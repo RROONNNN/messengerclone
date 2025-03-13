@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:messenger_clone/features/main_page/main.dart';
+import 'package:messenger_clone/features/main_page/main_page.dart';
 import 'package:provider/provider.dart';
 
 import 'common/extensions/custom_theme_extension.dart';

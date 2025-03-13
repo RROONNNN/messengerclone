@@ -5,7 +5,7 @@ import '../extensions/custom_theme_extension.dart';
 
 const double DEFAULT_TITLE_FONT_SIZE = 28;
 const double DEFAULT_HEADLINE_FONT_SIZE = 20;
-const double DEFAULT_CONTENT_FONT_SIZE = 16;
+const double DEFAULT_CONTENT_FONT_SIZE = 15;
 
 class TitleText extends BaseText {
   const TitleText(
@@ -19,11 +19,11 @@ class TitleText extends BaseText {
     super.maxLines,
     super.decoration,
   }) : super(
-          fontSize: fontSize ?? DEFAULT_TITLE_FONT_SIZE,
-          fontWeight: fontWeight ?? FontWeight.w900,
-          textAlign: textAlign ?? TextAlign.left,
-          overflow: overflow ?? TextOverflow.visible,
-        );
+         fontSize: fontSize ?? DEFAULT_TITLE_FONT_SIZE,
+         fontWeight: fontWeight ?? FontWeight.w900,
+         textAlign: textAlign ?? TextAlign.left,
+         overflow: overflow ?? TextOverflow.visible,
+       );
 }
 
 class HeadlineText extends BaseText {
@@ -38,11 +38,11 @@ class HeadlineText extends BaseText {
     super.maxLines,
     super.decoration,
   }) : super(
-          fontSize: fontSize ?? DEFAULT_HEADLINE_FONT_SIZE,
-          fontWeight: fontWeight ?? FontWeight.w700,
-          textAlign: textAlign ?? TextAlign.left,
-          overflow: overflow ?? TextOverflow.visible,
-        );
+         fontSize: fontSize ?? DEFAULT_HEADLINE_FONT_SIZE,
+         fontWeight: fontWeight ?? FontWeight.w700,
+         textAlign: textAlign ?? TextAlign.left,
+         overflow: overflow ?? TextOverflow.visible,
+       );
 }
 
 class ContentText extends BaseText {
@@ -57,11 +57,11 @@ class ContentText extends BaseText {
     super.maxLines,
     super.decoration,
   }) : super(
-          fontSize: fontSize ?? DEFAULT_CONTENT_FONT_SIZE,
-          fontWeight: fontWeight ?? FontWeight.w500,
-          textAlign: textAlign ?? TextAlign.left,
-          overflow: overflow ?? TextOverflow.visible,
-        );
+         fontSize: fontSize ?? DEFAULT_CONTENT_FONT_SIZE,
+         fontWeight: fontWeight ?? FontWeight.w500,
+         textAlign: textAlign ?? TextAlign.left,
+         overflow: overflow ?? TextOverflow.visible,
+       );
 }
 
 class BaseText extends StatefulWidget {
@@ -96,17 +96,17 @@ class _BaseTextState extends State<BaseText> {
     return widget.text == null
         ? const SizedBox()
         : Text(
-            widget.text!,
-            style: TextStyle(
-              decoration: widget.decoration,
-              fontSize: widget.fontSize,
-              fontWeight: widget.fontWeight,
-              color: widget.color ?? context.theme.textColor,
-            ),
-            textScaler: const TextScaler.linear(1.0),
-            textAlign: widget.textAlign,
-            overflow: widget.overflow,
-            maxLines: widget.maxLines,
-          );
+          widget.text!,
+          style: TextStyle(
+            decoration: widget.decoration,
+            fontSize: widget.fontSize,
+            fontWeight: widget.fontWeight,
+            color: widget.color ?? context.theme.textColor,
+          ),
+          textScaler: const TextScaler.linear(1.0),
+          textAlign: widget.textAlign,
+          overflow: widget.overflow,
+          maxLines: widget.maxLines,
+        );
   }
 }

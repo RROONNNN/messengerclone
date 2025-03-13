@@ -52,7 +52,7 @@ class _SettingsPageState extends State<SettingsPage> {
               onPressed: () {
                 themeProvider.setTheme(ThemeMode.system);
               },
-              child: const Text('System Theme'),
+              child: const Text('Setting'),
             ),
           ],
         ),
