@@ -2,25 +2,40 @@ import 'package:flutter/material.dart';
 import '../../extensions/custom_theme_extension.dart';
 import '../custom_text_style.dart';
 
-class CustomMessageItem extends StatelessWidget {
+class CustomMessageItem extends StatefulWidget {
   final bool isMe;
   final bool isTextMessage;
   final bool isImageMessage;
   final Widget child;
-  final List<String> reactions;
-  final void Function()? onLongPress;
   const CustomMessageItem({
     super.key,
     required this.isMe,
     required this.child,
     this.isImageMessage = false,
     this.isTextMessage = false,
-    this.reactions = const [],
-    this.onLongPress,
   }) : assert(
          (isTextMessage ? 1 : 0) + (isImageMessage ? 1 : 0) < 2,
          "only and must be one of isImageMessage, isTextMessage can be true",
        );
+
+  @override
+  State<CustomMessageItem> createState() => _CustomMessageItemState();
+}
+
+class _CustomMessageItemState extends State<CustomMessageItem> {
+  late List<String> reactions;
+
+  @override
+  void initState() {
+    super.initState();
+    reactions = [];
+  }
+
+  void addReaction(String reaction) {
+    setState(() {
+      reactions.add(reaction);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,13 +44,45 @@ class CustomMessageItem extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: GestureDetector(
-            onLongPress: onLongPress,
+            onLongPress: () {
+              showDialog<List<String>>(
+                context: context,
+                builder:
+                    (context) => AlertDialog(
+                      contentPadding: EdgeInsets.all(5),
+                      backgroundColor: context.theme.tileColor,
+                      content: SizedBox(
+                        width: 250,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+
+                          children:
+                              ['👍', '❤️', '😂', '😮', '😢', '👏'].map((
+                                reaction,
+                              ) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    addReaction(reaction);
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: ContentText(
+                                    reaction,
+                                    fontSize: 22,
+                                    overflow: TextOverflow.clip,
+                                  ),
+                                );
+                              }).toList(),
+                        ),
+                      ),
+                    ),
+              );
+            },
             child: Container(
               decoration: BoxDecoration(
                 color:
-                    isImageMessage
+                    widget.isImageMessage
                         ? null
-                        : isMe
+                        : widget.isMe
                         ? context.theme.blue
                         : context.theme.grey,
                 borderRadius: BorderRadius.all(Radius.circular(15)),
@@ -43,18 +90,18 @@ class CustomMessageItem extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth:
-                      isImageMessage
+                      widget.isImageMessage
                           ? MediaQuery.of(context).size.width * 0.6
                           : MediaQuery.of(context).size.width * 0.8,
                   maxHeight:
-                      isImageMessage
+                      widget.isImageMessage
                           ? MediaQuery.of(context).size.width * 0.5
                           : double.infinity,
                   minWidth: 0,
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(15),
-                  child: child,
+                  child: widget.child,
                 ),
               ),
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../common/extensions/custom_theme_extension.dart';
 
 class CustomMessagesBottomBar extends StatefulWidget {
@@ -11,6 +12,20 @@ class CustomMessagesBottomBar extends StatefulWidget {
 }
 
 class _CustomMessagesBottomBarState extends State<CustomMessagesBottomBar> {
+  final FocusNode _focusNode = FocusNode();
+  late bool _isFocused;
+  @override
+  void initState() {
+    super.initState();
+    _isFocused = false;
+
+    _focusNode.addListener(() {
+      setState(() {
+        _isFocused = _focusNode.hasFocus;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return IconTheme(
@@ -21,21 +36,39 @@ class _CustomMessagesBottomBarState extends State<CustomMessagesBottomBar> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            IconButton(onPressed: () {}, icon: Icon(Icons.add_circle)),
-            IconButton(onPressed: () {}, icon: Icon(Icons.camera_alt)),
-            IconButton(onPressed: () {}, icon: Icon(Icons.image)),
-            IconButton(onPressed: () {}, icon: Icon(Icons.mic)),
+            _isFocused
+                ? SizedBox()
+                : IconButton(onPressed: () {}, icon: Icon(Icons.add_circle)),
+            _isFocused
+                ? SizedBox()
+                : IconButton(onPressed: () {}, icon: Icon(Icons.camera_alt)),
+            _isFocused
+                ? SizedBox()
+                : IconButton(onPressed: () {}, icon: Icon(Icons.image)),
+            _isFocused
+                ? SizedBox()
+                : IconButton(onPressed: () {}, icon: Icon(Icons.mic)),
+            _isFocused
+                ? SizedBox(
+                  width: 30,
+                  child: IconButton(
+                    padding: EdgeInsets.all(0),
+                    onPressed: () {},
+                    icon: Icon(Icons.keyboard_arrow_right),
+                  ),
+                )
+                : SizedBox(),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 5),
                 child: TextField(
+                  focusNode: _focusNode,
                   controller: widget.textController,
                   style: TextStyle(
                     color: context.theme.textColor,
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
                   ),
-
                   decoration: InputDecoration(
                     border: OutlineInputBorder(
                       borderSide: BorderSide.none,
@@ -53,7 +86,6 @@ class _CustomMessagesBottomBarState extends State<CustomMessagesBottomBar> {
                 ),
               ),
             ),
-
             IconButton(onPressed: () {}, icon: Icon(Icons.thumb_up_alt)),
           ],
         ),

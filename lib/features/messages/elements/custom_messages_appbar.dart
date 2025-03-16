@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../common/widgets/custom_text_style.dart';
 import '../../../common/widgets/elements/custom_round_avatar.dart';
 import '../../../common/extensions/custom_theme_extension.dart';
@@ -48,27 +49,36 @@ class CustomMessagesAppBar extends StatelessWidget
       iconTheme: IconThemeData(color: context.theme.blue),
       backgroundColor: context.theme.appBar,
       elevation: 0,
-      leadingWidth: 50,
+      leadingWidth: 40,
+      titleSpacing: 0,
+      actionsPadding: EdgeInsets.all(0),
       title: GestureDetector(
         onTap: onTapAvatar,
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             CustomRoundAvatar(isActive: user.isActive, radius: 16),
             SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ContentText(
-                  user.name,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-                ContentText(
-                  user.isActive ? "Đang hoạt động" : _getOfflineDurationText(),
-                  color: context.theme.textGrey,
-                ),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ContentText(
+                    user.name,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  ContentText(
+                    user.isActive
+                        ? "Đang hoạt động"
+                        : _getOfflineDurationText(),
+                    overflow: TextOverflow.ellipsis,
+                    color: context.theme.textGrey,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -89,16 +99,13 @@ class CustomMessagesAppBar extends StatelessWidget
                 const SizedBox(width: 8),
               ]
               : [const SizedBox()],
-      leading: Padding(
-        padding: const EdgeInsets.all(8),
-        child: IconButton(
-          padding: EdgeInsets.all(0),
-          iconSize: 18,
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: Icon(Icons.arrow_back_ios_new),
-        ),
+      leading: IconButton(
+        padding: EdgeInsets.all(0),
+        iconSize: 18,
+        onPressed: () {
+          Navigator.pop(context);
+        },
+        icon: Icon(Icons.arrow_back_ios_new),
       ),
     );
   }

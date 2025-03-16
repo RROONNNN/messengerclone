@@ -124,7 +124,6 @@ class _ChatPageState extends State<ChatPage> {
                 CustomMessageItem(
                   isMe: false,
                   isImageMessage: false,
-                  reactions: ["👍", "❤️", "😂", "😂"],
                   child: IntrinsicWidth(
                     child: ListTile(
                       title: ContentText("Cuộc gọi video"),
@@ -138,7 +137,7 @@ class _ChatPageState extends State<ChatPage> {
                         color: context.theme.textColor,
                       ),
                     ),
-                  ), // Add reactions here
+                  ),
                 ),
                 SizedBox(height: 25),
               ],
