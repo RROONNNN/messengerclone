@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import '../themes/app_colors.dart';
 
 ThemeData darkTheme = ThemeData(
-    extensions: const <ThemeExtension<dynamic>>[CustomThemeExtension.darkMode]);
+  extensions: const <ThemeExtension<dynamic>>[CustomThemeExtension.darkMode],
+);
 
-ThemeData lightTheme = ThemeData(extensions: const <ThemeExtension<dynamic>>[
-  CustomThemeExtension.lightMode
-]);
+ThemeData lightTheme = ThemeData(
+  extensions: const <ThemeExtension<dynamic>>[CustomThemeExtension.lightMode],
+);
 
 extension ExtendedTheme on BuildContext {
   CustomThemeExtension get theme =>
@@ -26,6 +27,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
   final Color tileColor;
   final Color white;
   final Color bottomNav;
+  final Color textGrey;
 
   static const lightMode = CustomThemeExtension(
     bg: AppColors.bgLight,
@@ -39,6 +41,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
     tileColor: AppColors.tileColorLight,
     white: AppColors.whiteColorLight,
     bottomNav: AppColors.bottomNavBarLight,
+    textGrey: AppColors.textColorLight,
   );
 
   static const darkMode = CustomThemeExtension(
@@ -53,6 +56,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
     tileColor: AppColors.tileColorDark,
     white: AppColors.whiteColorDark,
     bottomNav: AppColors.bottomNavBarDark,
+    textGrey: AppColors.textGreyDark,
   );
 
   const CustomThemeExtension({
@@ -67,12 +71,11 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
     required this.tileColor,
     required this.white,
     required this.bottomNav,
+    required this.textGrey,
   });
 
   @override
-  ThemeExtension<CustomThemeExtension> copyWith({
-    Color? circleImageColor,
-  }) {
+  ThemeExtension<CustomThemeExtension> copyWith({Color? circleImageColor}) {
     return CustomThemeExtension(
       bg: bg,
       appBar: appBar,
@@ -85,12 +88,15 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
       tileColor: tileColor,
       white: white,
       bottomNav: bottomNav,
+      textGrey: textGrey,
     );
   }
 
   @override
   ThemeExtension<CustomThemeExtension> lerp(
-      covariant ThemeExtension<CustomThemeExtension>? other, double t) {
+    covariant ThemeExtension<CustomThemeExtension>? other,
+    double t,
+  ) {
     if (other is! CustomThemeExtension) {
       return this;
     }
@@ -106,6 +112,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
       tileColor: tileColor,
       white: white,
       bottomNav: bottomNav,
+      textGrey: textGrey,
     );
   }
 }
