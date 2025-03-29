@@ -9,12 +9,18 @@ import 'common/themes/theme_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   try {
     AppWriteService.client;
-    await AppWriteService.signIn(
-      email: 'havannguyen@haha.d',
-      password: 'Nguyen@902993',
-    );
+    try {
+      final user = await AppWriteService.getCurrentUser();
+      debugPrint('Already logged in as: ${user.email}');
+    } catch (_) {
+      await AppWriteService.signIn(
+        email: 'nguyen@haha.d',
+        password: 'Nguyen@902993',
+      );
+    }
   } catch (e) {
     debugPrint('Appwrite initialization error: $e');
   }
