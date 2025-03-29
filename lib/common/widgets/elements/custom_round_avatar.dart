@@ -28,9 +28,9 @@ class CustomRoundAvatar extends StatelessWidget {
               right: 1,
               child: CircleAvatar(
                 backgroundColor: context.theme.bg,
-                radius: 7,
+                radius: 8,
                 child: CircleAvatar(
-                  radius: 4,
+                  radius: 6,
                   backgroundColor: context.theme.green,
                 ),
               ),
