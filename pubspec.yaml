@@ -37,6 +37,12 @@ dependencies:
   shared_preferences: ^2.5.2
   provider: ^6.1.2
   font_awesome_flutter: ^10.8.0
+  appwrite: ^15.0.0
+
+
+dependency_overrides:
+  flutter_web_auth_2:
+    path: ./android/local_plugins/flutter_web_auth_2
 
 dev_dependencies:
   flutter_test:

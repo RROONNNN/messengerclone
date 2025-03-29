@@ -4,9 +4,20 @@ import 'package:provider/provider.dart';
 
 import 'common/extensions/custom_theme_extension.dart';
 import 'common/routes/routes.dart';
+import 'common/services/app_write_service.dart';
 import 'common/themes/theme_provider.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    AppWriteService.client;
+    await AppWriteService.signIn(
+      email: 'havannguyen@haha.d',
+      password: 'Nguyen@902993',
+    );
+  } catch (e) {
+    debugPrint('Appwrite initialization error: $e');
+  }
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
