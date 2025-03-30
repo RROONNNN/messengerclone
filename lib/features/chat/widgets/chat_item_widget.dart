@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 
 import '../../../common/widgets/elements/custom_round_avatar.dart';
 import '../model/chat_item.dart';
@@ -49,6 +50,7 @@ class ChatItemWidget extends StatelessWidget {
                               : FontWeight.normal,
                           fontSize:  18,
                           overflow: TextOverflow.ellipsis,
+                          color: context.theme.textColor
                         ),
                       ),
                     ),
@@ -57,38 +59,42 @@ class ChatItemWidget extends StatelessWidget {
                 Row(
                   children: [
                     if (item.subtitle.isNotEmpty)
-                      Flexible(
-                        child: Padding(
+                      Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             item.subtitle,
                             style: TextStyle(
-                              color: item.hasUnread ? Colors.black : Colors.grey,
+                              color: item.hasUnread ? context.theme.textColor
+                                  : context.theme.textColor.withOpacity(0.5) ,
                               fontWeight: item.hasUnread ? FontWeight.bold : FontWeight.normal,
                               fontSize: 16,
                               overflow: TextOverflow.ellipsis,
                             ),
                             maxLines: 1,
                           ),
-                        ),
                       ),
                     Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.only(top: 4 , left: 4 ,right: 4),
                         child: Text(
                           "·",
                           style: TextStyle(
-                            color: item.hasUnread ? Colors.black : Colors.grey,
+                            color: item.hasUnread ? context.theme.textColor
+                                : context.theme.textColor.withOpacity(0.5) ,
                             fontSize: 16,
                             fontWeight: item.hasUnread ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
                     ),
-                    Text(
-                      item.time,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: item.hasUnread ? Colors.black : Colors.grey,
-                        fontWeight: item.hasUnread ? FontWeight.bold : FontWeight.normal,
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        item.time,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: item.hasUnread ? context.theme.textColor
+                              : context.theme.textColor.withOpacity(0.5) ,
+                          fontWeight: item.hasUnread ? FontWeight.bold : FontWeight.normal,
+                        ),
                       ),
                     ),
                   ],

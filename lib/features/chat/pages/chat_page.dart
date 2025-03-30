@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 import 'package:messenger_clone/common/widgets/elements/custom_round_avatar.dart';
 import 'package:messenger_clone/features/messages/pages/messages_page.dart';
 
@@ -90,14 +91,14 @@ class _ChatPageState extends State<ChatPage> {
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue,
+                color: context.theme.titleHeaderColor,
               ),
             ),
             SizedBox(width: 8),
             Container(
               padding: EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.blueAccent.withOpacity(0.2),
+                color: context.theme.titleHeaderColor.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -109,27 +110,20 @@ class _ChatPageState extends State<ChatPage> {
           ],
         ),
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: context.theme.bg,
         actions: [
           IconButton(
-            icon: Icon(Icons.account_tree_outlined, color: Colors.black.withOpacity(0.7)),
+            icon: Icon(Icons.account_tree_outlined, color: context.theme.textColor.withOpacity(0.7)),
             onPressed: () {},
           ),
           IconButton(
             icon: Icon(Icons.facebook,
-                color: Colors.black.withOpacity(0.7)),
+                color: context.theme.textColor.withOpacity(0.7)),
             onPressed: () {},
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Container(
-            color: Colors.grey[300],
-            height: 1,
-          ),
-        ),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: context.theme.bg,
       body: ListView(
         children: [
           _buildHeader(),
@@ -169,20 +163,20 @@ class _ChatPageState extends State<ChatPage> {
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.grey[200],
+              color: context.theme.grey,
               borderRadius: BorderRadius.circular(20.0),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
             child: Row(
               children: [
-                const Icon(Icons.search, color: Colors.grey, size: 20),
+                Icon(Icons.search, color: context.theme.textColor.withOpacity(0.5), size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     decoration: InputDecoration(
                       hintText: 'Tìm kiếm',
                       hintStyle: TextStyle(
-                        color: Colors.grey[600],
+                        color: context.theme.textColor.withOpacity(0.5),
                         fontSize: 16.0,
                       ),
                       border: InputBorder.none,
@@ -190,12 +184,12 @@ class _ChatPageState extends State<ChatPage> {
                       contentPadding: const EdgeInsets.symmetric(vertical: 8),
                     ),
                     style: TextStyle(
-                      color: Colors.black,
+                      color: context.theme.textColor,
                       fontSize: 16.0,
                     ),
                   ),
                 ),
-                const Icon(Icons.qr_code, color: Colors.grey, size: 20),
+                Icon(Icons.qr_code, color: context.theme.textColor.withOpacity(0.5), size: 20),
               ],
             ),
           ),
@@ -215,7 +209,7 @@ class _ChatPageState extends State<ChatPage> {
                     );
                   },
                   onLongPress: (){
-                    _showContextMenu(context);
+                    debugPrint("LongPress");
                   },
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -226,7 +220,12 @@ class _ChatPageState extends State<ChatPage> {
                           avatarImage: NetworkImage('https://picsum.photos/50?random=${name.hashCode}'),
                      ),
                       const SizedBox(height: 4),
-                      Text(name),
+                      Text(
+                          name ,
+                          style: TextStyle(
+                            color: context.theme.textColor,
+                          ),
+                      ),
                     ],
                   ),
                 ),
@@ -244,9 +243,9 @@ class _ChatPageState extends State<ChatPage> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          decoration: BoxDecoration(
+            color: context.theme.appBar,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
           ),
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
@@ -254,20 +253,14 @@ class _ChatPageState extends State<ChatPage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                child: Text(
-                  item.title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                height: 6,
+                width: 50,
+                color: Colors.grey,
               ),
-
-              const Divider(height: 1),
 
               ListTile(
                 leading: const Icon(Icons.archive),
-                title: const Text('Lưu trữ'),
+                title: Text('Lưu trữ'  , style: TextStyle(color: context.theme.textColor),),
                 onTap: () {
                   Navigator.pop(context);
                 },
@@ -283,7 +276,7 @@ class _ChatPageState extends State<ChatPage> {
 
               ListTile(
                 leading: const Icon(Icons.notifications_off),
-                title: const Text('Tắt thông báo'),
+                title:  Text('Tắt thông báo' , style: TextStyle(color: context.theme.textColor),),
                 onTap: () {
                   Navigator.pop(context);
                 },
@@ -291,7 +284,7 @@ class _ChatPageState extends State<ChatPage> {
 
               ListTile(
                 leading: const Icon(Icons.markunread),
-                title: const Text('Đánh dấu là chưa đọc'),
+                title:  Text('Đánh dấu là chưa đọc' , style: TextStyle(color: context.theme.textColor),),
                 onTap: () {
                   Navigator.pop(context);
                 },
@@ -299,7 +292,7 @@ class _ChatPageState extends State<ChatPage> {
 
               ListTile(
                 leading: const Icon(Icons.exit_to_app),
-                title: const Text('Rời nhóm'),
+                title:  Text('Rời nhóm' , style: TextStyle(color: context.theme.textColor),),
                 onTap: () {
                   Navigator.pop(context);
                 },
@@ -317,34 +310,6 @@ class _ChatPageState extends State<ChatPage> {
           ),
         );
       },
-    );
-  }
-  void _showContextMenu(BuildContext context) {
-    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final RenderBox tile = context.findRenderObject() as RenderBox;
-    final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        tile.localToGlobal(Offset.zero, ancestor: overlay),
-        tile.localToGlobal(tile.size.bottomRight(Offset.zero), ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
-    );
-
-    showMenu(
-      context: context,
-      position: position,
-      items: [
-        PopupMenuItem(
-          child: const Text('Xem trang cá nhân'),
-          onTap: () {
-          },
-        ),
-        PopupMenuItem(
-          child: const Text('Ẩn người liên he'),
-          onTap: () {
-          },
-        ),
-      ],
     );
   }
 }
