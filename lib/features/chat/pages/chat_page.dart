@@ -259,7 +259,7 @@ class _ChatPageState extends State<ChatPage> {
               ),
 
               ListTile(
-                leading: const Icon(Icons.archive),
+                leading:  Icon(Icons.archive , color: context.theme.textColor,),
                 title: Text('Lưu trữ'  , style: TextStyle(color: context.theme.textColor),),
                 onTap: () {
                   Navigator.pop(context);
@@ -267,15 +267,15 @@ class _ChatPageState extends State<ChatPage> {
               ),
 
               ListTile(
-                leading: const Icon(Icons.person_add),
-                title: const Text('Thêm thành viên'),
+                leading: Icon(Icons.person_add , color: context.theme.textColor,),
+                title: Text('Thêm thành viên' , style: TextStyle(color: context.theme.textColor),),
                 onTap: () {
                   Navigator.pop(context);
                 },
               ),
 
               ListTile(
-                leading: const Icon(Icons.notifications_off),
+                leading:  Icon(Icons.notifications_off , color: context.theme.textColor,),
                 title:  Text('Tắt thông báo' , style: TextStyle(color: context.theme.textColor),),
                 onTap: () {
                   Navigator.pop(context);
@@ -283,7 +283,7 @@ class _ChatPageState extends State<ChatPage> {
               ),
 
               ListTile(
-                leading: const Icon(Icons.markunread),
+                leading:  Icon(Icons.markunread , color: context.theme.textColor,),
                 title:  Text('Đánh dấu là chưa đọc' , style: TextStyle(color: context.theme.textColor),),
                 onTap: () {
                   Navigator.pop(context);
@@ -291,17 +291,15 @@ class _ChatPageState extends State<ChatPage> {
               ),
 
               ListTile(
-                leading: const Icon(Icons.exit_to_app),
+                leading:  Icon(Icons.exit_to_app , color: context.theme.textColor,),
                 title:  Text('Rời nhóm' , style: TextStyle(color: context.theme.textColor),),
                 onTap: () {
                   Navigator.pop(context);
                 },
               ),
-
-              const Divider(height: 1),
               ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('Xóa', style: TextStyle(color: Colors.red)),
+                leading:  Icon(Icons.delete, color: context.theme.red),
+                title:  Text('Xóa', style: TextStyle(color: context.theme.red)),
                 onTap: () {
                   Navigator.pop(context);
                 },
