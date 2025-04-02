@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 
+import '../../../common/widgets/custom_text_style.dart';
 import '../../../common/widgets/elements/custom_round_avatar.dart';
 import '../model/chat_item.dart';
 
@@ -61,16 +62,19 @@ class ChatItemWidget extends StatelessWidget {
                     if (item.subtitle.isNotEmpty)
                       Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            item.subtitle,
-                            style: TextStyle(
+                          child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: MediaQuery.of(context).size.width * 0.6,
+                              ),
+                             child : ContentText(
+                              item.subtitle,
                               color: item.hasUnread ? context.theme.textColor
-                                  : context.theme.textColor.withOpacity(0.5) ,
+                                    : context.theme.textColor.withOpacity(0.5) ,
                               fontWeight: item.hasUnread ? FontWeight.bold : FontWeight.normal,
                               fontSize: 16,
                               overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
-                            maxLines: 1,
                           ),
                       ),
                     Padding(

@@ -17,7 +17,7 @@ class _ChatPageState extends State<ChatPage> {
   final List<ChatItem> chatItems = [
     ChatItem(
       title: 'Mobile',
-      subtitle: 'https://docs.google.co...',
+      subtitle: 'https://docs.google.codsfsfsfsfdsfsfdsfdsfdsfdfds',
       time: '12:28',
       avatar: 'https://picsum.photos/50?random=${'Mobile'.hashCode}'
     ),
@@ -30,7 +30,7 @@ class _ChatPageState extends State<ChatPage> {
     ),
     ChatItem(
       title: 'Anh Em Cây Khế',
-      subtitle: 'Thuận: Dứt xíu về hè lọ',
+      subtitle: 'Thuận: Dứt xíu về hè duyet duyet dsfsdfsd',
       time: '21:04',
       avatar: 'https://picsum.photos/50?random=${'Anh Em Cây Khế'.hashCode}'
     ),
