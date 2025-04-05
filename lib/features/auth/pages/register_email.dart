@@ -1,4 +1,3 @@
-import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/services/opt_email_service.dart';
 
@@ -132,7 +131,6 @@ class _EmailInputScreenState extends State<EmailInputScreen> {
                           ),
                         );
                         final otp = OTPEmailService.generateOTP();
-                        debugPrint('OTP: $otp');
                         await OTPEmailService.sendOTPEmail(_emailController.text, otp);
                         Navigator.pushAndRemoveUntil(
                           context,
@@ -142,9 +140,8 @@ class _EmailInputScreenState extends State<EmailInputScreen> {
                               (route) => false,
                         );
                       }
-                    } on AppwriteException catch (e) {
+                    } catch (e) {
                       Navigator.of(context).pop();
-                      debugPrint('Error checking email: $e');
                       await CustomAlertDialog.show(
                         context: context,
                         title: "Lỗi hệ thống",

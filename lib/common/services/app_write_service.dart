@@ -1,27 +1,21 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart' as models;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 class AppWriteService {
   const AppWriteService._();
 
-  static final Client _publicClient = Client()
+  static final Client _client = Client()
       .setEndpoint('https://cloud.appwrite.io/v1')
-      .setProject('67e7a7eb001c9cd8d6ad')
-      .addHeader('X-Appwrite-Key', 'standard_a8eb9a9f20ca95f65b224f78345b4f54f8f5b443a7f1344e4a2e638fb098a72c72ac78411b0e90107e3ac62c706631d9666affd00d8b0078c531c52ea0844545c4502372fbc097870a5fb977ae1949f3829b7476173879a53a49db29182146d567d9d7526370b4defc5491f279ccbc969920e669c5384843a86a55d54e1201b4')
-      .setSelfSigned();
+      .setProject('67e7a7eb001c9cd8d6ad');
 
-  static final Client _sessionClient = Client()
-      .setEndpoint('https://cloud.appwrite.io/v1')
-      .setProject('67e7a7eb001c9cd8d6ad')
-      .setSelfSigned();
-
-  static Account get account => Account(_sessionClient);
-  static Databases get publicDatabases  => Databases(_publicClient);
-  static Databases get privateDatabases  => Databases(_sessionClient);
+  static Account get account => Account(_client);
+  static Databases get databases => Databases(_client);
 
   static const String _databaseId = '67e90080000a47b1eba4';
   static const String _userCollectionUser = '67e904b9002db65c933b';
@@ -32,185 +26,285 @@ class AppWriteService {
     required String password,
     required String name,
   }) async {
-    try {
-      final user = await account.create(
-        userId: ID.unique(),
-        email: email,
-        password: password,
-        name: name,
-      );
-      await _registerUser(user);
-      return user;
-    } on AppwriteException catch (e) {
-      throw Exception('Sign up failed: ${e.message}');
-    }
+    return withNetworkCheck(() async {
+      try {
+        final user = await account.create(
+          userId: ID.unique(),
+          email: email,
+          password: password,
+          name: name,
+        );
+        await _registerUser(user);
+        return user;
+      } on AppwriteException catch (e) {
+        throw Exception('Sign up failed: ${e.message}');
+      }
+    });
   }
 
   static Future<void> _registerUser(models.User user) async {
-    try {
-      await publicDatabases.createDocument(
-        databaseId: _databaseId,
-        collectionId: _userCollectionUser,
-        documentId: user.$id,
-        data: {
-          'email': user.email,
-          'name': user.name,
-        },
-      );
-    } on AppwriteException catch (e) {
-      throw Exception('Failed to register email: ${e.message}');
-    }
+    return withNetworkCheck(() async {
+      try {
+        await databases.createDocument(
+          databaseId: _databaseId,
+          collectionId: _userCollectionUser,
+          documentId: user.$id,
+          data: {
+            'email': user.email,
+            'name': user.name,
+          },
+        );
+      } on AppwriteException catch (e) {
+        throw Exception('Failed to register email: ${e.message}');
+      }
+    });
   }
-
-
 
   static Future<models.Session> signIn({
     required String email,
     required String password,
   }) async {
-    return await account.createEmailPasswordSession(
-      email: email,
-      password: password,
-    );
+    return withNetworkCheck(() async {
+      return await account.createEmailPasswordSession(
+        email: email,
+        password: password,
+      );
+    });
   }
 
   static Future<void> signOut() async {
-    try {
-      await account.deleteSession(sessionId: 'current');
-    } on AppwriteException catch (e) {
-      throw (e, 'Đăng xuất thất bại');
-    }
+    return withNetworkCheck(() async {
+      try {
+        await account.deleteSession(sessionId: 'current');
+      } on AppwriteException {
+        return;
+      }
+    });
   }
 
   static Future<models.User?> getCurrentUser() async {
-    try {
-      return await account.get();
-    } on AppwriteException catch (e) {
-      if (e.code == 401) {
+      try {
+        return await account.get();
+      } on AppwriteException catch (e) {
+        if (e.code == 401) {
+          return null;
+        }
         return null;
       }
-    }
-    return null;
   }
-  static Future<String?> getCurrentUserId() async {
-    try {
-      final user = await account.get();
-      return user.$id;
-    } on AppwriteException catch (e) {
-      if (e.code == 401) {
+
+  static Future<String?> getUserIdFromEmailAndPassword(
+      String email, String password) async {
+    return withNetworkCheck(() async {
+      try {
+        await signIn(email: email, password: password);
+        final user = await account.get();
+        await signOut();
+        return user.$id;
+      } on AppwriteException {
+        await signOut();
         return null;
       }
-      throw Exception('Failed to get current user: ${e.message}');
-    }
+    });
   }
 
   static Future<bool> isEmailRegistered(String email) async {
-    try {
-      final result = await publicDatabases.listDocuments(
-        databaseId: _databaseId,
-        collectionId: _userCollectionUser,
-        queries: [
-          Query.equal('email', email)
-        ],
-      );
-
-      return result.documents.isNotEmpty;
-    } on AppwriteException catch (e) {
-      throw Exception('Error checking email: ${e.message}');
-    }
+    return withNetworkCheck(() async {
+      try {
+        final result = await databases.listDocuments(
+          databaseId: _databaseId,
+          collectionId: _userCollectionUser,
+          queries: [Query.equal('email', email)],
+        );
+        return result.documents.isNotEmpty;
+      } on AppwriteException catch (e) {
+        throw Exception('Error checking email: ${e.message}');
+      }
+    });
   }
 
   static Future<bool> hasUserLoggedInFromThisDevice(String userId) async {
-    try {
-      final deviceInfo = DeviceInfoPlugin();
-      String deviceId;
+    return withNetworkCheck(() async {
+      try {
+        final deviceInfo = DeviceInfoPlugin();
+        String deviceId;
 
-      if (Platform.isAndroid) {
-        final androidInfo = await deviceInfo.androidInfo;
-        deviceId = androidInfo.id;
-      } else if (Platform.isIOS) {
-        final iosInfo = await deviceInfo.iosInfo;
-        deviceId = iosInfo.identifierForVendor ?? '';
-      } else {
-        throw PlatformException(
-          code: 'UNSUPPORTED_PLATFORM',
-          message: 'Device info is only supported on Android and iOS',
+        if (Platform.isAndroid) {
+          final androidInfo = await deviceInfo.androidInfo;
+          deviceId = androidInfo.id;
+        } else if (Platform.isIOS) {
+          final iosInfo = await deviceInfo.iosInfo;
+          deviceId = iosInfo.identifierForVendor ?? '';
+        } else {
+          return false;
+        }
+
+        final isExitUserAndDevice = await databases.listDocuments(
+          databaseId: _databaseId,
+          collectionId: _deviceCollection,
+          queries: [
+            Query.equal('userId', userId),
+            Query.equal('deviceId', deviceId),
+            Query.limit(1)
+          ],
         );
+        if (isExitUserAndDevice.documents.isNotEmpty) {
+          return true;
+        }
+        return false;
+      } catch (e) {
+        throw Exception('Failed to check device login history: $e');
       }
-      
-      final isExitUserAndDevice = await privateDatabases.listDocuments(
-        databaseId: _databaseId,
-        collectionId: _deviceCollection,
-        queries: [
-          Query.equal('userId', userId),
-          Query.equal('deviceId', deviceId),
-          Query.limit(1)
-        ],
-      );
-      if(isExitUserAndDevice.documents.isNotEmpty){
-        return true ;
-      }
-      return false;
-    } catch (e) {
-      throw Exception('Failed to check device login history: $e');
-    }
+    });
   }
 
   static Future<void> saveLoginDeviceInfo(String userId) async {
-    try {
-      final deviceInfo = DeviceInfoPlugin();
-      String deviceId;
-      String platform;
+    return withNetworkCheck(() async {
+      try {
+        final deviceInfo = DeviceInfoPlugin();
+        String deviceId;
+        String platform;
 
-      if (Platform.isAndroid) {
-        final androidInfo = await deviceInfo.androidInfo;
-        deviceId = androidInfo.id;
-        platform = 'Android';
-      } else if (Platform.isIOS) {
-        final iosInfo = await deviceInfo.iosInfo;
-        deviceId = iosInfo.identifierForVendor ?? '';
-        platform = 'iOS';
-      } else {
-        throw PlatformException(
-          code: 'UNSUPPORTED_PLATFORM',
-          message: 'Device info is only supported on Android and iOS',
+        if (Platform.isAndroid) {
+          final androidInfo = await deviceInfo.androidInfo;
+          deviceId = androidInfo.id;
+          platform = 'Android';
+        } else if (Platform.isIOS) {
+          final iosInfo = await deviceInfo.iosInfo;
+          deviceId = iosInfo.identifierForVendor ?? '';
+          platform = 'iOS';
+        } else {
+          throw PlatformException(
+            code: 'UNSUPPORTED_PLATFORM',
+            message: 'Device info is only supported on Android and iOS',
+          );
+        }
+
+        final existingDevice = await databases.listDocuments(
+          databaseId: _databaseId,
+          collectionId: _deviceCollection,
+          queries: [
+            Query.equal('userId', userId),
+            Query.equal('deviceId', deviceId),
+            Query.limit(1),
+          ],
         );
+
+        if (existingDevice.documents.isNotEmpty) {
+          await databases.updateDocument(
+            databaseId: _databaseId,
+            collectionId: _deviceCollection,
+            documentId: existingDevice.documents.first.$id,
+            data: {
+              'lastLogin': DateTime.now().toIso8601String(),
+            },
+          );
+        } else {
+          await databases.createDocument(
+            databaseId: _databaseId,
+            collectionId: _deviceCollection,
+            documentId: ID.unique(),
+            data: {
+              'userId': userId,
+              'deviceId': deviceId,
+              'platform': platform,
+              'lastLogin': DateTime.now().toIso8601String(),
+            },
+          );
+        }
+      } on AppwriteException catch (e) {
+        throw Exception('Failed to save device info: ${e.message}');
+      }
+    });
+  }
+
+  static Future<bool> _checkAppwriteConnection() async {
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isEmpty || result[0].rawAddress.isEmpty) {
+        return false;
       }
 
-      final existingDevice = await privateDatabases.listDocuments(
+      final response = await http.get(
+          Uri.parse('https://cloud.appwrite.io/v1/avatars/initials')
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        return true;
+      }
+      return false;
+    } on SocketException catch (_) {
+      return false;
+    } on http.ClientException catch (_) {
+      return false;
+    } on TimeoutException catch (_) {
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<T> withNetworkCheck<T>(Future<T> Function() apiCall) async {
+    if (!await _checkAppwriteConnection()) {
+      throw Exception('No internet connection available');
+    }
+    return await apiCall();
+  }
+
+  static Future<void> deleteAccount() async {
+    return withNetworkCheck(() async {
+      try {
+        final user =  await getCurrentUser();
+        final userId = user?.$id;
+
+        await _deleteUserDocuments(userId!);
+
+        await _deleteDeviceRecords(userId);
+
+        await account.updateStatus();
+        //= block + function = delete ( do khoong xoa truc tiep duoc )
+
+      } on AppwriteException catch (e) {
+        throw Exception('Failed to delete account: ${e.message}');
+      } catch (e) {
+        throw Exception('An error occurred while deleting account: $e');
+      }
+    });
+  }
+
+  static Future<void> _deleteUserDocuments(String userId) async {
+    try {
+      await databases.deleteDocument(
+        databaseId: _databaseId,
+        collectionId: _userCollectionUser,
+        documentId: userId,
+      );
+    } on AppwriteException catch (e) {
+      if (e.code != 404) {
+        throw Exception('Failed to delete user documents: ${e.message}');
+      }
+    }
+  }
+
+  static Future<void> _deleteDeviceRecords(String userId) async {
+    try {
+
+      final deviceRecords = await databases.listDocuments(
         databaseId: _databaseId,
         collectionId: _deviceCollection,
-        queries: [
-          Query.equal('userId', userId),
-          Query.equal('deviceId', deviceId),
-          Query.limit(1),
-        ],
+        queries: [Query.equal('userId', userId)],
       );
 
-      if (existingDevice.documents.isNotEmpty) {
-        await privateDatabases.updateDocument(
+
+      for (final doc in deviceRecords.documents) {
+        await databases.deleteDocument(
           databaseId: _databaseId,
           collectionId: _deviceCollection,
-          documentId: existingDevice.documents.first.$id,
-          data: {
-            'lastLogin': DateTime.now().toIso8601String(),
-          },
-        );
-      } else {
-        await privateDatabases.createDocument(
-          databaseId: _databaseId,
-          collectionId: _deviceCollection,
-          documentId: ID.unique(),
-          data: {
-            'userId': userId,
-            'deviceId': deviceId,
-            'platform': platform,
-            'lastLogin': DateTime.now().toIso8601String(),
-          },
+          documentId: doc.$id,
         );
       }
     } on AppwriteException catch (e) {
-      throw Exception('Failed to save device info: ${e.message}');
+      throw Exception('Failed to delete device records: ${e.message}');
     }
   }
 }

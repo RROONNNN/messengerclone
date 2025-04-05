@@ -4,6 +4,7 @@ import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 import 'package:messenger_clone/features/auth/pages/login_screen.dart';
 import 'package:messenger_clone/features/settings/pages/settings_page.dart';
 import '../../../common/services/app_write_service.dart';
+import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../../../common/widgets/dialog/loading_dialog.dart';
 
 class MenuPage extends StatelessWidget {
@@ -59,6 +60,38 @@ class MenuPage extends StatelessWidget {
                 }
               },
               child: const Text('LogOut'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) =>
+                  const LoadingDialog(
+                    message: "Đang xóa tài khoản...",
+                  ),
+                );
+                try {
+                  await AppWriteService.deleteAccount();
+                  Navigator.of(context).pop();
+                  CustomAlertDialog.show(
+                      context: context,
+                      title: "Thông báo",
+                      message: "Yêu cầu đã được gửi đi. Tài khoản sẽ được xóa hoàn toàn sau ít phút."
+                  );
+                  Navigator.pushAndRemoveUntil(
+                    context ,
+                    MaterialPageRoute(builder: (context) => LoginScreen()),
+                        (route) => false,
+                  );
+                } catch (e) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Delete account failed: $e')),
+                  );
+                }
+              },
+              child: const Text('Delete Account'),
             ),
           ],
         ),

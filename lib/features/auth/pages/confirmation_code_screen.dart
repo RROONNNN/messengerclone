@@ -117,45 +117,56 @@ class _ConfirmationCodeScreenState extends State<ConfirmationCodeScreen> {
                       showDialog(
                         context: context,
                         barrierDismissible: false,
-                        builder: (context) => const LoadingDialog(
+                        builder: (context) =>
+                        const LoadingDialog(
                           message: "Đang kiểm tra...",
                         ),
                       );
-                      final remainingAttempts = await OTPEmailService
-                          .getRemainingAttempts(widget.email);
-                      if(remainingAttempts <= 0){
-                        Navigator.of(context).pop();
-                        await CustomAlertDialog.show(
-                          context: context,
-                          title: "Error ",
-                          message: "Bạn nhập sai mã xác minh quá nhiều lần , vui lòng thử lại sau.",
-                        );
-                      }
-                      else {
-                        bool isVerified = await OTPEmailService.verifyOTP(
-                            widget.email, _codeController.text);
-                        if (isVerified) {
-                          widget.nextScreen == null ? Store.setEmailRegistered(widget.email) : null;
-
-                          final nextPage = widget.nextScreen != null
-                              ? widget.nextScreen!()
-                              : CreatePasswordScreen();
-                          widget.action != null ? widget.action!() : null;
-
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => nextPage
-                              ));
-                        }
-                        else {
+                      try {
+                        final remainingAttempts = await OTPEmailService
+                            .getRemainingAttempts(widget.email);
+                        if (remainingAttempts <= 0) {
                           Navigator.of(context).pop();
                           await CustomAlertDialog.show(
                             context: context,
                             title: "Error ",
-                            message: "Invalid or expired code. Remaining attempts: $remainingAttempts",
+                            message: "Bạn nhập sai mã xác minh quá nhiều lần , vui lòng thử lại sau.",
                           );
                         }
+                        else {
+                          bool isVerified = await OTPEmailService.verifyOTP(
+                              widget.email, _codeController.text);
+                          if (isVerified) {
+                            widget.nextScreen == null ? Store
+                                .setEmailRegistered(widget.email) : null;
+
+                            final nextPage = widget.nextScreen != null
+                                ? widget.nextScreen!()
+                                : CreatePasswordScreen();
+                            widget.action != null ? widget.action!() : null;
+
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => nextPage
+                                ));
+                          }
+                          else {
+                            Navigator.of(context).pop();
+                            await CustomAlertDialog.show(
+                              context: context,
+                              title: "Error ",
+                              message: "Invalid or expired code. Remaining attempts: $remainingAttempts",
+                            );
+                          }
+                        }
+                      }
+                      catch (e) {
+                        Navigator.of(context).pop();
+                        await CustomAlertDialog.show(
+                            context: context,
+                            title: "Lỗi hệ thống",
+                            message: "Không thể kiểm tra OTP. Vui lòng thử lại sau.");
                       }
                     }
                 },
@@ -185,20 +196,30 @@ class _ConfirmationCodeScreenState extends State<ConfirmationCodeScreen> {
                       message: "Đang gửi OTP...",
                     ),
                   );
-                  final otp = OTPEmailService.generateOTP();
-                  debugPrint('OTP: $otp');
-                  await OTPEmailService.sendOTPEmail(widget.email, otp);
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ConfirmationCodeScreen(
-                          email:widget.email ,
-                          nextScreen: widget.nextScreen,
-                          action: widget.action
+                  try {
+                    final otp = OTPEmailService.generateOTP();
+                    await OTPEmailService.sendOTPEmail(widget.email, otp);
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ConfirmationCodeScreen(
+                                email: widget.email,
+                                nextScreen: widget.nextScreen,
+                                action: widget.action
+                            ),
                       ),
-                    ),
-                        (route) => false,
-                  );
+                          (route) => false,
+                    );
+                  }
+                  catch (e) {
+                    Navigator.of(context).pop();
+                    await CustomAlertDialog.show(
+                      context: context,
+                      title: "Lỗi hệ thống",
+                      message: "Không thể gui OTP. Vui lòng thử lại sau.",
+                    );
+                  }
                 },
                 child: const Text(
                   "I didn't get the code. Resend code?",

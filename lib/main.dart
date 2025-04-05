@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import 'common/extensions/custom_theme_extension.dart';
 import 'common/routes/routes.dart';
-import 'common/services/app_write_service.dart';
 import 'common/themes/theme_provider.dart';
 import 'features/splash/pages/splash.dart';
 

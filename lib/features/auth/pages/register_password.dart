@@ -130,6 +130,9 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                         message: "Tài khoản đã được tạo thành công.",
                       );
 
+                      await Store.setEmailRegistered("");
+                      await Store.setNameRegistered("");
+
                       Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(builder: (context) => LoginScreen()),
@@ -154,13 +157,11 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
 
                     } catch (e) {
                       Navigator.of(context).pop();
-
                       await CustomAlertDialog.show(
                         context: context,
-                        title: "Lỗi hệ thống",
-                        message: "Đã xảy ra lỗi không mong muốn",
+                        title: "Lỗi ",
+                        message: "Đã xảy ra lỗi không mong muốn : ${e.toString()}",
                       );
-                      debugPrint("Lỗi không xác định: ${e.toString()}");
                     }
                   }
                 },

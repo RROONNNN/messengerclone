@@ -18,8 +18,8 @@ class LoginScreen extends StatefulWidget {
 
 
 class LoginScreenState extends State<LoginScreen> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = false;
 
   @override
@@ -27,21 +27,21 @@ class LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: Color(0xFF162127),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 40.0),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            SizedBox(height: 150),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.1),
             Image.asset(
               "assets/images/logo.png",
               width: 80,
               height: 80,
               fit: BoxFit.contain,
             ),
-            SizedBox(height: 100),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.1),
             TextField(
-              controller: emailController,
+              controller: _emailController,
               decoration: InputDecoration(
                 labelText: 'Enter your email address',
                 isDense: true,
@@ -54,19 +54,20 @@ class LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(15),
                   borderSide: BorderSide(color: Colors.blue),
                 ),
-                contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 20),
+                contentPadding: EdgeInsets.symmetric(
+                    horizontal: 15, vertical: 20),
               ),
               style: TextStyle(
-                color: Colors.white ,
+                color: Colors.white,
               ),
             ),
             SizedBox(height: 15),
             TextField(
-              controller: passwordController,
+              controller: _passwordController,
               obscureText: _obscurePassword ? false : true,
               decoration: InputDecoration(
                 labelText: 'Enter your password',
-                labelStyle: TextStyle(color:  Color(0xFF9eabb3)),
+                labelStyle: TextStyle(color: Color(0xFF9eabb3)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(15),
                   borderSide: BorderSide(color: Colors.grey),
@@ -75,9 +76,10 @@ class LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(15),
                   borderSide: BorderSide(color: Colors.blue),
                 ),
-                contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 20),
+                contentPadding: EdgeInsets.symmetric(
+                    horizontal: 15, vertical: 20),
                 suffixIcon: IconButton(
-                  icon:  Icon(
+                  icon: Icon(
                     _obscurePassword ? Icons.visibility_off : Icons.visibility,
                     color: Colors.grey,
                   ),
@@ -89,7 +91,7 @@ class LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               style: TextStyle(
-                color: Colors.white ,
+                color: Colors.white,
               ),
             ),
             SizedBox(height: 20),
@@ -98,87 +100,91 @@ class LoginScreenState extends State<LoginScreen> {
               height: 50,
               child: ElevatedButton(
                 onPressed: () async {
-                  if(emailController.text.isEmpty || passwordController.text.isEmpty){
+                  if (_emailController.text.isEmpty ||
+                      _passwordController.text.isEmpty) {
                     await CustomAlertDialog.show(
                       context: context,
                       title: "Cảnh báo",
                       message: "Vui lòng nhập đầy đủ thông tin.",
                     );
+                  } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(_emailController.text) ||
+                      _passwordController.text.length <= 8  ) {
+                    await CustomAlertDialog.show(
+                      context: context,
+                      title: "Lỗi đăng nhập",
+                      message: "Sai email hoặc mật khẩu",
+                    );
                   } else {
                     showDialog(
                       context: context,
                       barrierDismissible: false,
-                      builder: (context) => const LoadingDialog(
+                      builder: (context) =>
+                      const LoadingDialog(
                         message: "Đang đăng nhập...",
                       ),
                     );
                     try {
-                      await AppWriteService.signIn(
-                        email: emailController.text,
-                        password: passwordController.text,
-                      );
                       final String? userID = await AppWriteService
-                          .getCurrentUserId();
+                          .getUserIdFromEmailAndPassword(
+                          _emailController.text, _passwordController.text
+                      );
                       if (userID == null) {
-                        throw Exception('Không thể lấy thông tin người dùng');
-                      }
-                      bool check = await AppWriteService
-                          .hasUserLoggedInFromThisDevice(userID);
-                      if (check) {
-                        await AppWriteService.saveLoginDeviceInfo(userID);
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => MainPage()),
-                            (route) => false
+                        Navigator.of(context).pop();
+                        await CustomAlertDialog.show(
+                          context: context,
+                          title: "Lỗi đăng nhập",
+                          message: "Sai email hoặc mật khẩu",
                         );
-                      } else {
-                        await AppWriteService.signOut();
-                        final otp = OTPEmailService.generateOTP();
-                        debugPrint('OTP: $otp');
-                        await OTPEmailService.sendOTPEmail(emailController.text, otp);
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ConfirmationCodeScreen(
-                                email: emailController.text ,
-                                nextScreen: () => MainPage(),
-                                action: () async {
-                                  await AppWriteService.signIn(
-                                    email: emailController.text,
-                                    password: passwordController.text,
-                                  );
-                                  final String? userID = await AppWriteService
-                                      .getCurrentUserId();
-                                  if (userID == null) {
-                                    throw Exception('Không thể lấy thông tin người dùng');
-                                  }
-                                  await AppWriteService.saveLoginDeviceInfo(userID);
-                                },
+                      }
+                      else {
+                        bool check = await AppWriteService
+                            .hasUserLoggedInFromThisDevice(userID);
+                        if (check) {
+                          await AppWriteService.signIn(
+                            email: _emailController.text,
+                            password: _passwordController.text,
+                          );
+                          await AppWriteService.saveLoginDeviceInfo(userID);
+                          Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => MainPage()),
+                                  (route) => false
+                          );
+                        } else {
+                          final otp = OTPEmailService.generateOTP();
+                          debugPrint('OTP: $otp');
+                          await OTPEmailService.sendOTPEmail(_emailController
+                              .text, otp);
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ConfirmationCodeScreen(
+                                    email: _emailController.text,
+                                    nextScreen: () => MainPage(),
+                                    action: () async {
+                                      await AppWriteService.signIn(
+                                        email: _emailController.text,
+                                        password: _passwordController.text,
+                                      );
+                                      await AppWriteService.saveLoginDeviceInfo(
+                                          userID);
+                                    },
+                                  ),
                             ),
-                          ),
-                              (route) => false,
-                        );
+                                (route) => false,
+                          );
+                        }
                       }
-                    }  catch (e) {
-                      try {
-                        await AppWriteService.signOut();
+                    }
+                    catch (e) {
+                      if(e.toString().contains('No internet connection')){
                         Navigator.of(context).pop();
-                        debugPrint(e.toString());
                         await CustomAlertDialog.show(
                           context: context,
                           title: "Lỗi đăng nhập",
-                          message: "Đã có lỗi xảy ra : $e",
-                        );
-                      }
-                      catch(e) {
-                        Navigator.of(context).pop();
-                        debugPrint(e.toString());
-                        await CustomAlertDialog.show(
-                          context: context,
-                          title: "Lỗi đăng nhập",
-                          message: "Sai email hoac mat khau",
-                        );
+                          message: "Không có kết nối mạng");
                       }
                     }
                   }
@@ -191,7 +197,7 @@ class LoginScreenState extends State<LoginScreen> {
                 ),
                 child: Text('Login',
                     style: TextStyle(
-                        color: Colors.white ,
+                        color: Colors.white,
                         fontSize: 20)),
               ),
             ),
@@ -201,7 +207,7 @@ class LoginScreenState extends State<LoginScreen> {
               child: Center(
                 child: Text(
                   'Forgot your password ?',
-                  style: TextStyle(color: Colors.white , fontSize: 20),
+                  style: TextStyle(color: Colors.white, fontSize: 20),
                 ),
               ),
             ),
@@ -226,7 +232,7 @@ class LoginScreenState extends State<LoginScreen> {
                 child: Text(
                   'Create new account',
                   style: TextStyle(
-                      color: Colors.blue ,
+                      color: Colors.blue,
                       fontSize: 18
                   ),
                 ),
