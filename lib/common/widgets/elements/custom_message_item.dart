@@ -92,7 +92,7 @@ class _CustomMessageItemState extends State<CustomMessageItem> {
                   maxWidth:
                       widget.isImageMessage
                           ? MediaQuery.of(context).size.width * 0.6
-                          : MediaQuery.of(context).size.width * 0.8,
+                          : MediaQuery.of(context).size.width * 0.7,
                   maxHeight:
                       widget.isImageMessage
                           ? MediaQuery.of(context).size.width * 0.5

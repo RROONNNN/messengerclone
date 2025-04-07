@@ -3,11 +3,15 @@ import 'package:appwrite/models.dart' as models;
 
 class AppWriteService {
   const AppWriteService._();
-
-  static Client client = Client()
-      .setEndpoint('https://cloud.appwrite.io/v1')
-      .setProject('67e7a7eb001c9cd8d6ad')
-      .setSelfSigned();
+  static const String databaseId = '67e90080000a47b1eba4';
+  static const String groupMessagesCollectionId = '67e908ed003b62a3f44a';
+  static const String messageCollectionId = '67e9013c002a978980fa';
+  static const String userCollectionId = '67e904b9002db65c933b';
+  static Client client =
+      Client()
+          .setEndpoint('https://cloud.appwrite.io/v1')
+          .setProject('67e7a7eb001c9cd8d6ad')
+          .setSelfSigned();
 
   static Account get account => Account(client);
   static Databases get databases => Databases(client);
@@ -83,9 +87,7 @@ class AppWriteService {
     );
   }
 
-  static Future<models.FileList> listFiles({
-    required String bucketId,
-  }) async {
+  static Future<models.FileList> listFiles({required String bucketId}) async {
     return await storage.listFiles(bucketId: bucketId);
   }
 }
