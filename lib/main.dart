@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/features/main_page/main_page.dart';
-import 'package:messenger_clone/features/messages/data/data_sources/remote/appwrite_chat_repository.dart';
-import 'package:messenger_clone/features/messages/data/repositories/chat_repository_impl.dart';
 import 'package:provider/provider.dart';
 
 import 'common/extensions/custom_theme_extension.dart';
