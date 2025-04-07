@@ -25,6 +25,7 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/images/aeck_logo.png"
+  dartz: ^0.10.1
 
 
 dependency_overrides:

@@ -49,10 +49,7 @@ class AppWriteService {
           databaseId: _databaseId,
           collectionId: _userCollectionUser,
           documentId: user.$id,
-          data: {
-            'email': user.email,
-            'name': user.name,
-          },
+          data: {'email': user.email, 'name': user.name},
         );
       } on AppwriteException catch (e) {
         throw Exception('Failed to register email: ${e.message}');
@@ -83,18 +80,20 @@ class AppWriteService {
   }
 
   static Future<models.User?> getCurrentUser() async {
-      try {
-        return await account.get();
-      } on AppwriteException catch (e) {
-        if (e.code == 401) {
-          return null;
-        }
+    try {
+      return await account.get();
+    } on AppwriteException catch (e) {
+      if (e.code == 401) {
         return null;
       }
+      return null;
+    }
   }
 
   static Future<String?> getUserIdFromEmailAndPassword(
-      String email, String password) async {
+    String email,
+    String password,
+  ) async {
     return withNetworkCheck(() async {
       try {
         await signIn(email: email, password: password);
@@ -145,7 +144,7 @@ class AppWriteService {
           queries: [
             Query.equal('userId', userId),
             Query.equal('deviceId', deviceId),
-            Query.limit(1)
+            Query.limit(1),
           ],
         );
         if (isExitUserAndDevice.documents.isNotEmpty) {
@@ -195,9 +194,7 @@ class AppWriteService {
             databaseId: _databaseId,
             collectionId: _deviceCollection,
             documentId: existingDevice.documents.first.$id,
-            data: {
-              'lastLogin': DateTime.now().toIso8601String(),
-            },
+            data: {'lastLogin': DateTime.now().toIso8601String()},
           );
         } else {
           await databases.createDocument(
@@ -225,9 +222,9 @@ class AppWriteService {
         return false;
       }
 
-      final response = await http.get(
-          Uri.parse('https://cloud.appwrite.io/v1/avatars/initials')
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .get(Uri.parse('https://cloud.appwrite.io/v1/avatars/initials'))
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         return true;
@@ -254,7 +251,7 @@ class AppWriteService {
   static Future<void> deleteAccount() async {
     return withNetworkCheck(() async {
       try {
-        final user =  await getCurrentUser();
+        final user = await getCurrentUser();
         final userId = user?.$id;
 
         await _deleteUserDocuments(userId!);
@@ -263,7 +260,6 @@ class AppWriteService {
 
         await account.updateStatus();
         //= block + function = delete ( do khoong xoa truc tiep duoc )
-
       } on AppwriteException catch (e) {
         throw Exception('Failed to delete account: ${e.message}');
       } catch (e) {
@@ -288,13 +284,11 @@ class AppWriteService {
 
   static Future<void> _deleteDeviceRecords(String userId) async {
     try {
-
       final deviceRecords = await databases.listDocuments(
         databaseId: _databaseId,
         collectionId: _deviceCollection,
         queries: [Query.equal('userId', userId)],
       );
-
 
       for (final doc in deviceRecords.documents) {
         await databases.deleteDocument(

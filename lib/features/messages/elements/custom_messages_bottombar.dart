@@ -3,8 +3,13 @@ import 'package:flutter/material.dart';
 import '../../../common/extensions/custom_theme_extension.dart';
 
 class CustomMessagesBottomBar extends StatefulWidget {
-  final TextEditingController? textController;
-  const CustomMessagesBottomBar({super.key, this.textController});
+  final TextEditingController textController;
+  final void Function()? onSendMessage;
+  const CustomMessagesBottomBar({
+    super.key,
+    required this.textController,
+    this.onSendMessage,
+  });
 
   @override
   State<CustomMessagesBottomBar> createState() =>
@@ -14,15 +19,21 @@ class CustomMessagesBottomBar extends StatefulWidget {
 class _CustomMessagesBottomBarState extends State<CustomMessagesBottomBar> {
   final FocusNode _focusNode = FocusNode();
   late bool _isFocused;
+  late bool _isExpandedLeft;
+
   @override
   void initState() {
     super.initState();
     _isFocused = false;
-
+    _isExpandedLeft = false;
     _focusNode.addListener(() {
       setState(() {
         _isFocused = _focusNode.hasFocus;
       });
+    });
+
+    widget.textController.addListener(() {
+      setState(() {});
     });
   }
 
@@ -36,24 +47,28 @@ class _CustomMessagesBottomBarState extends State<CustomMessagesBottomBar> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _isFocused
+            (_isFocused && _isExpandedLeft == false)
                 ? SizedBox()
                 : IconButton(onPressed: () {}, icon: Icon(Icons.add_circle)),
-            _isFocused
+            (_isFocused && _isExpandedLeft == false)
                 ? SizedBox()
                 : IconButton(onPressed: () {}, icon: Icon(Icons.camera_alt)),
-            _isFocused
+            (_isFocused && _isExpandedLeft == false)
                 ? SizedBox()
                 : IconButton(onPressed: () {}, icon: Icon(Icons.image)),
-            _isFocused
+            (_isFocused && _isExpandedLeft == false)
                 ? SizedBox()
                 : IconButton(onPressed: () {}, icon: Icon(Icons.mic)),
-            _isFocused
+            (_isFocused && _isExpandedLeft == false)
                 ? SizedBox(
                   width: 30,
                   child: IconButton(
                     padding: EdgeInsets.all(0),
-                    onPressed: () {},
+                    onPressed: () {
+                      setState(() {
+                        _isExpandedLeft = !_isExpandedLeft;
+                      });
+                    },
                     icon: Icon(Icons.keyboard_arrow_right),
                   ),
                 )
@@ -62,6 +77,11 @@ class _CustomMessagesBottomBarState extends State<CustomMessagesBottomBar> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 5),
                 child: TextField(
+                  onTap: () {
+                    setState(() {
+                      _isExpandedLeft = false;
+                    });
+                  },
                   focusNode: _focusNode,
                   controller: widget.textController,
                   style: TextStyle(
@@ -86,10 +106,22 @@ class _CustomMessagesBottomBarState extends State<CustomMessagesBottomBar> {
                 ),
               ),
             ),
-            IconButton(onPressed: () {}, icon: Icon(Icons.thumb_up_alt)),
+            IconButton(
+              onPressed: () {
+                widget.onSendMessage?.call();
+                _focusNode.requestFocus();
+              },
+              icon: Icon(
+                widget.textController.text.isNotEmpty
+                    ? Icons.send
+                    : Icons.thumb_up_alt,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 }
+//67e9058800157c0908e0
+//67e905710032fd9a41b3
