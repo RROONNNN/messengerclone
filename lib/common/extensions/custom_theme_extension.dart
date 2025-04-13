@@ -28,6 +28,8 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
   final Color white;
   final Color bottomNav;
   final Color textGrey;
+  final Color titleHeaderColor;
+
 
   static const lightMode = CustomThemeExtension(
     bg: AppColors.bgLight,
@@ -42,6 +44,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
     white: AppColors.whiteColorLight,
     bottomNav: AppColors.bottomNavBarLight,
     textGrey: AppColors.textColorLight,
+    titleHeaderColor: AppColors.titleHeadColorLight,
   );
 
   static const darkMode = CustomThemeExtension(
@@ -57,6 +60,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
     white: AppColors.whiteColorDark,
     bottomNav: AppColors.bottomNavBarDark,
     textGrey: AppColors.textGreyDark,
+    titleHeaderColor: AppColors.titleHeadColorDark,
   );
 
   const CustomThemeExtension({
@@ -72,6 +76,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
     required this.white,
     required this.bottomNav,
     required this.textGrey,
+    required this.titleHeaderColor,
   });
 
   @override
@@ -89,6 +94,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
       white: white,
       bottomNav: bottomNav,
       textGrey: textGrey,
+      titleHeaderColor: titleHeaderColor,
     );
   }
 
@@ -113,6 +119,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
       white: white,
       bottomNav: bottomNav,
       textGrey: textGrey,
+      titleHeaderColor: titleHeaderColor,
     );
   }
 }

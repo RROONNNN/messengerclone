@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:messenger_clone/features/main_page/main_page.dart';
 import 'package:provider/provider.dart';
 
 import 'common/extensions/custom_theme_extension.dart';
 import 'common/routes/routes.dart';
 import 'common/themes/theme_provider.dart';
+import 'features/splash/pages/splash.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
@@ -33,7 +34,7 @@ class _MessengerCloneState extends State<MessengerClone> {
       onGenerateRoute: Routes.onGenerateRoute,
       theme: lightTheme,
       darkTheme: darkTheme,
-      home: const MainPage(),
+      home: const SplashPage(),
     );
   }
 }
