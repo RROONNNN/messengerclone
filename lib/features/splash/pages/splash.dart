@@ -49,7 +49,7 @@ class _SplashPageState extends State<SplashPage> {
     } catch (e) {
       await CustomAlertDialog.show(
         context: context,
-        title: "Lỗi hệ thống",
+        title: "Error System",
         message: "An error occurred : $e.",
       );
       SystemNavigator.pop();

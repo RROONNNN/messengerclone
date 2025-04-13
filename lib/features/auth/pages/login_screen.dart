@@ -104,15 +104,15 @@ class LoginScreenState extends State<LoginScreen> {
                       _passwordController.text.isEmpty) {
                     await CustomAlertDialog.show(
                       context: context,
-                      title: "Cảnh báo",
-                      message: "Vui lòng nhập đầy đủ thông tin.",
+                      title: "Warning",
+                      message: "Please enter complete information.",
                     );
                   } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(_emailController.text) ||
                       _passwordController.text.length <= 8  ) {
                     await CustomAlertDialog.show(
                       context: context,
-                      title: "Lỗi đăng nhập",
-                      message: "Sai email hoặc mật khẩu",
+                      title: "Login error",
+                      message: "Wrong email or password.",
                     );
                   } else {
                     showDialog(
@@ -120,7 +120,7 @@ class LoginScreenState extends State<LoginScreen> {
                       barrierDismissible: false,
                       builder: (context) =>
                       const LoadingDialog(
-                        message: "Đang đăng nhập...",
+                        message: "Logging in...",
                       ),
                     );
                     try {
@@ -132,8 +132,8 @@ class LoginScreenState extends State<LoginScreen> {
                         Navigator.of(context).pop();
                         await CustomAlertDialog.show(
                           context: context,
-                          title: "Lỗi đăng nhập",
-                          message: "Sai email hoặc mật khẩu",
+                          title: "Login error",
+                          message: "Wrong email or password.",
                         );
                       }
                       else {
@@ -183,8 +183,8 @@ class LoginScreenState extends State<LoginScreen> {
                         Navigator.of(context).pop();
                         await CustomAlertDialog.show(
                           context: context,
-                          title: "Lỗi đăng nhập",
-                          message: "Không có kết nối mạng");
+                            title: "Login error",
+                          message: "No network connection");
                       }
                     }
                   }

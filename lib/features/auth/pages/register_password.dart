@@ -18,6 +18,7 @@ class CreatePasswordScreen extends StatefulWidget {
 class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
   final TextEditingController _passwordController = TextEditingController();
   String? _passwordError;
+  bool _obscurePassword = false;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +65,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
             const SizedBox(height: 40),
             TextField(
               controller: _passwordController,
-              obscureText: false,
+              obscureText: _obscurePassword ? false : true,
               decoration: InputDecoration(
                 labelText: 'Password',
                 isDense: true,
@@ -81,12 +82,26 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
                 errorText: _passwordError,
-                suffixIcon: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_passwordError != null)
-                      const Icon(Icons.error, color: Colors.red),
-                  ],
+                suffixIcon: Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.grey,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
+                      if (_passwordError != null)
+                        const Icon(Icons.error, color: Colors.red),
+                    ],
+                  ),
                 ),
                 errorStyle: const TextStyle(color: Colors.red),
               ),
@@ -111,7 +126,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                       context: context,
                       barrierDismissible: false,
                       builder: (context) => const LoadingDialog(
-                        message: "Đang tao tai khoan...",
+                        message: "Creating an account...",
                       ),
                     );
 
@@ -126,8 +141,8 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
 
                       await CustomAlertDialog.show(
                         context: context,
-                        title: "Thành công",
-                        message: "Tài khoản đã được tạo thành công.",
+                        title: "Success",
+                        message: "Account created successfully.",
                       );
 
                       await Store.setEmailRegistered("");
@@ -142,16 +157,16 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                     } on AppwriteException catch (e) {
                       Navigator.of(context).pop();
 
-                      String errorMessage = "Lỗi khi tạo tài khoản";
+                      String errorMessage = "Error creating account";
                       if (e.code == 409) {
-                        errorMessage = "Email đã được đăng ký";
+                        errorMessage = "Email has been registered";
                       } else if (e.code == 400) {
-                        errorMessage = "Thông tin không hợp lệ";
+                        errorMessage = "Invalid information";
                       }
 
                       await CustomAlertDialog.show(
                         context: context,
-                        title: "Lỗi",
+                        title: "Error",
                         message: errorMessage,
                       );
 
@@ -159,8 +174,8 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                       Navigator.of(context).pop();
                       await CustomAlertDialog.show(
                         context: context,
-                        title: "Lỗi ",
-                        message: "Đã xảy ra lỗi không mong muốn : ${e.toString()}",
+                        title: "Error ",
+                        message: "An unexpected error occurred. : ${e.toString()}",
                       );
                     }
                   }

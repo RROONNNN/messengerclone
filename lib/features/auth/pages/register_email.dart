@@ -101,8 +101,8 @@ class _EmailInputScreenState extends State<EmailInputScreen> {
                     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(_emailController.text)) {
                       await CustomAlertDialog.show(
                         context: context,
-                        title: "Email không hợp lệ",
-                        message: "Vui lòng nhập đúng định dạng email",
+                        title: "Invalid email",
+                        message: "Please enter correct email format",
                       );
                       return;
                     }
@@ -110,7 +110,7 @@ class _EmailInputScreenState extends State<EmailInputScreen> {
                       context: context,
                       barrierDismissible: false,
                       builder: (context) => const LoadingDialog(
-                        message: "Đang kiem tra email...",
+                        message: "Checking email...",
                       ),
                     );
                     try {
@@ -119,15 +119,15 @@ class _EmailInputScreenState extends State<EmailInputScreen> {
                       if (isRegistered) {
                         await CustomAlertDialog.show(
                           context: context,
-                          title: "Email đã tồn tại",
-                          message: "Email này đã được đăng ký. Vui lòng sử dụng email khác.",
+                          title: "Email already exists",
+                          message: "This email is already registered. Please use another email.",
                         );
                       } else {
                         showDialog(
                           context: context,
                           barrierDismissible: false,
                           builder: (context) => const LoadingDialog(
-                            message: "Đang gửi OTP...",
+                            message: "Sending OTP...",
                           ),
                         );
                         final otp = OTPEmailService.generateOTP();
@@ -144,8 +144,8 @@ class _EmailInputScreenState extends State<EmailInputScreen> {
                       Navigator.of(context).pop();
                       await CustomAlertDialog.show(
                         context: context,
-                        title: "Lỗi hệ thống",
-                        message: "Không thể kiểm tra email. Vui lòng thử lại sau.",
+                        title: "System error",
+                        message: "Unable to check email. Please try again later.",
                       );
                     }
                   }

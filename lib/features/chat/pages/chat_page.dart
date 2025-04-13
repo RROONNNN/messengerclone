@@ -174,7 +174,7 @@ class _ChatPageState extends State<ChatPage> {
                 Expanded(
                   child: TextField(
                     decoration: InputDecoration(
-                      hintText: 'Tìm kiếm',
+                      hintText: 'Search',
                       hintStyle: TextStyle(
                         color: context.theme.textColor.withOpacity(0.5),
                         fontSize: 16.0,

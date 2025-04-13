@@ -119,7 +119,7 @@ class _ConfirmationCodeScreenState extends State<ConfirmationCodeScreen> {
                         barrierDismissible: false,
                         builder: (context) =>
                         const LoadingDialog(
-                          message: "Đang kiểm tra...",
+                          message: "Checking...",
                         ),
                       );
                       try {
@@ -130,7 +130,7 @@ class _ConfirmationCodeScreenState extends State<ConfirmationCodeScreen> {
                           await CustomAlertDialog.show(
                             context: context,
                             title: "Error ",
-                            message: "Bạn nhập sai mã xác minh quá nhiều lần , vui lòng thử lại sau.",
+                            message: "You entered the wrong verification code too many times, please try again later.",
                           );
                         }
                         else {
@@ -165,8 +165,8 @@ class _ConfirmationCodeScreenState extends State<ConfirmationCodeScreen> {
                         Navigator.of(context).pop();
                         await CustomAlertDialog.show(
                             context: context,
-                            title: "Lỗi hệ thống",
-                            message: "Không thể kiểm tra OTP. Vui lòng thử lại sau.");
+                            title: "System error",
+                            message: "Unable to verify OTP. Please try again later.");
                       }
                     }
                 },
@@ -193,7 +193,7 @@ class _ConfirmationCodeScreenState extends State<ConfirmationCodeScreen> {
                     context: context,
                     barrierDismissible: false,
                     builder: (context) => const LoadingDialog(
-                      message: "Đang gửi OTP...",
+                      message: "Sending OTP...",
                     ),
                   );
                   try {
@@ -216,8 +216,8 @@ class _ConfirmationCodeScreenState extends State<ConfirmationCodeScreen> {
                     Navigator.of(context).pop();
                     await CustomAlertDialog.show(
                       context: context,
-                      title: "Lỗi hệ thống",
-                      message: "Không thể gui OTP. Vui lòng thử lại sau.",
+                      title: "System error",
+                      message: "Unable to send OTP. Please try again later.",
                     );
                   }
                 },
