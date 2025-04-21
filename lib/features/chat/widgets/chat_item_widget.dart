@@ -31,9 +31,8 @@ class ChatItemWidget extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: CustomRoundAvatar(
-              avatarImage : NetworkImage(item.avatar),
               radius: avatarRadius,
-              isActive: item.isActive,
+              isActive: item.user.isActive,
             ),
           ),
           Expanded(
@@ -45,13 +44,15 @@ class ChatItemWidget extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        item.title,
+                        item.user.name,
                         style: TextStyle(
-                          fontWeight: item.hasUnread ? FontWeight.bold
-                              : FontWeight.normal,
-                          fontSize:  18,
+                          fontWeight:
+                              item.hasUnread
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                          fontSize: 18,
                           overflow: TextOverflow.ellipsis,
-                          color: context.theme.textColor
+                          color: context.theme.textColor,
                         ),
                       ),
                     ),
@@ -59,35 +60,45 @@ class ChatItemWidget extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    if (item.subtitle.isNotEmpty)
+                    if (item.latestMessage.isNotEmpty)
                       Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxWidth: MediaQuery.of(context).size.width * 0.6,
-                              ),
-                             child : ContentText(
-                              item.subtitle,
-                              color: item.hasUnread ? context.theme.textColor
-                                    : context.theme.textColor.withOpacity(0.5) ,
-                              fontWeight: item.hasUnread ? FontWeight.bold : FontWeight.normal,
-                              fontSize: 16,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
+                        padding: const EdgeInsets.only(top: 4),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width * 0.6,
                           ),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4 , left: 4 ,right: 4),
-                        child: Text(
-                          "·",
-                          style: TextStyle(
-                            color: item.hasUnread ? context.theme.textColor
-                                : context.theme.textColor.withOpacity(0.5) ,
+                          child: ContentText(
+                            item.latestMessage,
+                            color:
+                                item.hasUnread
+                                    ? context.theme.textColor
+                                    : context.theme.textColor.withOpacity(0.5),
+                            fontWeight:
+                                item.hasUnread
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                             fontSize: 16,
-                            fontWeight: item.hasUnread ? FontWeight.bold : FontWeight.normal,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
+                      child: Text(
+                        "·",
+                        style: TextStyle(
+                          color:
+                              item.hasUnread
+                                  ? context.theme.textColor
+                                  : context.theme.textColor.withOpacity(0.5),
+                          fontSize: 16,
+                          fontWeight:
+                              item.hasUnread
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                        ),
+                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
@@ -95,9 +106,14 @@ class ChatItemWidget extends StatelessWidget {
                         item.time,
                         style: TextStyle(
                           fontSize: 14,
-                          color: item.hasUnread ? context.theme.textColor
-                              : context.theme.textColor.withOpacity(0.5) ,
-                          fontWeight: item.hasUnread ? FontWeight.bold : FontWeight.normal,
+                          color:
+                              item.hasUnread
+                                  ? context.theme.textColor
+                                  : context.theme.textColor.withOpacity(0.5),
+                          fontWeight:
+                              item.hasUnread
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                         ),
                       ),
                     ),

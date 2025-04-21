@@ -6,7 +6,6 @@ import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 import '../../../common/widgets/elements/custom_grouped_list_title.dart';
 import '../../../common/widgets/elements/custom_message_item.dart';
 import '../../../common/widgets/elements/custom_round_avatar.dart';
-import '../../messages/pages/messages_page.dart';
 
 class MetaAiPage extends StatefulWidget {
   const MetaAiPage({super.key});
@@ -33,9 +32,9 @@ class _MetaAiPageState extends State<MetaAiPage> {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => MessagesPage()),
-                    );
+                    // Navigator.of(context).push(
+                    //   MaterialPageRoute(builder: (context) => MessagesPage( )),
+                    // );
                   },
                   child: Text("MessagesPage"),
                 ),

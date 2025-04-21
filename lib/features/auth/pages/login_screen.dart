@@ -8,19 +8,24 @@ import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../../../common/widgets/dialog/loading_dialog.dart';
 import 'confirmation_code_screen.dart';
 
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() =>LoginScreenState();
+  State<LoginScreen> createState() => LoginScreenState();
 }
-
 
 class LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = false;
+
+  @override
+  void initState() {
+    _emailController.text = "tsarlvntn2004@gmail.com";
+    _passwordController.text = "1234567890R@n";
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,11 +60,11 @@ class LoginScreenState extends State<LoginScreen> {
                   borderSide: BorderSide(color: Colors.blue),
                 ),
                 contentPadding: EdgeInsets.symmetric(
-                    horizontal: 15, vertical: 20),
+                  horizontal: 15,
+                  vertical: 20,
+                ),
               ),
-              style: TextStyle(
-                color: Colors.white,
-              ),
+              style: TextStyle(color: Colors.white),
             ),
             SizedBox(height: 15),
             TextField(
@@ -77,7 +82,9 @@ class LoginScreenState extends State<LoginScreen> {
                   borderSide: BorderSide(color: Colors.blue),
                 ),
                 contentPadding: EdgeInsets.symmetric(
-                    horizontal: 15, vertical: 20),
+                  horizontal: 15,
+                  vertical: 20,
+                ),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -90,9 +97,7 @@ class LoginScreenState extends State<LoginScreen> {
                   },
                 ),
               ),
-              style: TextStyle(
-                color: Colors.white,
-              ),
+              style: TextStyle(color: Colors.white),
             ),
             SizedBox(height: 20),
             // Login Button
@@ -107,8 +112,10 @@ class LoginScreenState extends State<LoginScreen> {
                       title: "Warning",
                       message: "Please enter complete information.",
                     );
-                  } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(_emailController.text) ||
-                      _passwordController.text.length <= 8  ) {
+                  } else if (!RegExp(
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(_emailController.text) ||
+                      _passwordController.text.length <= 8) {
                     await CustomAlertDialog.show(
                       context: context,
                       title: "Login error",
@@ -118,16 +125,16 @@ class LoginScreenState extends State<LoginScreen> {
                     showDialog(
                       context: context,
                       barrierDismissible: false,
-                      builder: (context) =>
-                      const LoadingDialog(
-                        message: "Logging in...",
-                      ),
+                      builder:
+                          (context) =>
+                              const LoadingDialog(message: "Logging in..."),
                     );
                     try {
-                      final String? userID = await AppWriteService
-                          .getUserIdFromEmailAndPassword(
-                          _emailController.text, _passwordController.text
-                      );
+                      final String? userID =
+                          await AppWriteService.getUserIdFromEmailAndPassword(
+                            _emailController.text,
+                            _passwordController.text,
+                          );
                       if (userID == null) {
                         Navigator.of(context).pop();
                         await CustomAlertDialog.show(
@@ -135,10 +142,11 @@ class LoginScreenState extends State<LoginScreen> {
                           title: "Login error",
                           message: "Wrong email or password.",
                         );
-                      }
-                      else {
-                        bool check = await AppWriteService
-                            .hasUserLoggedInFromThisDevice(userID);
+                      } else {
+                        bool check =
+                            await AppWriteService.hasUserLoggedInFromThisDevice(
+                              userID,
+                            );
                         if (check) {
                           await AppWriteService.signIn(
                             email: _emailController.text,
@@ -146,21 +154,22 @@ class LoginScreenState extends State<LoginScreen> {
                           );
                           await AppWriteService.saveLoginDeviceInfo(userID);
                           Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => MainPage()),
-                                  (route) => false
+                            context,
+                            MaterialPageRoute(builder: (context) => MainPage()),
+                            (route) => false,
                           );
                         } else {
                           final otp = OTPEmailService.generateOTP();
                           debugPrint('OTP: $otp');
-                          await OTPEmailService.sendOTPEmail(_emailController
-                              .text, otp);
+                          await OTPEmailService.sendOTPEmail(
+                            _emailController.text,
+                            otp,
+                          );
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  ConfirmationCodeScreen(
+                              builder:
+                                  (context) => ConfirmationCodeScreen(
                                     email: _emailController.text,
                                     nextScreen: () => MainPage(),
                                     action: () async {
@@ -169,22 +178,23 @@ class LoginScreenState extends State<LoginScreen> {
                                         password: _passwordController.text,
                                       );
                                       await AppWriteService.saveLoginDeviceInfo(
-                                          userID);
+                                        userID,
+                                      );
                                     },
                                   ),
                             ),
-                                (route) => false,
+                            (route) => false,
                           );
                         }
                       }
-                    }
-                    catch (e) {
-                      if(e.toString().contains('No internet connection')){
+                    } catch (e) {
+                      if (e.toString().contains('No internet connection')) {
                         Navigator.of(context).pop();
                         await CustomAlertDialog.show(
                           context: context,
-                            title: "Login error",
-                          message: "No network connection");
+                          title: "Login error",
+                          message: "No network connection",
+                        );
                       }
                     }
                   }
@@ -195,10 +205,10 @@ class LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                child: Text('Login',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20)),
+                child: Text(
+                  'Login',
+                  style: TextStyle(color: Colors.white, fontSize: 20),
+                ),
               ),
             ),
             SizedBox(height: 10),
@@ -231,10 +241,7 @@ class LoginScreenState extends State<LoginScreen> {
                 ),
                 child: Text(
                   'Create new account',
-                  style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 18
-                  ),
+                  style: TextStyle(color: Colors.blue, fontSize: 18),
                 ),
               ),
             ),
