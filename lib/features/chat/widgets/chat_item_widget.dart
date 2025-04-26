@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
+import 'package:messenger_clone/common/services/hive_service.dart';
+import 'package:messenger_clone/features/chat/model/user.dart';
 
 import '../../../common/widgets/custom_text_style.dart';
 import '../../../common/widgets/elements/custom_round_avatar.dart';
@@ -18,112 +20,141 @@ class ChatItemWidget extends StatelessWidget {
     this.onLongPress,
     this.avatarRadius = 30,
   });
+  Future<String> _init() async {
+    return await HiveService.instance.getCurrentUserId();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      dense: false,
-      onTap: onTap,
-      onLongPress: () => onLongPress?.call(item),
-      title: Row(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: CustomRoundAvatar(
-              radius: avatarRadius,
-              isActive: item.user.isActive,
-            ),
+    return FutureBuilder<String>(
+      future: _init(),
+      builder: (context, currentUserIdSnapshot) {
+        if (currentUserIdSnapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final List<User> others =
+            item.groupMessage.users
+                .where((user) => user.id != currentUserIdSnapshot.data)
+                .toList();
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 12,
+            horizontal: 16,
           ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          dense: false,
+          onTap: onTap,
+          onLongPress: () => onLongPress?.call(item),
+          title: Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: CustomRoundAvatar(
+                  radius: avatarRadius,
+                  isActive: item.groupMessage.users.first.isActive,
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Flexible(
-                      child: Text(
-                        item.user.name,
-                        style: TextStyle(
-                          fontWeight:
-                              item.hasUnread
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                          fontSize: 18,
-                          overflow: TextOverflow.ellipsis,
-                          color: context.theme.textColor,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            item.groupMessage.isGroup
+                                ? item.groupMessage.groupName!
+                                : item.groupMessage.users.first.name,
+                            style: TextStyle(
+                              fontWeight:
+                                  item.hasUnread
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                              fontSize: 18,
+                              overflow: TextOverflow.ellipsis,
+                              color: context.theme.textColor,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.of(context).size.width * 0.6,
+                            ),
+                            child: ContentText(
+                              item.groupMessage.latestMessage?.content,
+                              color:
+                                  item.hasUnread
+                                      ? context.theme.textColor
+                                      : context.theme.textColor.withOpacity(
+                                        0.5,
+                                      ),
+                              fontWeight:
+                                  item.hasUnread
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                              fontSize: 16,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            top: 4,
+                            left: 4,
+                            right: 4,
+                          ),
+                          child: Text(
+                            "·",
+                            style: TextStyle(
+                              color:
+                                  item.hasUnread
+                                      ? context.theme.textColor
+                                      : context.theme.textColor.withOpacity(
+                                        0.5,
+                                      ),
+                              fontSize: 16,
+                              fontWeight:
+                                  item.hasUnread
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            item.time,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color:
+                                  item.hasUnread
+                                      ? context.theme.textColor
+                                      : context.theme.textColor.withOpacity(
+                                        0.5,
+                                      ),
+                              fontWeight:
+                                  item.hasUnread
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    if (item.latestMessage.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.6,
-                          ),
-                          child: ContentText(
-                            item.latestMessage,
-                            color:
-                                item.hasUnread
-                                    ? context.theme.textColor
-                                    : context.theme.textColor.withOpacity(0.5),
-                            fontWeight:
-                                item.hasUnread
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                            fontSize: 16,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
-                      child: Text(
-                        "·",
-                        style: TextStyle(
-                          color:
-                              item.hasUnread
-                                  ? context.theme.textColor
-                                  : context.theme.textColor.withOpacity(0.5),
-                          fontSize: 16,
-                          fontWeight:
-                              item.hasUnread
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        item.time,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color:
-                              item.hasUnread
-                                  ? context.theme.textColor
-                                  : context.theme.textColor.withOpacity(0.5),
-                          fontWeight:
-                              item.hasUnread
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

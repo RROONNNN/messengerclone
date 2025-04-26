@@ -2,14 +2,19 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:messenger_clone/common/services/app_write_service.dart';
 
 class HiveService {
-  static const String _CurrentUserBoxName = 'currentUserBox';
+  static final HiveService instance = HiveService._internal();
   late final Future<Box<String>> _box;
-  HiveService() {
+
+  factory HiveService() {
+    return instance;
+  }
+
+  HiveService._internal() {
     _box = _initializeBox();
   }
 
   Future<Box<String>> _initializeBox() async {
-    return await Hive.openBox<String>(_CurrentUserBoxName);
+    return await Hive.openBox<String>('currentUserBox');
   }
 
   Future<void> saveCurrentUserId(String userId) async {

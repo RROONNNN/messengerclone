@@ -1,5 +1,6 @@
 import 'package:appwrite/src/realtime_message.dart';
 import 'package:dartz/dartz.dart';
+import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/messages/data/data_sources/remote/appwrite_chat_repository.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
 import 'package:messenger_clone/features/messages/domain/repositories/abstract_chat_repository.dart';
@@ -11,10 +12,10 @@ class ChatRepositoryImpl implements AbstractChatRepository {
   }
   @override
   Future<Either<String, Stream<RealtimeMessage>>> getChatStream(
-    String groupChatId,
+    String groupMessId,
   ) async {
     try {
-      final response = await appwriteChatRepository.getChatStream(groupChatId);
+      final response = await appwriteChatRepository.getChatStream(groupMessId);
       return Right(response);
     } catch (error) {
       return Left("Failed to fetch chat stream: $error");
@@ -23,13 +24,13 @@ class ChatRepositoryImpl implements AbstractChatRepository {
 
   @override
   Future<Either<String, List<MessageModel>>> getMessages(
-    String groupChatId,
+    String groupMessId,
     int limit,
     int offset,
   ) async {
     try {
       final response = await appwriteChatRepository.getMessages(
-        groupChatId,
+        groupMessId,
         limit,
         offset,
       );
@@ -40,12 +41,47 @@ class ChatRepositoryImpl implements AbstractChatRepository {
   }
 
   @override
-  Future<Either<String, void>> sendMessage(MessageModel message) async {
+  Future<Either<String, void>> sendMessage(
+    MessageModel message,
+    List<String> receiver,
+  ) async {
     try {
-      final response = await appwriteChatRepository.sendMessage(message);
+      final response = await appwriteChatRepository.sendMessage(
+        message,
+        receiver,
+      );
       return Right(response);
     } catch (error) {
       return Left("Failed to send message: $error");
     }
+  }
+
+  @override
+  Future<Either<String, GroupMessage>> createGroupMessages({
+    String? groupName,
+    required List<String> userIds,
+    String? avatarGroupUrl,
+    bool isGroup = false,
+    required String groupId,
+  }) async {
+    try {
+      final GroupMessage response = await appwriteChatRepository
+          .createGroupMessages(
+            groupName: groupName,
+            userIds: userIds,
+            avatarGroupUrl: avatarGroupUrl,
+            isGroup: isGroup,
+            groupId: groupId,
+          );
+
+      return Right(response);
+    } catch (error) {
+      return Left("Failed to create group messages: $error");
+    }
+  }
+
+  @override
+  Future<GroupMessage?> getGroupMessagesByGroupId(String groupId) async {
+    return await appwriteChatRepository.getGroupMessagesByGroupId(groupId);
   }
 }

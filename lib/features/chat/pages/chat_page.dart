@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 import 'package:messenger_clone/common/routes/routes.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/common/widgets/elements/custom_round_avatar.dart';
 import 'package:messenger_clone/features/chat/bloc/chat_item_bloc.dart';
 import 'package:messenger_clone/features/chat/pages/searching_page.dart';
-import 'package:messenger_clone/features/messages/pages/messages_page.dart';
 
 import '../model/chat_item.dart';
 import '../widgets/chat_item_widget.dart';
@@ -117,9 +115,10 @@ class _ChatPageState extends State<ChatPage> {
                       ChatItemWidget(
                         item: item,
                         onTap: () {
-                          Navigator.of(
-                            context,
-                          ).pushNamed(Routes.chat, arguments: item.user);
+                          Navigator.of(context).pushNamed(
+                            Routes.chat,
+                            arguments: item.groupMessage,
+                          );
                         },
                         onLongPress: (item) {
                           _showChatOptionsBottomSheet(context, item);

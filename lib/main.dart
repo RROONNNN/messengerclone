@@ -3,8 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:messenger_clone/features/chat/bloc/chat_item_bloc.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
-
-import 'package:messenger_clone/features/chat/model/user.dart';
 import 'package:provider/provider.dart';
 
 import 'common/extensions/custom_theme_extension.dart';
@@ -15,8 +13,6 @@ import 'features/splash/pages/splash.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
-  final AppwriteRepository repository = AppwriteRepository();
-  final List<User> test = await repository.getAllUsers();
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),

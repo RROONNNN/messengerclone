@@ -6,14 +6,12 @@ class CustomRoundAvatar extends StatelessWidget {
   final bool isActive;
   final double radius;
   final double? radiusOfActiveIndicator;
-  final double? radiusOfActiveIndicator;
 
   const CustomRoundAvatar({
     super.key,
     this.avatarUrl,
     required this.isActive,
     required this.radius,
-    this.radiusOfActiveIndicator = 8,
     this.radiusOfActiveIndicator = 8,
   });
 

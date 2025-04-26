@@ -3,7 +3,6 @@ import 'package:equatable/equatable.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
 import 'package:messenger_clone/features/chat/model/chat_item.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
-import 'package:messenger_clone/features/chat/model/user.dart';
 
 part 'chat_item_event.dart';
 part 'chat_item_state.dart';
@@ -19,20 +18,21 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
 
         List<ChatItem> chatItems = [];
         for (var groupMessage in groupMessages) {
+          if (groupMessage.latestMessage == null) {
+            continue;
+          }
           for (var user in groupMessage.users) {
             if (user != user.id) {
               final isTheLatestMessSentByMe =
-                  groupMessage.latestMessage.idFrom == user.id;
+                  groupMessage.latestMessage!.idFrom == user.id;
               chatItems.add(
                 ChatItem(
-                  user: user,
-                  latestMessage: groupMessage.latestMessage.content,
-                  isTheLatestMessSentByMe: isTheLatestMessSentByMe,
-                  time: groupMessage.latestMessage.timestamp,
+                  groupMessage: groupMessage,
+                  time: groupMessage.latestMessage!.timestamp,
                   hasUnread:
                       (isTheLatestMessSentByMe)
                           ? false
-                          : groupMessage.latestMessage.isSeen,
+                          : groupMessage.latestMessage!.isSeen,
                 ),
               );
             }

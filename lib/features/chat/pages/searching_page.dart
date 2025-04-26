@@ -62,9 +62,7 @@ class SearchingPage extends StatelessWidget {
           actions: [
             IconButton(
               icon: Icon(Icons.send, color: context.theme.blue),
-              onPressed: () {
-                // Implement search functionality here
-              },
+              onPressed: () {},
             ),
           ],
         ),

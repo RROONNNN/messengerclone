@@ -1,17 +1,17 @@
 import 'dart:async';
 
 import 'package:appwrite/appwrite.dart';
-import 'dart:async';
 
-import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/constants/appwrite_database_constants.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/common/services/common_function.dart';
+
+import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 import 'package:messenger_clone/common/widgets/elements/custom_message_item.dart';
 import 'package:messenger_clone/common/widgets/elements/custom_round_avatar.dart';
+import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/chat/model/user.dart';
 import 'package:messenger_clone/features/messages/data/repositories/chat_repository_impl.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
@@ -21,8 +21,13 @@ import '../elements/custom_messages_appbar.dart';
 import '../elements/custom_messages_bottombar.dart';
 
 class MessagesPage extends StatefulWidget {
-  final User other;
-  const MessagesPage({super.key, required this.other});
+  final GroupMessage? groupMessage;
+  final List<User>? otherUsers;
+  const MessagesPage({super.key, this.groupMessage, this.otherUsers})
+    : assert(
+        (groupMessage == null) != (otherUsers == null),
+        'Either groupMessage or otherUsers must be provided, but not both.',
+      );
 
   @override
   State<MessagesPage> createState() => _MessagesPageState();
@@ -40,37 +45,32 @@ class _MessagesPageState extends State<MessagesPage> {
   int _offset = 0;
   bool isLoadingMore = false;
   bool isLoading = true;
-
-  void _getMessages() {
-    chatRepository
-        .getMessages(
-          CommonFunction.getGroupChatId(me!, widget.other.id),
-          _limit,
-          _offset,
-        )
-        .then((value) {
-          return value.fold((error) => [], (messages) {
-            setState(() {
-              this.messages = messages;
-            });
-          });
-        });
+  late final List<User> others;
+  late final GroupMessage groupMessage;
+  Future<void> _getMessages() async {
+    final result = await chatRepository.getMessages(
+      groupMessage.groupMessagesId,
+      _limit,
+      _offset,
+    );
+    result.fold((error) => [], (messages) {
+      if (messages.isNotEmpty) {
+        _subcribeToChatStream();
+      }
+      setState(() {
+        this.messages = messages;
+      });
+    });
   }
 
   Future<void> _loadMoreMessages() async {
     chatRepository
-        .getMessages(
-          CommonFunction.getGroupChatId(me!, widget.other.id),
-          _limit,
-          _offset,
-        )
+        .getMessages(groupMessage.groupMessagesId, _limit, _offset)
         .then((value) {
           return value.fold((error) => [], (newMessages) {
             setState(() {
               messages.addAll(newMessages);
-              if (messages.isNotEmpty) {
-                _subcribeToChatStream();
-              }
+
               isLoadingMore = false;
             });
           });
@@ -78,15 +78,37 @@ class _MessagesPageState extends State<MessagesPage> {
   }
 
   void _init_async() async {
-    final user = await AppWriteService.getCurrentUser();
-    me = user?.$id ?? '';
+    me = await HiveService.instance.getCurrentUserId();
     if (me == null || me!.isEmpty) {
       debugPrint('User ID is empty. Please log in.');
       return;
     }
-
-    _getMessages();
-
+    if (widget.groupMessage == null) {
+      others = widget.otherUsers!;
+      final groupId = CommonFunction.generateGroupId([
+        ...widget.otherUsers!.map((user) => user.id).toList(),
+        me!,
+      ]);
+      final GroupMessage? getGroup = await chatRepository
+          .getGroupMessagesByGroupId(groupId);
+      if (getGroup != null) {
+        debugPrint('Group message already exists.');
+        groupMessage = getGroup;
+      } else {
+        final result = await chatRepository.createGroupMessages(
+          userIds: CommonFunction.getOthersId(widget.otherUsers!, me!),
+          groupId: groupId,
+        );
+        result.fold(
+          (error) => debugPrint('Error creating group message: $error'),
+          (group) => groupMessage = group,
+        );
+      }
+    } else {
+      groupMessage = widget.groupMessage!;
+      others = groupMessage.users.where((user) => user.id != me).toList();
+    }
+    await _getMessages();
     setState(() {
       isLoading = false;
     });
@@ -97,8 +119,8 @@ class _MessagesPageState extends State<MessagesPage> {
     super.initState();
     textEditingController = TextEditingController();
     chatRepository = ChatRepositoryImpl();
-    _init_async();
 
+    _init_async();
     _scrollController = ScrollController();
     _scrollController.addListener(_scrollListener);
   }
@@ -124,33 +146,31 @@ class _MessagesPageState extends State<MessagesPage> {
   }
 
   void _subcribeToChatStream() {
-    chatRepository
-        .getChatStream(CommonFunction.getGroupChatId(me!, widget.other.id))
-        .then((response) {
-          response.fold((error) => debugPrint('Error: $error'), (stream) {
-            chatStream = stream;
-            _chatStreamSubscription = chatStream!.listen(
-              (event) {
-                debugPrint('Received event: ${event.events}');
-                final payload = event.payload;
-                debugPrint(
-                  'type of payload: ${payload[AppwriteDatabaseConstants.lastMessage].runtimeType}',
-                );
-                final MessageModel newMessage = MessageModel.fromMap(
-                  payload[AppwriteDatabaseConstants.lastMessage],
-                );
-                if (newMessage.idFrom != me) {
-                  setState(() {
-                    messages.insert(0, newMessage);
-                  });
-                }
-              },
-              onError: (error) {
-                debugPrint('Error in chat stream: $error');
-              },
+    chatRepository.getChatStream(groupMessage.groupMessagesId).then((response) {
+      response.fold((error) => debugPrint('Error: $error'), (stream) {
+        chatStream = stream;
+        _chatStreamSubscription = chatStream!.listen(
+          (event) {
+            debugPrint('Received event: ${event.events}');
+            final payload = event.payload;
+            debugPrint(
+              'type of payload: ${payload[AppwriteDatabaseConstants.lastMessage].runtimeType}',
             );
-          });
-        });
+            final MessageModel newMessage = MessageModel.fromMap(
+              payload[AppwriteDatabaseConstants.lastMessage],
+            );
+            if (newMessage.idFrom != me) {
+              setState(() {
+                messages.insert(0, newMessage);
+              });
+            }
+          },
+          onError: (error) {
+            debugPrint('Error in chat stream: $error');
+          },
+        );
+      });
+    });
   }
 
   @override
@@ -170,18 +190,23 @@ class _MessagesPageState extends State<MessagesPage> {
     setState(() {
       final newMessage = MessageModel(
         idFrom: me!,
-        idTo: widget.other.id,
         timestamp: DateTime.now().toString(),
         content: message,
         type: "text",
+        groupMessagesId: groupMessage.groupMessagesId,
       );
       messages.insert(0, newMessage);
-      chatRepository.sendMessage(newMessage).then((value) {
-        value.fold(
-          (error) => debugPrint('Error sending message: $error'),
-          (success) => debugPrint('Message sent successfully'),
-        );
-      });
+      chatRepository
+          .sendMessage(
+            newMessage,
+            CommonFunction.getOthersId(groupMessage.users, me!),
+          )
+          .then((value) {
+            value.fold(
+              (error) => debugPrint('Error sending message: $error'),
+              (success) => debugPrint('Message sent successfully'),
+            );
+          });
       textEditingController.clear();
     });
   }
@@ -199,7 +224,10 @@ class _MessagesPageState extends State<MessagesPage> {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-        appBar: CustomMessagesAppBar(isMe: true, user: widget.other),
+        appBar: CustomMessagesAppBar(
+          isMe: true,
+          user: groupMessage.users.first,
+        ),
         bottomNavigationBar: Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
