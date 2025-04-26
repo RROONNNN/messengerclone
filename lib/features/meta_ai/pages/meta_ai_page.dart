@@ -1,12 +1,9 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
-import 'package:messenger_clone/common/widgets/custom_text_style.dart';
-
-import '../../../common/widgets/elements/custom_grouped_list_title.dart';
-import '../../../common/widgets/elements/custom_message_item.dart';
-import '../../../common/widgets/elements/custom_round_avatar.dart';
-import '../../messages/pages/messages_page.dart';
+import '../../../common/services/app_write_service.dart';
+import '../../../common/services/store.dart';
 
 class MetaAiPage extends StatefulWidget {
   const MetaAiPage({super.key});
@@ -16,142 +13,203 @@ class MetaAiPage extends StatefulWidget {
 }
 
 class _MetaAiPageState extends State<MetaAiPage> {
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  List<Map<String, String>> _messages = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMessages();
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.theme.bg,
       appBar: AppBar(
-        title: const TitleText("Chat Page"),
-        backgroundColor: context.theme.appBar,
+        title: Text('Meta AI'),
+        backgroundColor: Colors.blue,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: _clearMessages,
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: EdgeInsets.all(8),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                bool isUser = _messages[index]['role'] == 'user';
+                return Row(
+                  mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+                  children: [
+                    if (!isUser)
+                      Padding(
+                        padding: EdgeInsets.only(right: 8),
+                        child: CircleAvatar(
+                          radius: 16,
+                          backgroundColor: Colors.blue,
+                          child: Text('AI', style: TextStyle(color: Colors.white, fontSize: 12)),
+                        ),
+                      ),
+                    Column(
+                      crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          margin: EdgeInsets.symmetric(vertical: 4),
+                          padding: EdgeInsets.all(12),
+                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+                          decoration: BoxDecoration(
+                            color: isUser ? Colors.blue[100] : Colors.grey[200],
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            _messages[index]['content']!,
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                        Text(
+                          _messages[index]['timestamp']!,
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          if (_isLoading)
+            Padding(
+              padding: EdgeInsets.all(8),
+              child: CircularProgressIndicator(),
+            ),
+          Padding(
+            padding: EdgeInsets.all(8),
+            child: Row(
               children: [
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => MessagesPage()),
-                    );
-                  },
-                  child: Text("MessagesPage"),
-                ),
-                CustomRoundAvatar(isActive: true, radius: 25),
-                CustomGroupedListTitle(
-                  onTapFunc: () {},
-                  isFirstTab: true,
-                  child: ListTile(
-                    iconColor: context.theme.textColor,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                    leading: FaIcon(FontAwesomeIcons.store, size: 19),
-                    title: ContentText("Marketplace"),
-                    trailing: Icon(Icons.keyboard_arrow_right),
-                  ),
-                ),
-                _divider(),
-                CustomGroupedListTitle(
-                  onTapFunc: () {},
-                  isMiddleTab: true,
-                  child: ListTile(
-                    iconColor: context.theme.textColor,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                    leading: Icon(Icons.chat_bubble, size: 19),
-                    title: ContentText("Tin nhắn đang chờ"),
-                    trailing: Icon(Icons.keyboard_arrow_right),
-                  ),
-                ),
-                _divider(),
-                CustomGroupedListTitle(
-                  onTapFunc: () {},
-                  isLastTab: true,
-                  child: ListTile(
-                    iconColor: context.theme.textColor,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                    leading: FaIcon(FontAwesomeIcons.box, size: 19),
-                    title: ContentText("Kho lưu trữ"),
-                    trailing: Icon(Icons.keyboard_arrow_right),
-                  ),
-                ),
-
-                CustomMessageItem(
-                  isTextMessage: true,
-                  isMe: true,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ContentText(
-                      "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,  ",
-                    ),
-                  ),
-                ),
-                CustomMessageItem(
-                  isImageMessage: true,
-                  isMe: true,
-                  child: Image.asset("assets/images/imagemaxwidth.png"),
-                ),
-                CustomMessageItem(
-                  isImageMessage: true,
-                  isMe: true,
-                  child: Image.asset(
-                    "assets/images/imagemaxheight.png",
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                CustomMessageItem(
-                  isMe: false,
-                  isImageMessage: false,
-                  child: IntrinsicWidth(
-                    child: ListTile(
-                      dense: true,
-                      title: ContentText(
-                        "Cuộc gọi video",
-                        fontWeight: FontWeight.w700,
-                      ),
-                      subtitle: ContentText(
-                        "13 giây",
-                        color: context.theme.textGrey,
-                      ),
-                      leading: Icon(
-                        Icons.video_call,
-                        size: 30,
-                        color: context.theme.textColor,
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: InputDecoration(
+                      hintText: 'Nhập câu hỏi của bạn...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     ),
                   ),
                 ),
-                CustomMessageItem(
-                  isMe: false,
-                  isImageMessage: false,
-                  child: IntrinsicWidth(
-                    child: ListTile(
-                      title: ContentText("Cuộc gọi video"),
-                      subtitle: ContentText(
-                        "13 giây",
-                        color: context.theme.textGrey,
-                      ),
-                      leading: Icon(
-                        Icons.video_call,
-                        size: 30,
-                        color: context.theme.textColor,
-                      ),
-                    ),
-                  ),
+                SizedBox(width: 8),
+                IconButton(
+                  onPressed: _isLoading ? null : _sendMessage,
+                  icon: Icon(Icons.send, color: Colors.blue),
                 ),
-                SizedBox(height: 25),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _divider() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 45),
-      child: Divider(height: 0, thickness: 0.5, color: context.theme.grey),
-    );
+  Future<void> _loadMessages() async {
+    final messagesJson = await Store.getMessagesChatWithAI();
+    setState(() {
+      _messages = List<Map<String, String>>.from(
+        jsonDecode(messagesJson).map((msg) => Map<String, String>.from(msg)),
+      );
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
+  }
+
+  Future<void> _sendMessage() async {
+    if (_messageController.text.isEmpty) return;
+
+    final userMessage = _messageController.text;
+    final timestamp = DateTime.now().toString().substring(11, 16);
+
+    setState(() {
+      _messages.add({
+        'role': 'user',
+        'content': userMessage,
+        'timestamp': timestamp
+      });
+      _isLoading = true;
+      _messageController.clear();
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
+
+    try {
+      final enhancedPrompt = """
+      $userMessage
+      Hãy trả lời bằng tiếng Việt tự nhiên.
+      """;
+      final responseData = await AppWriteService.callMetaAIFunction(enhancedPrompt,1000);
+
+      if (responseData['ok'] == true) {
+        setState(() {
+          _messages.add({
+            'role': 'ai',
+            'content': responseData['completion'] ?? 'Not response from AI',
+            'timestamp': timestamp,
+          });
+        });
+      } else {
+        throw Exception(responseData['error'] ?? 'Unknown error from AI, possibly due to unpaid operating fees');
+      }
+    } catch (e) {
+      final errorMsg = e is SocketException ? 'Lost network connection'
+          : e is TimeoutException ? 'Timeout exceeded'
+          : e.toString();
+
+      setState(() {
+        _messages.add({
+          'role': 'ai',
+          'content': errorMsg,
+          'timestamp': timestamp,
+        });
+      });
+    } finally {
+      setState(() => _isLoading = false);
+      await Store.saveMessagesWithAI(_messages);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    }
+  }
+
+  Future<void> _clearMessages() async {
+    setState(() {
+      _messages.clear();
+    });
+    await Store.saveMessagesWithAI(_messages);
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 }

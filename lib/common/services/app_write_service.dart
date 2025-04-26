@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:appwrite/appwrite.dart';
@@ -16,10 +17,13 @@ class AppWriteService {
 
   static Account get account => Account(_client);
   static Databases get databases => Databases(_client);
+  static Functions get functions => Functions(_client);
 
   static const String _databaseId = '67e90080000a47b1eba4';
   static const String _userCollectionUser = '67e904b9002db65c933b';
   static const String _deviceCollection = '67ed42540013471695d3';
+
+  static const String _functionMetaAIId = '680b45a1003d0c997a24';
 
   static Future<models.User> signUp({
     required String email,
@@ -305,6 +309,28 @@ class AppWriteService {
       }
     } on AppwriteException catch (e) {
       throw Exception('Failed to delete device records: ${e.message}');
+    }
+  }
+
+  static Future<Map<String, dynamic>> callMetaAIFunction(String prompt,int maxTokens) async {
+    try {
+      final execution = await functions.createExecution(
+        functionId: _functionMetaAIId,
+        body: jsonEncode({
+          'body': {
+            'prompt': prompt,
+            'max_new_tokens': maxTokens,
+          }
+        }),
+      );
+      final response = jsonDecode(execution.responseBody);
+      final responseData = response['body'] ?? response;
+      if (responseData is! Map<String, dynamic>) {
+        throw Exception('Invalid response format');
+      }
+      return responseData;
+    } catch (e) {
+      throw Exception('Failed to call AI function: ${e.toString()}');
     }
   }
 }
