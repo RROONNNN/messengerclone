@@ -312,13 +312,13 @@ class AppWriteService {
     }
   }
 
-  static Future<Map<String, dynamic>> callMetaAIFunction(String prompt,int maxTokens) async {
+  static Future<Map<String, dynamic>> callMetaAIFunction(List<Map<String, String>> history, int maxTokens) async {
     try {
       final execution = await functions.createExecution(
         functionId: _functionMetaAIId,
         body: jsonEncode({
           'body': {
-            'prompt': prompt,
+            'history': history,
             'max_new_tokens': maxTokens,
           }
         }),

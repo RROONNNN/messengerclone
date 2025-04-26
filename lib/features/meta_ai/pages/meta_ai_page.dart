@@ -158,11 +158,23 @@ class _MetaAiPageState extends State<MetaAiPage> {
     });
 
     try {
+      List<Map<String, String>> history = _messages
+          .map((msg) => {
+        'role': msg['role']!,
+        'content': msg['content']!,
+      })
+          .toList();
+
       final enhancedPrompt = """
-      $userMessage
-      Hãy trả lời bằng tiếng Việt tự nhiên.
-      """;
-      final responseData = await AppWriteService.callMetaAIFunction(enhancedPrompt,1000);
+    $userMessage
+    Hãy đóng vai là một người bạn thân và trả lời như một người bạn thân..
+    """;
+      history.add({'role': 'user', 'content': enhancedPrompt});
+
+      final responseData = await AppWriteService.callMetaAIFunction(
+        history,
+        5000,
+      );
 
       if (responseData['ok'] == true) {
         setState(() {
@@ -176,8 +188,10 @@ class _MetaAiPageState extends State<MetaAiPage> {
         throw Exception(responseData['error'] ?? 'Unknown error from AI, possibly due to unpaid operating fees');
       }
     } catch (e) {
-      final errorMsg = e is SocketException ? 'Lost network connection'
-          : e is TimeoutException ? 'Timeout exceeded'
+      final errorMsg = e is SocketException
+          ? 'Lost network connection'
+          : e is TimeoutException
+          ? 'Timeout exceeded'
           : e.toString();
 
       setState(() {

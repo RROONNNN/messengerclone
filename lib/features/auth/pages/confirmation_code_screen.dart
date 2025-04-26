@@ -145,11 +145,13 @@ class _ConfirmationCodeScreenState extends State<ConfirmationCodeScreen> {
                                 : CreatePasswordScreen();
                             widget.action != null ? widget.action!() : null;
 
-                            Navigator.push(
+                            Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) => nextPage
-                                ));
+                                ),
+                                (route) => false,
+                            );
                           }
                           else {
                             Navigator.of(context).pop();
