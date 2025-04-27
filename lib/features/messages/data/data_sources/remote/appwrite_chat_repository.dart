@@ -3,7 +3,6 @@ import 'package:appwrite/models.dart';
 import 'package:flutter/foundation.dart';
 import 'package:messenger_clone/common/constants/appwrite_database_constants.dart';
 import 'package:messenger_clone/common/services/app_write_service.dart';
-import 'package:messenger_clone/common/services/common_function.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
 
@@ -45,7 +44,7 @@ class AppwriteChatRepository {
                 AppwriteDatabaseConstants.groupMessagesId,
                 groupMessId,
               ),
-              Query.orderDesc(AppwriteDatabaseConstants.timestamp),
+              Query.orderDesc('\$createdAt'),
               Query.limit(limit),
               Query.offset(offset),
             ],
@@ -95,10 +94,7 @@ class AppwriteChatRepository {
           databaseId: AppWriteService.databaseId,
           collectionId: AppWriteService.groupMessagesCollectionId,
           documentId: ID.unique(),
-          data: {
-            AppwriteDatabaseConstants.lastMessage: messageId,
-            'users': [message.idFrom, ...receivers],
-          },
+          data: {AppwriteDatabaseConstants.lastMessage: messageId},
         );
 
         await _addGroupChatIdToUser(message.idFrom, message.groupMessagesId);
@@ -113,29 +109,39 @@ class AppwriteChatRepository {
 
   Future<void> _addGroupChatIdToUser(String userId, String groupMessId) async {
     try {
-      final Document userDocument = await AppWriteService.databases.getDocument(
+      debugPrint('Adding groupMessId $groupMessId to user $userId');
+
+      final Document userDoc = await AppWriteService.databases.getDocument(
         databaseId: AppWriteService.databaseId,
         collectionId: AppWriteService.userCollectionid,
         documentId: userId,
       );
-      final List<String> groupMessagesIds =
-          userDocument.data['groupMessages']
-              .map((message) => message['groupMessagesId'])
-              .toList()
-              .cast<String>();
-
-      if (!groupMessagesIds.contains(groupMessId)) {
-        groupMessagesIds.add(groupMessId);
-
+      final List<dynamic> groupMessages = userDoc.data['groupMessages'] ?? [];
+      final List<String> groupMessIds =
+          groupMessages
+              .where(
+                (message) =>
+                    message is Map<String, dynamic> &&
+                    message.containsKey('\$id'),
+              )
+              .map(
+                (message) =>
+                    (message as Map<String, dynamic>)['\$id'] as String,
+              )
+              .toList();
+      if (!groupMessIds.contains(groupMessId)) {
         await AppWriteService.databases.updateDocument(
           databaseId: AppWriteService.databaseId,
           collectionId: AppWriteService.userCollectionid,
           documentId: userId,
-          data: {'groupMessages': groupMessagesIds},
+          data: {
+            'groupMessages': [...groupMessIds, groupMessId],
+          },
         );
       }
     } catch (error) {
-      throw Exception("Failed to add groupChatId to user document: $error");
+      debugPrint("Failed to add groupMessId to user  $userId document: $error");
+      throw Exception("Failed to add groupMessId to user document: $error");
     }
   }
 
@@ -154,14 +160,24 @@ class AppwriteChatRepository {
             documentId: ID.unique(),
             data: {
               'groupName': groupName,
-              'users': userIds,
+              // 'users': userIds,
               'avatarGroupUrl': avatarGroupUrl,
               'isGroup': isGroup,
               'groupId': groupId,
             },
           );
+
+      for (String userId in userIds) {
+        _addGroupChatIdToUser(userId, groupMessageDocument.$id);
+      }
+      final Document groupMessageDoc = await AppWriteService.databases
+          .getDocument(
+            databaseId: AppWriteService.databaseId,
+            collectionId: AppWriteService.groupMessagesCollectionId,
+            documentId: groupMessageDocument.$id,
+          );
       final GroupMessage returnVal = GroupMessage.fromJson({
-        ...groupMessageDocument.data,
+        ...groupMessageDoc.data,
         'groupMessagesId': groupMessageDocument.$id,
       });
       return returnVal;

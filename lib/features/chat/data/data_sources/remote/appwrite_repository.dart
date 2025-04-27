@@ -1,3 +1,4 @@
+import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
@@ -27,7 +28,10 @@ class AppwriteRepository {
         final group = GroupMessage(
           groupId: doc.data['groupId'],
           groupMessagesId: doc.$id,
-          latestMessage: MessageModel.fromMap(doc.data['lastMessage']),
+          lastMessage:
+              doc.data['lastMessage'] != null
+                  ? MessageModel.fromMap(doc.data['lastMessage'])
+                  : null,
           users: users,
         );
         groupMessages.add(group);
@@ -94,16 +98,94 @@ class AppwriteRepository {
         collectionId: AppWriteService.userCollectionid,
         documentId: userId,
       );
-      //get all group messages id by userdoc.data['groupMessages'];
       final List<dynamic> groupMessages = userdoc.data['groupMessages'] ?? [];
       final List<String> groupMessIds =
           groupMessages
-              .map((message) => message['\$id'])
-              .toList()
-              .cast<String>();
+              .where(
+                (message) =>
+                    message is Map<String, dynamic> &&
+                    message.containsKey('\$id'),
+              )
+              .map(
+                (message) =>
+                    (message as Map<String, dynamic>)['\$id'] as String,
+              )
+              .toList();
+
       return getGroupMessByIds(groupMessIds);
     } catch (error) {
       throw Exception("Failed to fetch group messages: $error");
+    }
+  }
+
+  Future<Stream<RealtimeMessage>> getStreamToUpdateChatPage(
+    String userId,
+  ) async {
+    try {
+      final Document userDoc = await AppWriteService.databases.getDocument(
+        databaseId: AppWriteService.databaseId,
+        collectionId: AppWriteService.userCollectionid,
+        documentId: userId,
+      );
+      final List<dynamic> groupMessages = userDoc.data['groupMessages'] ?? [];
+      final List<String> groupMessIds =
+          groupMessages
+              .where(
+                (message) =>
+                    message is Map<String, dynamic> &&
+                    message.containsKey('\$id'),
+              )
+              .map(
+                (message) =>
+                    (message as Map<String, dynamic>)['\$id'] as String,
+              )
+              .toList();
+      List<String> channels = [];
+      channels.add(
+        'databases.${AppWriteService.databaseId}.collections.${AppWriteService.userCollectionid}.documents.$userId',
+      );
+      for (String groupMessageId in groupMessIds) {
+        channels.add(
+          'databases.${AppWriteService.databaseId}.collections.${AppWriteService.groupMessagesCollectionId}.documents.$groupMessageId',
+        );
+      }
+      final subscription = AppWriteService.realtime.subscribe(channels);
+      return subscription.stream;
+    } catch (error) {
+      throw Exception("Failed to getStreamToUpdateChatPage: $error");
+    }
+  }
+
+  Future<Stream<RealtimeMessage>> getUserStream(String userId) async {
+    try {
+      final subscription = AppWriteService.realtime.subscribe([
+        'databases.${AppWriteService.databaseId}.collections.${AppWriteService.userCollectionid}.documents.$userId',
+      ]);
+      return subscription.stream;
+    } catch (error) {
+      throw Exception("Failed to fetch user stream: $error");
+    }
+  }
+
+  Future<Stream<RealtimeMessage>> getGroupMessageStream(
+    String groupMessId,
+  ) async {
+    try {
+      final subscription = AppWriteService.realtime.subscribe([
+        'databases.${AppWriteService.databaseId}.collections.${AppWriteService.groupMessagesCollectionId}.documents.$groupMessId',
+      ]);
+      return subscription.stream;
+    } catch (error) {
+      throw Exception("Failed to fetch group message stream: $error");
+    }
+  }
+
+  Future<GroupMessage> getGroupMessageById(String groupMessId) async {
+    try {
+      final groupMessage = await getGroupMessByIds([groupMessId]);
+      return groupMessage.first;
+    } catch (error) {
+      throw Exception("Failed to fetch group message: $error");
     }
   }
 }

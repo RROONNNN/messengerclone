@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
+import 'package:messenger_clone/common/services/common_function.dart';
+import 'package:messenger_clone/common/services/date_time_format.dart';
 import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/features/chat/model/user.dart';
 
@@ -32,10 +34,14 @@ class ChatItemWidget extends StatelessWidget {
         if (currentUserIdSnapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final List<User> others =
-            item.groupMessage.users
-                .where((user) => user.id != currentUserIdSnapshot.data)
-                .toList();
+        // final List<User> others =
+        //     item.groupMessage.users
+        //         .where((user) => user.id != currentUserIdSnapshot.data)
+        //         .toList();
+        final List<User> others = CommonFunction.getOthers(
+          item.groupMessage.users,
+          currentUserIdSnapshot.data!,
+        );
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(
             vertical: 12,
@@ -50,7 +56,7 @@ class ChatItemWidget extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 16),
                 child: CustomRoundAvatar(
                   radius: avatarRadius,
-                  isActive: item.groupMessage.users.first.isActive,
+                  isActive: others.first.isActive,
                 ),
               ),
               Expanded(
@@ -64,7 +70,7 @@ class ChatItemWidget extends StatelessWidget {
                           child: Text(
                             item.groupMessage.isGroup
                                 ? item.groupMessage.groupName!
-                                : item.groupMessage.users.first.name,
+                                : others.first.name,
                             style: TextStyle(
                               fontWeight:
                                   item.hasUnread
@@ -87,7 +93,7 @@ class ChatItemWidget extends StatelessWidget {
                               maxWidth: MediaQuery.of(context).size.width * 0.6,
                             ),
                             child: ContentText(
-                              item.groupMessage.latestMessage?.content,
+                              item.groupMessage.lastMessage?.content,
                               color:
                                   item.hasUnread
                                       ? context.theme.textColor
@@ -130,7 +136,7 @@ class ChatItemWidget extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
-                            item.time,
+                            DateTimeFormat.dateTimeToString(item.vietnamTime),
                             style: TextStyle(
                               fontSize: 14,
                               color:

@@ -28,7 +28,8 @@ class User {
       email: map['email'] ?? '',
       id: map['id'] ?? '',
       isActive: map['isActive'] ?? false,
-      lastSeen: DateTime.tryParse(map['lastSeen'] ?? '') ?? DateTime.now(),
+      lastSeen:
+          DateTime.tryParse(map['lastSeen'] ?? '') ?? DateTime.now().toUtc(),
     );
   }
 }

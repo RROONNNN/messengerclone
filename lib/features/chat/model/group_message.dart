@@ -4,7 +4,7 @@ import 'package:messenger_clone/features/messages/domain/models/message_model.da
 class GroupMessage {
   final bool isGroup;
   final String groupMessagesId;
-  final MessageModel? latestMessage;
+  final MessageModel? lastMessage;
   final String? avatarGroupUrl;
   final List<User> users;
   final String? groupName;
@@ -12,7 +12,7 @@ class GroupMessage {
 
   GroupMessage({
     required this.groupMessagesId,
-    this.latestMessage,
+    this.lastMessage,
     this.users = const [],
     this.isGroup = false,
     this.avatarGroupUrl,
@@ -26,7 +26,7 @@ class GroupMessage {
   Map<String, dynamic> toJson() {
     return {
       'groupMessagesId': groupMessagesId,
-      'latestMessage': latestMessage?.toJson(),
+      'lastMessage': lastMessage?.toJson(),
       'users': users,
       'isGroup': isGroup,
       'avatarGroupUrl': avatarGroupUrl,
@@ -38,10 +38,10 @@ class GroupMessage {
   factory GroupMessage.fromJson(Map<String, dynamic> json) {
     return GroupMessage(
       groupMessagesId: json['groupMessagesId'] as String,
-      latestMessage:
-          json['latestMessage'] != null
+      lastMessage:
+          json['lastMessage'] != null
               ? MessageModel.fromMap(
-                json['latestMessage'] as Map<String, dynamic>,
+                json['lastMessage'] as Map<String, dynamic>,
               )
               : null,
       users:
@@ -55,4 +55,13 @@ class GroupMessage {
       groupId: json['groupId'] as String,
     );
   }
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GroupMessage &&
+          runtimeType == other.runtimeType &&
+          groupMessagesId == other.groupMessagesId;
+
+  @override
+  int get hashCode => groupMessagesId.hashCode;
 }

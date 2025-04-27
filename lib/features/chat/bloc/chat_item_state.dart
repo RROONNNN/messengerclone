@@ -10,8 +10,9 @@ sealed class ChatItemState extends Equatable {
 final class ChatItemLoading extends ChatItemState {}
 
 final class ChatItemLoaded extends ChatItemState {
+  final Set<GroupMessage> groupMessages;
   final List<ChatItem> chatItems;
-  const ChatItemLoaded({required this.chatItems});
+  const ChatItemLoaded(this.groupMessages, {required this.chatItems});
 
   @override
   List<Object> get props => [chatItems];

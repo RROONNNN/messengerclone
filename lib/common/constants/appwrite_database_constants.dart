@@ -1,5 +1,4 @@
 class AppwriteDatabaseConstants {
-  // static const groupChatId = "groupChatId";
   static const groupMessagesId = "groupMessagesId";
   static const nickname = "nickname";
   static const aboutMe = "aboutMe";

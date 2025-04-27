@@ -47,6 +47,7 @@ class _MessagesPageState extends State<MessagesPage> {
   bool isLoading = true;
   late final List<User> others;
   late final GroupMessage groupMessage;
+
   Future<void> _getMessages() async {
     final result = await chatRepository.getMessages(
       groupMessage.groupMessagesId,
@@ -84,7 +85,10 @@ class _MessagesPageState extends State<MessagesPage> {
       return;
     }
     if (widget.groupMessage == null) {
-      others = widget.otherUsers!;
+      others = widget.otherUsers!
+          .where((user) => user.id != me)
+          .toList(growable: false);
+
       final groupId = CommonFunction.generateGroupId([
         ...widget.otherUsers!.map((user) => user.id).toList(),
         me!,
@@ -96,7 +100,7 @@ class _MessagesPageState extends State<MessagesPage> {
         groupMessage = getGroup;
       } else {
         final result = await chatRepository.createGroupMessages(
-          userIds: CommonFunction.getOthersId(widget.otherUsers!, me!),
+          userIds: [...widget.otherUsers!.map((user) => user.id).toList(), me!],
           groupId: groupId,
         );
         result.fold(
@@ -190,7 +194,6 @@ class _MessagesPageState extends State<MessagesPage> {
     setState(() {
       final newMessage = MessageModel(
         idFrom: me!,
-        timestamp: DateTime.now().toString(),
         content: message,
         type: "text",
         groupMessagesId: groupMessage.groupMessagesId,
@@ -224,10 +227,7 @@ class _MessagesPageState extends State<MessagesPage> {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-        appBar: CustomMessagesAppBar(
-          isMe: true,
-          user: groupMessage.users.first,
-        ),
+        appBar: CustomMessagesAppBar(isMe: true, user: others.first),
         bottomNavigationBar: Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,

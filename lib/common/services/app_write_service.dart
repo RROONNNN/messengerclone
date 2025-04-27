@@ -84,8 +84,6 @@ class AppWriteService {
     return withNetworkCheck(() async {
       try {
         await account.deleteSession(sessionId: 'current');
-
-        // Clear the current user ID from Hive after signing out
         final hiveService = HiveService();
         await hiveService.clearCurrentUserId();
       } on AppwriteException {
