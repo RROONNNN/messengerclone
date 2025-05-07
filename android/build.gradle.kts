@@ -2,6 +2,8 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://jitpack.io") }
+        maven { url = uri("https://maven.google.com") }
     }
     dependencies {
         classpath("com.android.tools.build:gradle:8.9.0")
@@ -26,4 +28,12 @@ subprojects {
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
+}
+
+tasks.withType<JavaCompile> {
+    options.compilerArgs.addAll(listOf(
+        "-Xlint:unchecked",
+        "-Xlint:deprecation",
+        "-Xlint:-options"
+    ))
 }
