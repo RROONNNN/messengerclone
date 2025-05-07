@@ -1,30 +1,44 @@
+import 'package:appwrite/appwrite.dart';
 import 'package:messenger_clone/common/constants/appwrite_database_constants.dart';
+import 'package:messenger_clone/common/services/common_function.dart';
 import 'package:messenger_clone/common/services/date_time_format.dart';
+import 'package:messenger_clone/features/chat/model/user.dart';
+import 'package:messenger_clone/features/messages/enum/message_status.dart';
 
 class MessageModel {
+  String id;
   final String idFrom;
   DateTime createdAt;
   final String content;
   final String type;
-  bool isSeen;
   final String groupMessagesId;
+  List<String> reactions;
+  MessageStatus? status;
+
   MessageModel({
+    String? id,
     required this.idFrom,
     required this.content,
     required this.type,
-    this.isSeen = false,
     required this.groupMessagesId,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now().toUtc();
+    this.reactions = const [],
+    this.status,
+  }) : id = id ?? ID.unique(),
+       createdAt = createdAt ?? DateTime.now().toUtc();
 
   Map<String, dynamic> toJson() {
     return {
-      AppwriteDatabaseConstants.idFrom: this.idFrom,
-      AppwriteDatabaseConstants.content: this.content,
-      AppwriteDatabaseConstants.type: this.type,
-      AppwriteDatabaseConstants.isSeen: this.isSeen,
-      AppwriteDatabaseConstants.groupMessagesId: this.groupMessagesId,
+      AppwriteDatabaseConstants.idFrom: idFrom,
+      AppwriteDatabaseConstants.content: content,
+      AppwriteDatabaseConstants.type: type,
+      AppwriteDatabaseConstants.groupMessagesId: groupMessagesId,
+      'reactions': CommonFunction.reactionsToString(reactions),
     };
+  }
+
+  void addReaction(String reaction) {
+    reactions.add(reaction);
   }
 
   DateTime get vietnamTime {
@@ -37,10 +51,34 @@ class MessageModel {
       idFrom: map[AppwriteDatabaseConstants.idFrom] as String,
       content: map[AppwriteDatabaseConstants.content] as String,
       type: map[AppwriteDatabaseConstants.type] as String,
-      isSeen: map[AppwriteDatabaseConstants.isSeen] as bool? ?? false,
       groupMessagesId: map[AppwriteDatabaseConstants.groupMessagesId] as String,
+      reactions: CommonFunction.reactionsFromString(map['reactions']),
+      id: map['\$id'] as String,
     );
+
     result.createdAt = DateTimeFormat.parseToDateTime(map['\$createdAt']);
     return result;
+  }
+  //copyWith
+  MessageModel copyWith({
+    String? id,
+    String? idFrom,
+    DateTime? createdAt,
+    String? content,
+    String? type,
+    String? groupMessagesId,
+    List<String>? reactions,
+    MessageStatus? status,
+  }) {
+    return MessageModel(
+      id: id ?? this.id,
+      idFrom: idFrom ?? this.idFrom,
+      createdAt: createdAt ?? this.createdAt,
+      content: content ?? this.content,
+      type: type ?? this.type,
+      groupMessagesId: groupMessagesId ?? this.groupMessagesId,
+      reactions: reactions ?? this.reactions,
+      status: status ?? this.status,
+    );
   }
 }

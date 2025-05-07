@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:messenger_clone/features/messages/bloc/message_bloc.dart';
+import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
 import '../../extensions/custom_theme_extension.dart';
 import '../custom_text_style.dart';
 
@@ -7,12 +10,14 @@ class CustomMessageItem extends StatefulWidget {
   final bool isTextMessage;
   final bool isImageMessage;
   final Widget child;
+  final MessageModel message;
   const CustomMessageItem({
     super.key,
     required this.isMe,
     required this.child,
     this.isImageMessage = false,
     this.isTextMessage = false,
+    required this.message,
   }) : assert(
          (isTextMessage ? 1 : 0) + (isImageMessage ? 1 : 0) < 2,
          "only and must be one of isImageMessage, isTextMessage can be true",
@@ -23,23 +28,17 @@ class CustomMessageItem extends StatefulWidget {
 }
 
 class _CustomMessageItemState extends State<CustomMessageItem> {
-  late List<String> reactions;
-
   @override
   void initState() {
     super.initState();
-    reactions = [];
-  }
-
-  void addReaction(String reaction) {
-    setState(() {
-      reactions.add(reaction);
-    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final messageBloc = context.read<MessageBloc>();
+    List<String> reactions = widget.message.reactions;
     return Stack(
+      clipBehavior: Clip.none,
       children: [
         Padding(
           padding: const EdgeInsets.all(8.0),
@@ -62,7 +61,12 @@ class _CustomMessageItemState extends State<CustomMessageItem> {
                               ) {
                                 return GestureDetector(
                                   onTap: () {
-                                    addReaction(reaction);
+                                    messageBloc.add(
+                                      AddReactionEvent(
+                                        widget.message.id,
+                                        reaction,
+                                      ),
+                                    );
                                     Navigator.of(context).pop();
                                   },
                                   child: ContentText(

@@ -43,12 +43,12 @@ class ChatRepositoryImpl implements AbstractChatRepository {
   @override
   Future<Either<String, void>> sendMessage(
     MessageModel message,
-    List<String> receiver,
+    GroupMessage groupMessage,
   ) async {
     try {
       final response = await appwriteChatRepository.sendMessage(
         message,
-        receiver,
+        groupMessage,
       );
       return Right(response);
     } catch (error) {
@@ -83,5 +83,22 @@ class ChatRepositoryImpl implements AbstractChatRepository {
   @override
   Future<GroupMessage?> getGroupMessagesByGroupId(String groupId) async {
     return await appwriteChatRepository.getGroupMessagesByGroupId(groupId);
+  }
+
+  Future<void> updateMessage(MessageModel message) async {
+    await appwriteChatRepository.updateMessage(message);
+  }
+
+  Future<Either<String, Stream<RealtimeMessage>>> getMessagesStream(
+    List<String> messageIds,
+  ) async {
+    try {
+      final response = await appwriteChatRepository.getMessagesStream(
+        messageIds,
+      );
+      return Right(response);
+    } catch (error) {
+      return Left("Failed to fetch message stream: $error");
+    }
   }
 }

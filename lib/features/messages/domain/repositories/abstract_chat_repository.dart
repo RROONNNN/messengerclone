@@ -11,7 +11,7 @@ abstract class AbstractChatRepository {
   );
   Future<Either<String, void>> sendMessage(
     MessageModel message,
-    List<String> receiver,
+    GroupMessage groupMessage,
   );
   Future<Either<String, Stream<RealtimeMessage>>> getChatStream(
     String groupChatId,
@@ -24,4 +24,8 @@ abstract class AbstractChatRepository {
     required String groupId,
   });
   Future<GroupMessage?> getGroupMessagesByGroupId(String groupId);
+  Future<void> updateMessage(MessageModel message);
+  Future<Either<String, Stream<RealtimeMessage>>> getMessagesStream(
+    List<String> messageIds,
+  );
 }

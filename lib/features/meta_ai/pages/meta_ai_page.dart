@@ -4,7 +4,6 @@ import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 
 import '../../../common/widgets/elements/custom_grouped_list_title.dart';
-import '../../../common/widgets/elements/custom_message_item.dart';
 import '../../../common/widgets/elements/custom_round_avatar.dart';
 
 class MetaAiPage extends StatefulWidget {
@@ -30,14 +29,7 @@ class _MetaAiPageState extends State<MetaAiPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ElevatedButton(
-                  onPressed: () {
-                    // Navigator.of(context).push(
-                    //   MaterialPageRoute(builder: (context) => MessagesPage( )),
-                    // );
-                  },
-                  child: Text("MessagesPage"),
-                ),
+                ElevatedButton(onPressed: () {}, child: Text("MessagesPage")),
                 CustomRoundAvatar(isActive: true, radius: 25),
                 CustomGroupedListTitle(
                   onTapFunc: () {},
@@ -74,71 +66,6 @@ class _MetaAiPageState extends State<MetaAiPage> {
                     trailing: Icon(Icons.keyboard_arrow_right),
                   ),
                 ),
-
-                CustomMessageItem(
-                  isTextMessage: true,
-                  isMe: true,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ContentText(
-                      "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,  ",
-                    ),
-                  ),
-                ),
-                CustomMessageItem(
-                  isImageMessage: true,
-                  isMe: true,
-                  child: Image.asset("assets/images/imagemaxwidth.png"),
-                ),
-                CustomMessageItem(
-                  isImageMessage: true,
-                  isMe: true,
-                  child: Image.asset(
-                    "assets/images/imagemaxheight.png",
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                CustomMessageItem(
-                  isMe: false,
-                  isImageMessage: false,
-                  child: IntrinsicWidth(
-                    child: ListTile(
-                      dense: true,
-                      title: ContentText(
-                        "Cuộc gọi video",
-                        fontWeight: FontWeight.w700,
-                      ),
-                      subtitle: ContentText(
-                        "13 giây",
-                        color: context.theme.textGrey,
-                      ),
-                      leading: Icon(
-                        Icons.video_call,
-                        size: 30,
-                        color: context.theme.textColor,
-                      ),
-                    ),
-                  ),
-                ),
-                CustomMessageItem(
-                  isMe: false,
-                  isImageMessage: false,
-                  child: IntrinsicWidth(
-                    child: ListTile(
-                      title: ContentText("Cuộc gọi video"),
-                      subtitle: ContentText(
-                        "13 giây",
-                        color: context.theme.textGrey,
-                      ),
-                      leading: Icon(
-                        Icons.video_call,
-                        size: 30,
-                        color: context.theme.textColor,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 25),
               ],
             ),
           ),

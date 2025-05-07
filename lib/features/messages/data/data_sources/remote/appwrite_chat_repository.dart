@@ -7,6 +7,44 @@ import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
 
 class AppwriteChatRepository {
+  Future<MessageModel> updateMessage(MessageModel message) async {
+    try {
+      final Document messageDocument = await AppWriteService.databases
+          .updateDocument(
+            databaseId: AppWriteService.databaseId,
+            collectionId: AppWriteService.messageCollectionId,
+            documentId: message.id,
+            data: message.toJson(),
+          );
+      return MessageModel.fromMap(messageDocument.data);
+    } catch (error) {
+      debugPrint("Failed to update message: $error");
+      throw Exception("Failed to update message: $error");
+    }
+  }
+
+  Future<Stream<RealtimeMessage>> getMessagesStream(
+    List<String> messageIds,
+  ) async {
+    try {
+      debugPrint('Fetching messages stream for messageIds: $messageIds');
+      final String messageCollectionId = AppWriteService.messageCollectionId;
+
+      List<String> subscriptions =
+          messageIds
+              .map(
+                (messageId) =>
+                    'databases.${AppWriteService.databaseId}.collections.$messageCollectionId.documents.$messageId',
+              )
+              .toList();
+
+      final subscription = AppWriteService.realtime.subscribe(subscriptions);
+      return subscription.stream;
+    } catch (error) {
+      throw Exception("Failed to fetch messages stream: $error");
+    }
+  }
+
   Future<Stream<RealtimeMessage>> getChatStream(String groupMessId) async {
     try {
       debugPrint('Fetching chat stream for groupChatId: $groupMessId');
@@ -55,52 +93,42 @@ class AppwriteChatRepository {
       if (response.documents.isEmpty) {
         return [];
       }
+
       return response.documents
-          .map((document) => MessageModel.fromMap(document.data))
+          .map((doc) => MessageModel.fromMap(doc.data))
           .toList();
     } catch (error) {
       throw Exception("Failed to fetch messages: $error");
     }
   }
 
-  Future<void> sendMessage(MessageModel message, List<String> receivers) async {
+  Future<void> sendMessage(
+    MessageModel message,
+    GroupMessage groupMessage,
+  ) async {
     try {
       debugPrint('Sending message: ${message.toJson()}');
-
+      List<String> receivers =
+          groupMessage.users.map((user) => user.id).toList();
       final Document messageDocument = await AppWriteService.databases
           .createDocument(
             databaseId: AppWriteService.databaseId,
             collectionId: AppWriteService.messageCollectionId,
-            documentId: ID.unique(),
+            documentId: message.id,
             data: message.toJson(),
           );
 
       final String messageId = messageDocument.$id;
-      final Document groupMessDocument = await AppWriteService.databases
-          .getDocument(
-            databaseId: AppWriteService.databaseId,
-            collectionId: AppWriteService.groupMessagesCollectionId,
-            documentId: message.groupMessagesId,
-          );
-      if (groupMessDocument.data.isNotEmpty) {
-        await AppWriteService.databases.updateDocument(
-          databaseId: AppWriteService.databaseId,
-          collectionId: AppWriteService.groupMessagesCollectionId,
-          documentId: groupMessDocument.data['\$id'],
-          data: {AppwriteDatabaseConstants.lastMessage: messageId},
-        );
-      } else {
-        await AppWriteService.databases.createDocument(
-          databaseId: AppWriteService.databaseId,
-          collectionId: AppWriteService.groupMessagesCollectionId,
-          documentId: ID.unique(),
-          data: {AppwriteDatabaseConstants.lastMessage: messageId},
-        );
 
-        await _addGroupChatIdToUser(message.idFrom, message.groupMessagesId);
-        for (String receiver in receivers) {
-          await _addGroupChatIdToUser(receiver, message.groupMessagesId);
-        }
+      await AppWriteService.databases.updateDocument(
+        databaseId: AppWriteService.databaseId,
+        collectionId: AppWriteService.groupMessagesCollectionId,
+        documentId: groupMessage.groupMessagesId,
+        data: {AppwriteDatabaseConstants.lastMessage: messageId},
+      );
+      await _addGroupChatIdToUser(message.idFrom, message.groupMessagesId);
+      for (String receiver in receivers) {
+        await _addGroupChatIdToUser(receiver, message.groupMessagesId);
       }
     } catch (error) {
       throw Exception("Failed to send message: $error");
@@ -204,8 +232,8 @@ class AppwriteChatRepository {
         return null;
       }
     } catch (error) {
-      debugPrint("Failed to check group message existence: $error");
-      return null;
+      debugPrint("Failed to get group message existence: $error");
+      throw Exception("Failed to get group message existence: $error");
     }
   }
 }

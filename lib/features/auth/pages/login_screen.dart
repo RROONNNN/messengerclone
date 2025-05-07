@@ -136,6 +136,7 @@ class LoginScreenState extends State<LoginScreen> {
                             _passwordController.text,
                           );
                       if (userID == null) {
+                        if (!context.mounted) return;
                         Navigator.of(context).pop();
                         await CustomAlertDialog.show(
                           context: context,
@@ -153,6 +154,7 @@ class LoginScreenState extends State<LoginScreen> {
                             password: _passwordController.text,
                           );
                           await AppWriteService.saveLoginDeviceInfo(userID);
+                          if (!context.mounted) return;
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(builder: (context) => MainPage()),
@@ -165,6 +167,7 @@ class LoginScreenState extends State<LoginScreen> {
                             _emailController.text,
                             otp,
                           );
+                          if (!context.mounted) return;
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
@@ -189,6 +192,7 @@ class LoginScreenState extends State<LoginScreen> {
                       }
                     } catch (e) {
                       if (e.toString().contains('No internet connection')) {
+                        if (!context.mounted) return;
                         Navigator.of(context).pop();
                         await CustomAlertDialog.show(
                           context: context,

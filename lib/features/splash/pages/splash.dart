@@ -6,8 +6,6 @@ import '../../../common/services/app_write_service.dart';
 import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../../auth/pages/login_screen.dart';
 
-
-
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
 
@@ -28,7 +26,7 @@ class _SplashPageState extends State<SplashPage> {
       body: Center(
         child: Image.asset(
           "assets/images/aeck_logo.png",
-          width: MediaQuery.of(context).size.width*0.6,
+          width: MediaQuery.of(context).size.width * 0.6,
         ),
       ),
     );
@@ -41,9 +39,9 @@ class _SplashPageState extends State<SplashPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-            builder: (BuildContext context) => currentUser != null
-                ? MainPage()
-                : LoginScreen()
+          builder:
+              (BuildContext context) =>
+                  currentUser != null ? MainPage() : LoginScreen(),
         ),
       );
     } catch (e) {

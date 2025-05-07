@@ -38,10 +38,14 @@ class ChatItemWidget extends StatelessWidget {
         //     item.groupMessage.users
         //         .where((user) => user.id != currentUserIdSnapshot.data)
         //         .toList();
-        final List<User> others = CommonFunction.getOthers(
+        List<User> others = CommonFunction.getOthers(
           item.groupMessage.users,
           currentUserIdSnapshot.data!,
         );
+        if (others.isEmpty) {
+          others = [item.groupMessage.users.first];
+        }
+
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(
             vertical: 12,

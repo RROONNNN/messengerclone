@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/chat/model/user.dart';
+import 'package:messenger_clone/features/messages/bloc/message_bloc.dart';
 import 'package:messenger_clone/features/messages/pages/messages_page.dart';
 import 'package:page_transition/page_transition.dart';
 
@@ -10,36 +12,33 @@ class Routes {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case chat:
+        Widget pageChat = const Scaffold(
+          body: Center(child: Text('Invalid arguments for chat page')),
+        );
         if (settings.arguments is GroupMessage) {
           final GroupMessage groupMessage = settings.arguments as GroupMessage;
-          return PageTransition(
-            type: PageTransitionType.rightToLeft,
-            settings: settings,
-            child: MessagesPage(groupMessage: groupMessage),
-          );
+          pageChat = MessagesPage(groupMessage: groupMessage);
         } else if (settings.arguments is User) {
           final User user = settings.arguments as User;
-          return PageTransition(
-            type: PageTransitionType.rightToLeft,
-            settings: settings,
-            child: MessagesPage(otherUsers: [user]),
-          );
-        } else if (settings.arguments is List<User>) {
-          final List<User> argumentsList = settings.arguments as List<User>;
-          if (argumentsList.isNotEmpty) {
-            final List<User> users = argumentsList;
-            return PageTransition(
-              type: PageTransitionType.rightToLeft,
-              settings: settings,
-              child: MessagesPage(otherUsers: users),
-            );
-          }
+          pageChat = MessagesPage(otherUser: user);
         }
         return PageTransition(
           type: PageTransitionType.rightToLeft,
           settings: settings,
-          child: const Scaffold(
-            body: Center(child: Text('Invalid arguments for chat page')),
+          child: BlocProvider(
+            create:
+                (context) =>
+                    MessageBloc()..add(
+                      MessageLoadEvent(
+                        (settings.arguments is User)
+                            ? settings.arguments as User
+                            : null,
+                        (settings.arguments is GroupMessage)
+                            ? settings.arguments as GroupMessage
+                            : null,
+                      ),
+                    ),
+            child: pageChat,
           ),
         );
 

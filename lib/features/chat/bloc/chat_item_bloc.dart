@@ -43,12 +43,10 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
             final isTheLatestMessSentByMe =
                 groupMessage.lastMessage!.idFrom == event.userid;
             chatItems.add(
+              // todo:
               ChatItem(
                 groupMessage: groupMessage,
-                hasUnread:
-                    (isTheLatestMessSentByMe)
-                        ? false
-                        : groupMessage.lastMessage!.isSeen,
+                hasUnread: (isTheLatestMessSentByMe) ? false : true,
               ),
             );
           } else {
@@ -95,12 +93,10 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
             final isTheLatestMessSentByMe =
                 groupMessage.lastMessage!.idFrom == currentUserId;
             chatItems.add(
+              //todo:
               ChatItem(
                 groupMessage: groupMessage,
-                hasUnread:
-                    (isTheLatestMessSentByMe)
-                        ? false
-                        : groupMessage.lastMessage!.isSeen,
+                hasUnread: (isTheLatestMessSentByMe) ? false : true,
               ),
             );
           } else {

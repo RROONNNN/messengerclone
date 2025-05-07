@@ -32,4 +32,15 @@ class CommonFunction {
 
     return digest.toString();
   }
+
+  static List<String> reactionsFromString(String? reactions) {
+    if (reactions == null || reactions.isEmpty) {
+      return [];
+    }
+    return reactions.split(',').map((reaction) => reaction.trim()).toList();
+  }
+
+  static String reactionsToString(List<String> reactions) {
+    return reactions.join(',');
+  }
 }
