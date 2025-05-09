@@ -6,6 +6,7 @@ import 'package:appwrite/models.dart' as models;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 class AppWriteService {
   const AppWriteService._();
@@ -16,10 +17,150 @@ class AppWriteService {
 
   static Account get account => Account(_client);
   static Databases get databases => Databases(_client);
+  static Storage get storage => Storage(_client);
 
   static const String _databaseId = '67e90080000a47b1eba4';
   static const String _userCollectionUser = '67e904b9002db65c933b';
   static const String _deviceCollection = '67ed42540013471695d3';
+  static const String _storageId = '67e8ee480012c2579b40';
+
+  static Future<void> updateUserProfile({
+    required String userId,
+    String? name,
+    String? email,
+    String? aboutMe,
+    String? photoUrl,
+  }) async {
+    try {
+      await databases.updateDocument(
+        databaseId: _databaseId,
+        collectionId: _userCollectionUser,
+        documentId: userId,
+        data: {
+          if (name != null) 'name': name,
+          if (email != null) 'email': email,
+          if (aboutMe != null) 'aboutMe': aboutMe,
+          if (photoUrl != null) 'photoUrl': photoUrl,
+        },
+      );
+    } catch (e) {
+      throw Exception("Error updating profile: $e");
+    }
+  }
+
+  static Future<void> updateUserAuth({
+    required String userId,
+    String? name,
+    String? email,
+    required String password,
+  }) async {
+    try {
+      if (name != null) {
+        await account.updateName(name: name);
+      }
+      if (email != null) {
+        await account.updateEmail(email: email, password: password);
+      }
+    } on AppwriteException catch (e) {
+      throw Exception('Failed to update authentication details: ${e.message}');
+    } catch (e) {
+      throw Exception('Error updating authentication details: $e');
+    }
+  }
+
+  static Future<String> updatePhotoUrl({
+    required File imageFile,
+    required String userId,
+  }) async {
+    try {
+      final uploadedFile = await storage.createFile(
+        bucketId: _storageId,
+        fileId: ID.unique(),
+        file: InputFile.fromPath(
+          path: imageFile.path,
+          filename: 'avatar.png',
+        ),
+      );
+
+      final newPhotoUrl =
+          'https://fra.cloud.appwrite.io/v1/storage/buckets/$_storageId/files/${uploadedFile.$id}/view?project=67e7a7eb001c9cd8d6ad&mode=admin';
+
+      await databases.updateDocument(
+        databaseId: _databaseId,
+        collectionId: _userCollectionUser,
+        documentId: userId,
+        data: {'photoUrl': newPhotoUrl},
+      );
+
+      return newPhotoUrl;
+    } catch (e) {
+      throw Exception('Error uploading image: $e');
+    }
+  }
+
+  static Future<String> uploadAndUpdatePhoto(File imageFile, String userId) async {
+    return withNetworkCheck(() async {
+      try {
+        final directory = await getTemporaryDirectory();
+        final imagePath = await imageFile.copy('${directory.path}/temp_avatar.png');
+
+        final uploadedFile = await storage.createFile(
+          bucketId: _storageId,
+          fileId: ID.unique(),
+          file: InputFile.fromPath(path: imagePath.path, filename: 'avatar.png'),
+        );
+
+        final newPhotoUrl = 'https://fra.cloud.appwrite.io/v1/storage/buckets/$_storageId/files/${uploadedFile.$id}/view?project=67e7a7eb001c9cd8d6ad&mode=admin';
+
+        await databases.updateDocument(
+          databaseId: _databaseId,
+          collectionId: _userCollectionUser,
+          documentId: userId,
+          data: {'photoUrl': newPhotoUrl},
+        );
+
+        return newPhotoUrl;
+      } on AppwriteException catch (e) {
+        throw Exception('Failed to upload and update photo: ${e.message}');
+      } catch (e) {
+        throw Exception('Error uploading photo: $e');
+      }
+    });
+  }
+
+  static Future<Map<String, dynamic>> fetchUserData() async {
+    try {
+      final user = await account.get();
+      final userDoc = await databases.getDocument(
+        databaseId: _databaseId,
+        collectionId: _userCollectionUser,
+        documentId: user.$id,
+      );
+      return {
+        'userName': user.name,
+        'userId': user.$id,
+        'email': userDoc.data['email'] as String?,
+        'aboutMe': userDoc.data['aboutMe'] as String?,
+        'photoUrl': userDoc.data['photoUrl'] as String?,
+      };
+    } catch (e) {
+      return {'error': 'Error: $e'};
+    }
+  }
+
+  static Future<String?> isLoggedIn() async {
+    try {
+      final user = await account.get();
+      return user.$id;
+    } on AppwriteException catch (e) {
+      if (e.code == 401) {
+        return null;
+      }
+      throw Exception('Error checking login status: ${e.message}');
+    } catch (e) {
+      throw Exception('Unexpected error checking login status: $e');
+    }
+  }
 
   static Future<models.User> signUp({
     required String email,
@@ -55,7 +196,7 @@ class AppWriteService {
           },
         );
       } on AppwriteException catch (e) {
-        throw Exception('Failed to register email: ${e.message}');
+        throw Exception('Failed to register user: ${e.message}');
       }
     });
   }
@@ -83,14 +224,16 @@ class AppWriteService {
   }
 
   static Future<models.User?> getCurrentUser() async {
-      try {
-        return await account.get();
-      } on AppwriteException catch (e) {
-        if (e.code == 401) {
-          return null;
-        }
+    try {
+      return await account.get();
+    } on AppwriteException catch (e) {
+      if (e.code == 401) {
         return null;
       }
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   static Future<String?> getUserIdFromEmailAndPassword(
@@ -254,7 +397,7 @@ class AppWriteService {
   static Future<void> deleteAccount() async {
     return withNetworkCheck(() async {
       try {
-        final user =  await getCurrentUser();
+        final user = await getCurrentUser();
         final userId = user?.$id;
 
         await _deleteUserDocuments(userId!);
@@ -262,8 +405,7 @@ class AppWriteService {
         await _deleteDeviceRecords(userId);
 
         await account.updateStatus();
-        //= block + function = delete ( do khoong xoa truc tiep duoc )
-
+        //= block + function = delete (since direct deletion isn't possible)
       } on AppwriteException catch (e) {
         throw Exception('Failed to delete account: ${e.message}');
       } catch (e) {
@@ -288,13 +430,11 @@ class AppWriteService {
 
   static Future<void> _deleteDeviceRecords(String userId) async {
     try {
-
       final deviceRecords = await databases.listDocuments(
         databaseId: _databaseId,
         collectionId: _deviceCollection,
         queries: [Query.equal('userId', userId)],
       );
-
 
       for (final doc in deviceRecords.documents) {
         await databases.deleteDocument(

@@ -5,139 +5,68 @@ import 'package:messenger_clone/features/auth/pages/login_screen.dart';
 import 'package:messenger_clone/features/meta_ai/pages/meta_ai_page.dart';
 import 'package:messenger_clone/features/settings/pages/settings_page.dart';
 import 'package:messenger_clone/common/services/app_write_service.dart';
-import 'package:messenger_clone/common/widgets/dialog/loading_dialog.dart';
-import 'package:provider/provider.dart';
-import 'package:messenger_clone/common/themes/theme_provider.dart';
+import '../dialog/dialog_utils.dart';
+import 'edit_profile_page.dart';
 
-class MenuPage extends StatelessWidget {
+class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
 
-  Future<bool> _showConfirmationDialog({
-    required BuildContext context,
-    required String title,
-    required String message,
-    String confirmText = 'OK',
-    String cancelText = 'Hủy',
-  }) async {
-    return await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              backgroundColor: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF162127)
-                  : Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              title: Text(
-                title,
-                style: TextStyle(
-                  color: context.theme.textColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              content: Text(
-                message,
-                style: TextStyle(
-                  color: context.theme.textColor,
-                  fontSize: 16,
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(false);
-                  },
-                  child: Text(
-                    cancelText,
-                    style: TextStyle(
-                      color: context.theme.textColor.withOpacity(0.7),
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(true);
-                  },
-                  child: Text(
-                    confirmText,
-                    style: TextStyle(
-                      color: context.theme.blue,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ) ??
-        false;
+  @override
+  State<MenuPage> createState() => _MenuPageState();
+}
+
+class _MenuPageState extends State<MenuPage> {
+  String? userName;
+  String? userId;
+  String? email;
+  String? aboutMe;
+  String? photoUrl;
+  bool isLoading = true;
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
   }
 
-  Future<void> _executeWithLoading({
-    required BuildContext context,
-    required Future<void> Function() action,
-    required String loadingMessage,
-    required String errorMessage,
-    VoidCallback? onSuccess,
-  }) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => LoadingDialog(message: loadingMessage),
-    );
-    try {
-      await action();
-      Navigator.of(context).pop();
-      if (onSuccess != null) onSuccess();
-    } catch (e) {
-      Navigator.of(context).pop();
-      String detailedError = errorMessage;
-      if (e.toString().contains('network')) {
-        detailedError = 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối của bạn.';
-      } else if (e.toString().contains('unauthorized')) {
-        detailedError = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
-      }
-      await _showConfirmationDialog(
-        context: context,
-        title: 'Lỗi',
-        message: detailedError,
-        confirmText: 'Đóng',
-      );
+  Future<void> _fetchUserData() async {
+    final result = await AppWriteService.fetchUserData();
+    if (result.containsKey('error')) {
+      setState(() {
+        errorMessage = result['error'] as String?;
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        userName = result['userName'] as String?;
+        userId = result['userId'] as String?;
+        email = result['email'] as String?;
+        aboutMe = result['aboutMe'] as String?;
+        photoUrl = result['photoUrl'] as String?;
+        isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final ThemeMode themeMode = themeProvider.themeNotifier.value;
-
-    bool isDarkMode;
-    switch (themeMode) {
-      case ThemeMode.dark:
-        isDarkMode = true;
-        break;
-      case ThemeMode.light:
-        isDarkMode = false;
-        break;
-      case ThemeMode.system:
-        isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
-        break;
-    }
-
-    Color containerBackgroundColor = isDarkMode
-        ? const Color.fromARGB(255, 46, 45, 45)
-        : Colors.grey[200]!;
-
     return Scaffold(
       backgroundColor: context.theme.bg,
       appBar: AppBar(
         backgroundColor: context.theme.bg,
         elevation: 0,
-        title: const TitleText("Menu"),
+        title: const TitleText(
+          'Menu',
+          fontSize: 25,
+          fontWeight: FontWeight.bold,
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code),
+            onPressed: () {},
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -146,238 +75,40 @@ class MenuPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Vùng 1: Nguyễn Minh Thuận và Cài đặt
-                Container(
-                  decoration: BoxDecoration(
-                    color: containerBackgroundColor,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 30,
-                              backgroundImage: NetworkImage(
-                                'https://picsum.photos/100?random=${'Nguyen Minh Thuan'.hashCode}',
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Nguyễn Minh Thuận',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: context.theme.textColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Chuyện trang cá nhân',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: context.theme.textColor.withOpacity(0.7),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.edit,
-                                color: context.theme.textColor.withOpacity(0.7),
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const MetaAiPage(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 72.0),
-                        child: Divider(
-                          color: context.theme.textColor.withOpacity(0.3),
-                          thickness: 0.5,
-                        ),
-                      ),
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.settings,
-                        title: 'Cài đặt',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const SettingsPage()),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
+                _buildUserInfo(context),
                 const SizedBox(height: 16),
-
-                // Vùng 2: Tin nhắn đang chờ, Kho lưu trữ
-                Container(
-                  decoration: BoxDecoration(
-                    color: containerBackgroundColor,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.message,
-                        title: 'Tin nhắn đang chờ',
-                        onTap: () {},
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 72.0),
-                        child: Divider(
-                          color: context.theme.textColor.withOpacity(0.3),
-                          thickness: 0.5,
-                        ),
-                      ),
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.archive,
-                        title: 'Kho lưu trữ',
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-                ),
-
+                _buildMenuItem(context, icon: Icons.settings, title: 'Cài đặt', onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SettingsPage()),
+                  );
+                }),
+                _buildMenuItem(context, icon: Icons.chat_bubble, title: 'Tin nhắn đang chờ', onTap: () {}),
+                _buildMenuItem(context, icon: Icons.archive, title: 'Kho lưu trữ', onTap: () {}),
                 const SizedBox(height: 16),
-
-                // Vùng 3: Lời mời kết bạn, Tạo cộng đồng
-                Container(
-                  decoration: BoxDecoration(
-                    color: containerBackgroundColor,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.group_add,
-                        title: 'Lời mời kết bạn',
-                        onTap: () {},
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 72.0),
-                        child: Divider(
-                          color: context.theme.textColor.withOpacity(0.3),
-                          thickness: 0.5,
-                        ),
-                      ),
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.add_circle_outline,
-                        title: 'Tạo cộng đồng',
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
+                TitleText(
+                  'Xem thêm',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: context.theme.textColor.withOpacity(0.7),
                 ),
-
+                const SizedBox(height: 8),
+                _buildMenuItem(context, icon: Icons.group, title: 'Lời mời kết bạn', onTap: () {}),
+                _buildMenuItem(context, icon: Icons.group_add, title: 'Tìm bạn bè', onTap: () {}),
+                _buildMenuItem(context, icon: Icons.star, title: 'Đoạn chat trong AI Studio', onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MetaAiPage()),
+                  );
+                }),
+                TitleText(
+                  'Vùng nguy hiểm',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: context.theme.textColor.withOpacity(0.7),
+                ),
                 const SizedBox(height: 16),
-
-                // Vùng 4: Đăng xuất và Xóa tài khoản
-                Container(
-                  decoration: BoxDecoration(
-                    color: containerBackgroundColor,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.logout,
-                        title: 'Đăng xuất',
-                        onTap: () async {
-                          final confirm = await _showConfirmationDialog(
-                            context: context,
-                            title: 'Xác nhận',
-                            message: 'Bạn có chắc chắn muốn đăng xuất?',
-                            confirmText: 'Đăng xuất',
-                            cancelText: 'Hủy',
-                          );
-                          if (confirm) {
-                            await _executeWithLoading(
-                              context: context,
-                              action: () async => await AppWriteService.signOut(),
-                              loadingMessage: 'Đang đăng xuất...',
-                              errorMessage: 'Đăng xuất thất bại.',
-                              onSuccess: () {
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                                  (route) => false,
-                                );
-                              },
-                            );
-                          }
-                        },
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 72.0),
-                        child: Divider(
-                          color: context.theme.textColor.withOpacity(0.3),
-                          thickness: 0.5,
-                        ),
-                      ),
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.delete_forever,
-                        title: 'Xóa tài khoản',
-                        onTap: () async {
-                          final confirm = await _showConfirmationDialog(
-                            context: context,
-                            title: 'Xác nhận',
-                            message: 'Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác.',
-                            confirmText: 'Xóa',
-                            cancelText: 'Hủy',
-                          );
-                          if (confirm) {
-                            await _executeWithLoading(
-                              context: context,
-                              action: () async => await AppWriteService.deleteAccount(),
-                              loadingMessage: 'Đang xóa tài khoản...',
-                              errorMessage: 'Xóa tài khoản thất bại.',
-                              onSuccess: () async {
-                                await _showConfirmationDialog(
-                                  context: context,
-                                  title: 'Thông báo',
-                                  message: 'Yêu cầu đã được gửi đi. Tài khoản sẽ được xóa hoàn toàn sau ít phút.',
-                                  confirmText: 'Đóng',
-                                );
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                                  (route) => false,
-                                );
-                              },
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+                _buildMenuGroupActions(context),
               ],
             ),
           ),
@@ -386,38 +117,109 @@ class MenuPage extends StatelessWidget {
     );
   }
 
+  Widget _buildUserInfo(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (errorMessage != null) {
+      return TitleText(
+        errorMessage!,
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: context.theme.red,
+      );
+    }
+    return Container(
+      decoration: BoxDecoration(
+        color: context.theme.grey,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundImage: photoUrl != null
+                  ? (photoUrl!.startsWith('http')
+                  ? NetworkImage(photoUrl!)
+                  : const AssetImage('assets/images/avatar.png') as ImageProvider)
+                  : const AssetImage('assets/images/avatar.png'),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TitleText(
+                    userName ?? 'Không có tên',
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: context.theme.textColor,
+                  ),
+                  TitleText(
+                    '@${userId ?? 'Không có ID'}',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: context.theme.textColor.withOpacity(0.7),
+                  ),
+                  TitleText(
+                    aboutMe ?? 'Ruby chan (>ω<)',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: context.theme.textColor.withOpacity(0.7),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditProfilePage(
+                      initialName: userName,
+                      initialEmail: email,
+                      initialAboutMe: aboutMe,
+                      initialPhotoUrl: photoUrl,
+                      userId: userId ?? '',
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMenuItem(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    String? leadingImage,
-  }) {
+      BuildContext context, {
+        required IconData icon,
+        required String title,
+        required VoidCallback onTap,
+      }) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Row(
           children: [
-            const SizedBox(width: 16),
-            leadingImage != null
-                ? CircleAvatar(
-                    radius: 20,
-                    backgroundImage: NetworkImage(leadingImage),
-                  )
-                : Icon(
-                    icon,
-                    color: context.theme.textColor.withOpacity(0.7),
-                    size: 24,
-                  ),
+            Icon(
+              icon,
+              color: context.theme.textColor.withOpacity(0.7),
+              size: 24,
+            ),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(
+              child: TitleText(
                 title,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: context.theme.textColor,
-                ),
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: context.theme.textColor,
               ),
             ),
             Icon(
@@ -427,6 +229,90 @@ class MenuPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMenuGroupActions(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.theme.grey,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        children: [
+          _buildMenuItem(
+            context,
+            icon: Icons.logout,
+            title: 'Đăng xuất',
+            onTap: () async {
+              final confirm = await DialogUtils.showConfirmationDialog(
+                context: context,
+                title: 'Xác nhận',
+                message: 'Bạn có chắc chắn muốn đăng xuất?',
+                confirmText: 'Đăng xuất',
+                cancelText: 'Hủy',
+              );
+              if (confirm) {
+                await DialogUtils.executeWithLoading(
+                  context: context,
+                  action: () async => await AppWriteService.signOut(),
+                  loadingMessage: 'Đang đăng xuất...',
+                  errorMessage: 'Đăng xuất thất bại.',
+                  onSuccess: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          (route) => false,
+                    );
+                  },
+                );
+              }
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 72.0),
+            child: Divider(
+              color: context.theme.textColor.withOpacity(0.3),
+              thickness: 0.5,
+            ),
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.delete_forever,
+            title: 'Xóa tài khoản',
+            onTap: () async {
+              final confirm = await DialogUtils.showConfirmationDialog(
+                context: context,
+                title: 'Xác nhận',
+                message: 'Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác.',
+                confirmText: 'Xóa',
+                cancelText: 'Hủy',
+              );
+              if (confirm) {
+                await DialogUtils.executeWithLoading(
+                  context: context,
+                  action: () async => await AppWriteService.deleteAccount(),
+                  loadingMessage: 'Đang xóa tài khoản...',
+                  errorMessage: 'Xóa tài khoản thất bại.',
+                  onSuccess: () async {
+                    await DialogUtils.showConfirmationDialog(
+                      context: context,
+                      title: 'Thông báo',
+                      message: 'Yêu cầu đã được gửi đi. Tài khoản sẽ được xóa hoàn toàn sau ít phút.',
+                      confirmText: 'Đóng',
+                    );
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          (route) => false,
+                    );
+                  },
+                );
+              }
+            },
+          ),
+        ],
       ),
     );
   }

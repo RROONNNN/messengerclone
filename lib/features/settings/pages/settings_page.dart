@@ -1,8 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:messenger_clone/features/settings/pages/system_theme_settings_page.dart';
+import 'package:messenger_clone/features/settings/pages/change_password_page.dart'; // Import the new page
 import '../../../common/extensions/custom_theme_extension.dart';
-import '../../../common/themes/theme_provider.dart';
+import '../../../common/services/app_write_service.dart';
 import '../../../common/widgets/custom_text_style.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -13,42 +16,114 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  String avatar = ""; // Giữ nguyên biến, dù không dùng
+  String? userName;
+  String? userId;
+  String? photoUrl;
+  bool isLoading = true;
+  String? errorMessage;
+
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    final result = await AppWriteService.fetchUserData();
+    if (result.containsKey('error')) {
+      setState(() {
+        errorMessage = result['error'] as String?;
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        userName = result['userName'] as String?;
+        userId = result['userId'] as String?;
+        photoUrl = result['photoUrl'] as String?;
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(source: source);
+      if (image != null) {
+        final newPhotoUrl = await AppWriteService.uploadAndUpdatePhoto(
+          File(image.path),
+          userId!,
+        );
+        setState(() {
+          photoUrl = newPhotoUrl;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = "Error uploading image: $e";
+      });
+    }
+  }
+
+  void _showImageOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.theme.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+      ),
+      builder: (context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.camera, color: context.theme.textColor),
+              title: TitleText(
+                "Take Photo",
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: context.theme.textColor,
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library, color: context.theme.textColor),
+              title: TitleText(
+                "Choose from Gallery",
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: context.theme.textColor,
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final ThemeMode themeMode = themeProvider.themeNotifier.value;
-
-    bool isDarkMode;
-    switch (themeMode) {
-      case ThemeMode.dark:
-        isDarkMode = true;
-        break;
-      case ThemeMode.light:
-        isDarkMode = false;
-        break;
-      case ThemeMode.system:
-        isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
-        break;
-    }
-
-    Color containerBackgroundColor = isDarkMode
-        ? const Color.fromARGB(255, 46, 45, 45)
-        : Colors.grey[200]!;
-
-    Color iconColor = isDarkMode ? Colors.white.withOpacity(0.7) : Colors.grey[700]!;
-
     return Scaffold(
       backgroundColor: context.theme.bg,
       appBar: AppBar(
-        title: const TitleText("Settings"),
-        backgroundColor: context.theme.appBar,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: context.theme.textColor),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const TitleText(
+          "Settings",
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        backgroundColor: context.theme.bg,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -57,78 +132,13 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Tiêu đề và mô tả
-                Text(
-                  "Cài đặt",
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: context.theme.textColor,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Tùy chỉnh ứng dụng theo sở thích của bạn",
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: context.theme.textColor.withOpacity(0.7),
-                  ),
-                ),
+                _buildUserInfo(),
                 const SizedBox(height: 24),
-
-                // Container Theme
-                Container(
-                  decoration: BoxDecoration(
-                    color: containerBackgroundColor,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildThemeItem(
-                        context,
-                        icon: Icons.wb_sunny,
-                        title: 'Light Theme',
-                        iconColor: iconColor,
-                        onTap: () {
-                          themeProvider.setTheme(ThemeMode.light);
-                        },
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 72.0),
-                        child: Divider(
-                          color: context.theme.textColor.withOpacity(0.3),
-                          thickness: 0.5,
-                        ),
-                      ),
-                      _buildThemeItem(
-                        context,
-                        icon: Icons.nightlight_round,
-                        title: 'Dark Theme',
-                        iconColor: iconColor,
-                        onTap: () {
-                          themeProvider.setTheme(ThemeMode.dark);
-                        },
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 72.0),
-                        child: Divider(
-                          color: context.theme.textColor.withOpacity(0.3),
-                          thickness: 0.5,
-                        ),
-                      ),
-                      _buildThemeItem(
-                        context,
-                        icon: Icons.settings_system_daydream,
-                        title: 'Account', // Đổi thành "Account"
-                        iconColor: iconColor,
-                        onTap: () {
-                          themeProvider.setTheme(ThemeMode.system);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+                _buildSettingsGroup1(),
+                const SizedBox(height: 16),
+                _buildSettingsGroup2(),
+                const SizedBox(height: 16),
+                _buildSettingsGroup3(),
               ],
             ),
           ),
@@ -137,11 +147,157 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildThemeItem(
-    BuildContext context, {
+  Widget _buildUserInfo() {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (errorMessage != null) {
+      return TitleText(
+        errorMessage!,
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: context.theme.red,
+      );
+    }
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: _showImageOptions,
+          child: CircleAvatar(
+            radius: 30,
+            backgroundImage: photoUrl != null
+                ? (photoUrl!.startsWith('http')
+                ? NetworkImage(photoUrl!)
+                : FileImage(File(photoUrl!)) as ImageProvider)
+                : const AssetImage('assets/images/avatar.png'),
+            child: photoUrl == null
+                ? const Icon(Icons.camera_alt, color: Colors.grey)
+                : null,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TitleText(
+              userName ?? "No Name",
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: context.theme.textColor,
+            ),
+            TitleText(
+              "@${userId ?? 'No ID'}",
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+              color: context.theme.textColor.withOpacity(0.7),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSettingsGroup1() {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.theme.grey,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        children: [
+          _buildSettingItem(
+            icon: Icons.account_box,
+            title: "Account",
+            subtitle: userId ?? "No ID",
+            onTap: () {},
+          ),
+          _buildSettingItem(
+            icon: Icons.shield,
+            title: "Device Management",
+            notificationCount: 1,
+            onTap: () {},
+          ),
+          _buildSettingItem(
+            icon: Icons.person_outline,
+            title: "Password",
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ChangePasswordPage(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsGroup2() {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.theme.grey,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        children: [
+          _buildSettingItem(
+            icon: Icons.brightness_6,
+            title: "Dark Mode",
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SystemThemeSettingsPage(),
+                ),
+              );
+            },
+          ),
+          _buildSettingItem(
+            icon: Icons.notifications,
+            title: "Notifications and Sounds",
+            subtitle: "On",
+            onTap: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsGroup3() {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.theme.grey,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        children: [
+          _buildSettingItem(
+            icon: Icons.gavel,
+            title: "Legal and Policies",
+            onTap: () {},
+          ),
+          _buildSettingItem(
+            icon: Icons.report,
+            title: "Report an Issue",
+            onTap: () {},
+          ),
+          _buildSettingItem(
+            icon: Icons.help,
+            title: "Help",
+            onTap: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingItem({
     required IconData icon,
     required String title,
-    required Color iconColor,
+    String? subtitle,
+    int? notificationCount,
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -151,25 +307,46 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Row(
           children: [
-            const SizedBox(width: 16),
-            Icon(
-              icon,
-              color: iconColor,
-              size: 24,
-            ),
+            Icon(icon, color: context.theme.textColor.withOpacity(0.7), size: 24),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: context.theme.textColor,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TitleText(
+                    title,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: context.theme.textColor,
+                  ),
+                  if (subtitle != null)
+                    TitleText(
+                      subtitle,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: context.theme.textColor.withOpacity(0.7),
+                    ),
+                ],
               ),
             ),
+            if (notificationCount != null)
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: context.theme.red,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: TitleText(
+                  notificationCount.toString(),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  color: context.theme.white,
+                ),
+              ),
+            const SizedBox(width: 8),
             Icon(
               Icons.arrow_forward_ios,
-              color: iconColor,
+              color: context.theme.textColor.withOpacity(0.7),
               size: 16,
             ),
           ],

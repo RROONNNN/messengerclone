@@ -12,6 +12,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.2
+  path_provider:
   provider: ^6.1.2
   font_awesome_flutter: ^10.8.0
   appwrite: ^15.0.0

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/features/auth/pages/register_password.dart';
 
+import '../../../common/services/app_write_service.dart';
 import '../../../common/services/opt_email_service.dart';
 import '../../../common/services/store.dart';
 import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../../../common/widgets/dialog/loading_dialog.dart';
+import '../../main_page/main_page.dart';
 import 'login_screen.dart';
 
 class ConfirmationCodeScreen extends StatefulWidget {
@@ -38,14 +40,26 @@ class _ConfirmationCodeScreenState extends State<ConfirmationCodeScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LoginScreen(),
-              ),
-            );
-          }
+          onPressed: () async {
+            final userId = await AppWriteService.isLoggedIn();
+            if (userId == null) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LoginScreen(),
+                ),
+                    (route) => false,
+              );
+            } else {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MainPage(),
+                ),
+                    (route) => false,
+              );
+            }
+          },
         ),
       ),
       body: Padding(
