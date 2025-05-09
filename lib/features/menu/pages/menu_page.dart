@@ -6,8 +6,8 @@ import 'package:messenger_clone/features/meta_ai/pages/meta_ai_page.dart';
 import 'package:messenger_clone/features/settings/pages/settings_page.dart';
 import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/common/widgets/dialog/loading_dialog.dart';
-import 'package:provider/provider.dart'; // Thêm import Provider
-import 'package:messenger_clone/common/themes/theme_provider.dart'; // Thêm import ThemeProvider
+import 'package:provider/provider.dart';
+import 'package:messenger_clone/common/themes/theme_provider.dart';
 
 class MenuPage extends StatelessWidget {
   const MenuPage({super.key});
@@ -112,11 +112,9 @@ class MenuPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Lấy ThemeMode từ ThemeProvider
     final themeProvider = Provider.of<ThemeProvider>(context);
     final ThemeMode themeMode = themeProvider.themeNotifier.value;
 
-    // Xác định chế độ dark/light dựa trên ThemeMode
     bool isDarkMode;
     switch (themeMode) {
       case ThemeMode.dark:
@@ -126,12 +124,10 @@ class MenuPage extends StatelessWidget {
         isDarkMode = false;
         break;
       case ThemeMode.system:
-        // Nếu là system, kiểm tra độ sáng hệ thống
         isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
         break;
     }
 
-    // Định nghĩa màu nền dựa trên isDarkMode
     Color containerBackgroundColor = isDarkMode
         ? const Color.fromARGB(255, 46, 45, 45)
         : Colors.grey[200]!;
@@ -154,7 +150,7 @@ class MenuPage extends StatelessWidget {
                 Container(
                   decoration: BoxDecoration(
                     color: containerBackgroundColor,
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(
                     children: [
@@ -234,27 +230,14 @@ class MenuPage extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // Vùng 2: Marketplace, Tin nhắn dạng chó, Kho lưu trữ
+                // Vùng 2: Tin nhắn đang chờ, Kho lưu trữ
                 Container(
                   decoration: BoxDecoration(
                     color: containerBackgroundColor,
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(
                     children: [
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.store,
-                        title: 'Marketplace',
-                        onTap: () {},
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 72.0),
-                        child: Divider(
-                          color: context.theme.textColor.withOpacity(0.3),
-                          thickness: 0.5,
-                        ),
-                      ),
                       _buildMenuItem(
                         context,
                         icon: Icons.message,
@@ -280,11 +263,11 @@ class MenuPage extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // Vùng 3: Lời mời kết bạn và Tạo AI
+                // Vùng 3: Lời mời kết bạn, Tạo cộng đồng
                 Container(
                   decoration: BoxDecoration(
                     color: containerBackgroundColor,
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(
                     children: [
@@ -304,40 +287,6 @@ class MenuPage extends StatelessWidget {
                       _buildMenuItem(
                         context,
                         icon: Icons.add_circle_outline,
-                        title: 'Tạo AI',
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Vùng 4: Tạo cộng đồng
-                Container(
-                  decoration: BoxDecoration(
-                    color: containerBackgroundColor,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Cộng đồng',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: context.theme.textColor.withOpacity(0.7),
-                            ),
-                          ),
-                        ),
-                      ),
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.add_circle_outline,
                         title: 'Tạo cộng đồng',
                         onTap: () {},
                       ),
@@ -347,60 +296,11 @@ class MenuPage extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // Vùng 5: Nhóm Facebook
+                // Vùng 4: Đăng xuất và Xóa tài khoản
                 Container(
                   decoration: BoxDecoration(
                     color: containerBackgroundColor,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Nhóm Facebook',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: context.theme.textColor.withOpacity(0.7),
-                            ),
-                          ),
-                        ),
-                      ),
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.group,
-                        title: 'DUT - Đại Học Bách Khoa Đà Nẵng',
-                        onTap: () {},
-                        leadingImage: 'https://picsum.photos/50?random=${'Dự Án'.hashCode}',
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 72.0),
-                        child: Divider(
-                          color: context.theme.textColor.withOpacity(0.3),
-                          thickness: 0.5,
-                        ),
-                      ),
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.group,
-                        title: 'Backend & Frontend Developer Vie...',
-                        onTap: () {},
-                        leadingImage: 'https://picsum.photos/50?random=${'Backend'.hashCode}',
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Vùng 6: Đăng xuất và Xóa tài khoản
-                Container(
-                  decoration: BoxDecoration(
-                    color: containerBackgroundColor,
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(
                     children: [
@@ -478,8 +378,6 @@ class MenuPage extends StatelessWidget {
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -533,14 +431,3 @@ class MenuPage extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-

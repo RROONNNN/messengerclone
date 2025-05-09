@@ -19,7 +19,7 @@ class _MainPageState extends State<MainPage> {
   List<Widget> dashBoardScreens = [
     const ChatPage(),
     const MetaAiPage(),
-    const TinPage(),
+     TinPage(),
     const MenuPage(),
   ];
   int currentPage = 0;
