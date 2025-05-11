@@ -318,7 +318,11 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
           message: 'Đã đăng tin thành công!',
           onPressed: () {
             Navigator.of(context).pop(newStory);
-            Navigator.of(context).pop(newStory);
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const MainPage()),
+                  (route) => false,
+            );
           },
         );
       }
@@ -429,7 +433,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          if (_capturedMedia == null)
+          if (_capturedMedia == null || _isVideoMode)
             Column(
               children: [
                 Container(
@@ -599,7 +603,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
                 ),
               ),
             ),
-          if (_capturedMedia != null)
+          if (_capturedMedia != null && !_isVideoMode)
             Positioned(
               top: 40,
               left: 8,
@@ -681,7 +685,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
                 ],
               ),
             ),
-          if (_capturedMedia != null && _isDrawingMode)
+          if (_capturedMedia != null && !_isVideoMode && _isDrawingMode)
             Positioned(
               bottom: 140,
               left: 16,
@@ -744,14 +748,6 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
                 elevation: 6,
                 onPressed: () async {
                   await _uploadMedia(_capturedMedia!, isVideo: _isVideoMode);
-                  // Navigator.pushAndRemoveUntil(
-                  //   context,
-                  //   MaterialPageRoute(
-                  //       builder: (context) =>
-                  //           MainPage()
-                  //   ),
-                  //       (route) => false,
-                  // );
                 },
                 child: const Icon(Icons.send, color: Colors.white),
               ),

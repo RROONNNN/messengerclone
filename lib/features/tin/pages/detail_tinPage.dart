@@ -224,7 +224,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
                   child: SizedBox(
                     width: width,
                     height: height,
-                    child: story.isVideo ?? false
+                    child: story.isVideo
                         ? _chewieController != null
                         ? Chewie(controller: _chewieController!)
                         : const SizedBox.shrink()
@@ -244,7 +244,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
                   ..translate(width * dragFactor * 0.5)
                   ..rotateY(dragFactor * 0.3)
                   ..scale(1.0 - dragFactor.abs() * 0.2),
-                child: (story.isVideo ?? false) && _chewieController != null
+                child: (story.isVideo) && _chewieController != null
                     ? Chewie(controller: _chewieController!)
                     : CachedNetworkImage(
                   imageUrl: story.imageUrl,
@@ -263,7 +263,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
                   child: SizedBox(
                     width: width,
                     height: height,
-                    child: widget.stories[_currentIndex + 1].isVideo ?? false
+                    child: widget.stories[_currentIndex + 1].isVideo
                         ? _chewieController != null
                         ? Chewie(controller: _chewieController!)
                         : const SizedBox.shrink()
@@ -350,7 +350,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
                 ],
               ),
             ),
-            if ((story.isVideo ?? false) && !_isPlaying)
+            if ((story.isVideo) && !_isPlaying)
               Center(
                 child: Icon(
                   Icons.play_arrow,

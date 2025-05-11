@@ -6,7 +6,7 @@ class StoryItem {
   final String avatarUrl;
   final bool hasBorder;
   final int notificationCount;
-  final bool? isVideo;
+  final bool isVideo;
   final DateTime postedAt;
   final int totalStories;
   final String? mediaUrl;

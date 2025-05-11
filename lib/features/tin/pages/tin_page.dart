@@ -1,13 +1,16 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 import 'package:messenger_clone/features/tin/pages/detail_tinPage.dart';
 import 'package:messenger_clone/features/tin/pages/gallery_uploadTin.dart';
 import 'package:messenger_clone/common/services/app_write_service.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../widgets/story_item.dart';
-
 
 class TinPage extends StatefulWidget {
   const TinPage({super.key});
@@ -33,7 +36,8 @@ class _TinPageState extends State<TinPage> {
       if (userId != null) {
         final userData = await AppWriteService.fetchUserDataById(userId);
         setState(() {
-          _currentUserAvatarUrl = userData['photoUrl'] as String? ?? 'https://via.placeholder.com/150';
+          _currentUserAvatarUrl = userData['photoUrl'] as String? ??
+              'https://images.hcmcpv.org.vn/res/news/2024/02/24-02-2024-ve-su-dung-co-dang-va-hinh-anh-co-dang-cong-san-viet-nam-FE119635-details.jpg?vs=24022024094023';
         });
       }
     } catch (e) {
@@ -65,6 +69,10 @@ class _TinPageState extends State<TinPage> {
 
       final storyItems = await Future.wait(fetchedStories.map((data) async {
         final userData = await AppWriteService.fetchUserDataById(data['userId'] as String);
+        int totalStories = data['totalStories'] as int;
+        if (data['mediaType'] == 'video') {
+          totalStories = 10;
+        }
         return StoryItem(
           userId: data['userId'] as String,
           title: userData['userName'] as String? ?? 'Unknown',
@@ -72,13 +80,14 @@ class _TinPageState extends State<TinPage> {
           avatarUrl: userData['photoUrl'] as String? ?? '',
           isVideo: data['mediaType'] == 'video',
           postedAt: DateTime.parse(data['createdAt'] as String),
-          totalStories: data['totalStories'] as int,
+          totalStories: totalStories,
         );
       }).toList());
 
       if (mounted) {
         setState(() {
           stories.addAll(storyItems);
+          stories.sort((a, b) => b.postedAt.compareTo(a.postedAt));
         });
       }
     } catch (e) {
@@ -107,8 +116,8 @@ class _TinPageState extends State<TinPage> {
       StoryItem(
         userId: 'add_to_tin',
         title: 'Thêm vào tin',
-        imageUrl: _currentUserAvatarUrl
-            ?? 'https://images.hcmcpv.org.vn/res/news/2024/02/24-02-2024-ve-su-dung-co-dang-va-hinh-anh-co-dang-cong-san-viet-nam-FE119635-details.jpg?vs=24022024094023',
+        imageUrl: _currentUserAvatarUrl ??
+            'https://images.hcmcpv.org.vn/res/news/2024/02/24-02-2024-ve-su-dung-co-dang-va-hinh-anh-co-dang-cong-san-viet-nam-FE119635-details.jpg?vs=24022024094023',
         avatarUrl: '',
         notificationCount: 0,
         postedAt: DateTime.now(),
@@ -145,6 +154,7 @@ class _TinPageState extends State<TinPage> {
                 if (newStory != null && newStory is StoryItem && mounted) {
                   setState(() {
                     stories.add(newStory);
+                    stories.sort((a, b) => b.postedAt.compareTo(a.postedAt));
                   });
                   CustomAlertDialog.show(
                     context: context,
@@ -173,11 +183,62 @@ class _TinPageState extends State<TinPage> {
   }
 }
 
-class StoryCard extends StatelessWidget {
+class StoryCard extends StatefulWidget {
   final StoryItem story;
   final bool isFirst;
 
   const StoryCard({super.key, required this.story, required this.isFirst});
+
+  @override
+  State<StoryCard> createState() => _StoryCardState();
+}
+
+class _StoryCardState extends State<StoryCard> {
+  String? _thumbnailPath;
+
+  @override
+  void initState() {
+    super.initState();
+    _generateThumbnail();
+  }
+
+  Future<void> _generateThumbnail() async {
+    if (kIsWeb || widget.isFirst || !(widget.story.isVideo ?? false)) {
+      return;
+    }
+
+    try {
+      final directory = await getTemporaryDirectory();
+      final thumbnailPath = await VideoThumbnail.thumbnailFile(
+        video: widget.story.imageUrl,
+        thumbnailPath: '${directory.path}/thumb_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        imageFormat: ImageFormat.JPEG,
+        maxHeight: 150,
+        maxWidth: 150,
+        timeMs: 1000,
+        quality: 75,
+      );
+      if (thumbnailPath != null && mounted) {
+        if (File(thumbnailPath).existsSync()) {
+          print('Thumbnail file exists: $thumbnailPath');
+          setState(() {
+            _thumbnailPath = thumbnailPath;
+          });
+        } else {
+          print('Thumbnail file does not exist: $thumbnailPath');
+        }
+      }
+    } catch (e) {
+      print('Lỗi khi tạo thumbnail: $e');
+      if (mounted) {
+        CustomAlertDialog.show(
+          context: context,
+          title: 'Lỗi',
+          message: 'Không thể tạo thumbnail: $e',
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -185,14 +246,26 @@ class StoryCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(16.0),
       child: Stack(
         children: [
-          CachedNetworkImage(
-            imageUrl: story.imageUrl,
+          (widget.story.isVideo ?? false) && _thumbnailPath != null && File(_thumbnailPath!).existsSync()
+              ? Image.file(
+            File(_thumbnailPath!),
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.red),
+          )
+              : CachedNetworkImage(
+            imageUrl: widget.isFirst
+                ? widget.story.imageUrl
+                : (widget.story.isVideo ?? false)
+                ? 'https://via.placeholder.com/150' // Fallback nếu không tạo được thumbnail
+                : widget.story.imageUrl,
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
             errorWidget: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.red),
           ),
-          if (!isFirst)
+          if (!widget.isFirst)
             Positioned(
               top: 8,
               left: 8,
@@ -200,15 +273,15 @@ class StoryCard extends StatelessWidget {
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: story.hasBorder ? context.theme.blue : Colors.transparent,
+                  color: widget.story.hasBorder ? context.theme.blue : Colors.transparent,
                 ),
                 child: CircleAvatar(
                   radius: 18,
-                  backgroundImage: CachedNetworkImageProvider(story.avatarUrl),
+                  backgroundImage: CachedNetworkImageProvider(widget.story.avatarUrl),
                 ),
               ),
             ),
-          if (isFirst)
+          if (widget.isFirst)
             Positioned(
               top: 8,
               left: 8,
@@ -225,7 +298,7 @@ class StoryCard extends StatelessWidget {
                 ),
               ),
             ),
-          if (story.notificationCount > 0)
+          if (widget.story.notificationCount > 0)
             Positioned(
               top: 8,
               right: 8,
@@ -236,7 +309,7 @@ class StoryCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  story.notificationCount.toString(),
+                  widget.story.notificationCount.toString(),
                   style: TextStyle(
                     color: context.theme.white,
                     fontSize: 12,
@@ -250,7 +323,7 @@ class StoryCard extends StatelessWidget {
             left: 8,
             right: 8,
             child: Text(
-              story.title,
+              widget.story.title,
               style: TextStyle(
                 color: context.theme.white,
                 fontWeight: FontWeight.bold,
