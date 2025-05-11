@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/adapters.dart';
+import 'package:messenger_clone/features/chat/bloc/chat_item_bloc.dart';
+import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
 import 'package:provider/provider.dart';
 
 import 'common/extensions/custom_theme_extension.dart';
@@ -8,6 +12,7 @@ import 'features/splash/pages/splash.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
@@ -25,16 +30,30 @@ class MessengerClone extends StatefulWidget {
 
 class _MessengerCloneState extends State<MessengerClone> {
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      themeMode: themeProvider.themeNotifier.value,
-      onGenerateRoute: Routes.onGenerateRoute,
-      theme: lightTheme,
-      darkTheme: darkTheme,
-      home: const SplashPage(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create:
+              (context) =>
+                  ChatItemBloc(appwriteRepository: AppwriteRepository()),
+        ),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        themeMode: themeProvider.themeNotifier.value,
+        onGenerateRoute: Routes.onGenerateRoute,
+        theme: lightTheme,
+        darkTheme: darkTheme,
+        home: const SplashPage(),
+      ),
     );
   }
 }
