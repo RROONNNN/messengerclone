@@ -2,7 +2,6 @@ import 'package:appwrite/appwrite.dart';
 import 'package:messenger_clone/common/constants/appwrite_database_constants.dart';
 import 'package:messenger_clone/common/services/common_function.dart';
 import 'package:messenger_clone/common/services/date_time_format.dart';
-import 'package:messenger_clone/features/chat/model/user.dart';
 import 'package:messenger_clone/features/messages/enum/message_status.dart';
 
 class MessageModel {

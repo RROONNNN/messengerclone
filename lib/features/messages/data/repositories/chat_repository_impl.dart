@@ -1,5 +1,7 @@
+import 'package:appwrite/models.dart';
 import 'package:appwrite/src/realtime_message.dart';
 import 'package:dartz/dartz.dart';
+import 'package:flutter/material.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/messages/data/data_sources/remote/appwrite_chat_repository.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
@@ -23,7 +25,7 @@ class ChatRepositoryImpl implements AbstractChatRepository {
   }
 
   @override
-  Future<Either<String, List<MessageModel>>> getMessages(
+  Future<List<MessageModel>> getMessages(
     String groupMessId,
     int limit,
     int offset,
@@ -34,9 +36,10 @@ class ChatRepositoryImpl implements AbstractChatRepository {
         limit,
         offset,
       );
-      return Right(response);
+      return response;
     } catch (error) {
-      return Left("Failed to fetch messages: $error");
+      debugPrint("Failed to fetch messages: $error");
+      return [];
     }
   }
 
@@ -99,6 +102,16 @@ class ChatRepositoryImpl implements AbstractChatRepository {
       return Right(response);
     } catch (error) {
       return Left("Failed to fetch message stream: $error");
+    }
+  }
+
+  @override
+  Future<File> uploadFile(String filePath, String senderId) async {
+    try {
+      return appwriteChatRepository.uploadFile(filePath, senderId);
+    } catch (error) {
+      debugPrint("Failed to upload file: $error");
+      throw Exception("Failed to upload file: $error");
     }
   }
 }

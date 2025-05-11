@@ -8,7 +8,7 @@ sealed class MessageEvent extends Equatable {
 }
 
 final class MessageLoadEvent extends MessageEvent {
-  final User? otherUser;
+  final appUser.User? otherUser;
   final GroupMessage? groupMessage;
   final int offset;
 
@@ -32,7 +32,7 @@ final class MessageLoadMoreEvent extends MessageEvent {
 }
 
 final class MessageSendEvent extends MessageEvent {
-  final String message;
+  final dynamic message;
   const MessageSendEvent(this.message);
   @override
   List<Object> get props => [message];
@@ -92,4 +92,13 @@ final class UnsubscribeFromMessagesEvent extends MessageEvent {
 
   @override
   List<Object> get props => [];
+}
+
+final class PickImage extends MessageEvent {
+  final ImageSource source;
+
+  const PickImage({required this.source});
+
+  @override
+  List<Object> get props => [source];
 }

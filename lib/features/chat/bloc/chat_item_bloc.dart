@@ -1,11 +1,10 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
 import 'package:messenger_clone/features/chat/model/chat_item.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
-import 'package:messenger_clone/features/messages/message_type.dart';
+import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
 
 part 'chat_item_event.dart';
 part 'chat_item_state.dart';
@@ -39,21 +38,14 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
           if (groupMessage.lastMessage == null) {
             continue;
           }
-          if (groupMessage.lastMessage!.type == MessageType.text) {
-            final isTheLatestMessSentByMe =
-                groupMessage.lastMessage!.idFrom == event.userid;
-            chatItems.add(
-              // todo:
-              ChatItem(
-                groupMessage: groupMessage,
-                hasUnread: (isTheLatestMessSentByMe) ? false : true,
-              ),
-            );
-          } else {
-            debugPrint(
-              'Message type ${groupMessage.lastMessage!.type} not supported yet',
-            );
-          }
+          MessageModel? lastMessage = groupMessage.lastMessage;
+          final isTheLatestMessSentByMe = lastMessage!.idFrom == event.userid;
+          chatItems.add(
+            ChatItem(
+              groupMessage: groupMessage,
+              hasUnread: (isTheLatestMessSentByMe) ? false : true,
+            ),
+          );
         }
         emit(ChatItemLoaded(chatItems: chatItems, groupMessages));
       } catch (error) {
@@ -89,21 +81,15 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
           if (groupMessage.lastMessage == null) {
             continue;
           }
-          if (groupMessage.lastMessage!.type == MessageType.text) {
-            final isTheLatestMessSentByMe =
-                groupMessage.lastMessage!.idFrom == currentUserId;
-            chatItems.add(
-              //todo:
-              ChatItem(
-                groupMessage: groupMessage,
-                hasUnread: (isTheLatestMessSentByMe) ? false : true,
-              ),
-            );
-          } else {
-            debugPrint(
-              'Message type ${groupMessage.lastMessage!.type} not supported yet',
-            );
-          }
+
+          final isTheLatestMessSentByMe =
+              groupMessage.lastMessage!.idFrom == currentUserId;
+          chatItems.add(
+            ChatItem(
+              groupMessage: groupMessage,
+              hasUnread: (isTheLatestMessSentByMe) ? false : true,
+            ),
+          );
         }
         emit(ChatItemLoaded(chatItems: chatItems, groupMessages));
       } catch (error) {

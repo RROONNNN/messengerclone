@@ -16,8 +16,10 @@ final class MessageLoaded extends MessageState {
   final GroupMessage groupMessage;
   final bool isLoadingMore;
   final bool hasMoreMessages;
-  final List<User> others;
+  final List<appUser.User> others;
   final String meId;
+  final Map<String, VideoPlayerController> videoPlayers;
+  final Map<String, Image> images;
   const MessageLoaded({
     required this.messages,
     required this.groupMessage,
@@ -25,6 +27,8 @@ final class MessageLoaded extends MessageState {
     this.hasMoreMessages = true,
     required this.others,
     required this.meId,
+    this.videoPlayers = const {},
+    this.images = const {},
   });
   @override
   List<Object> get props => [messages, groupMessage];
@@ -33,8 +37,10 @@ final class MessageLoaded extends MessageState {
     GroupMessage? groupMessage,
     bool? isLoadingMore,
     bool? hasMoreMessages,
-    List<User>? others,
+    List<appUser.User>? others,
     String? meId,
+    Map<String, VideoPlayerController>? videoPlayers,
+    Map<String, Image>? images,
   }) {
     return MessageLoaded(
       messages: messages ?? this.messages,
@@ -43,6 +49,8 @@ final class MessageLoaded extends MessageState {
       hasMoreMessages: hasMoreMessages ?? this.hasMoreMessages,
       others: others ?? this.others,
       meId: meId ?? this.meId,
+      videoPlayers: videoPlayers ?? this.videoPlayers,
+      images: images ?? this.images,
     );
   }
 }

@@ -1,19 +1,26 @@
 import 'dart:async';
+import 'dart:io' as io;
 
 import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart';
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:messenger_clone/common/constants/appwrite_database_constants.dart';
+import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/common/services/common_function.dart';
 import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
-import 'package:messenger_clone/features/chat/model/user.dart';
+import 'package:messenger_clone/features/chat/model/user.dart' as appUser;
 import 'package:messenger_clone/features/messages/data/repositories/chat_repository_impl.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
 import 'package:messenger_clone/features/messages/enum/message_status.dart';
+import 'package:video_player/video_player.dart';
 
 part 'message_event.dart';
 part 'message_state.dart';
@@ -173,6 +180,15 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     _chatStreamSubscription = null;
     await _messagesStreamSubscription?.cancel();
     _messagesStreamSubscription = null;
+
+    if (state is MessageLoaded) {
+      final currentState = state as MessageLoaded;
+      // Dispose video players
+      for (var controller in currentState.videoPlayers.values) {
+        await controller.dispose();
+      }
+    }
+
     return super.close();
   }
 
@@ -231,7 +247,37 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
         final String me = await meId;
         if (newMessage.idFrom != me) {
           messages.insert(0, newMessage);
-          emit(currentState.copyWith(messages: messages));
+          Map<String, VideoPlayerController> updatedVideoPlayers = Map.from(
+            currentState.videoPlayers,
+          );
+          Map<String, Image> updatedImages = Map.from(currentState.images);
+          if (newMessage.type == "video") {
+            try {
+              final controller = VideoPlayerController.networkUrl(
+                Uri.parse(newMessage.content),
+              );
+              await controller.initialize();
+              updatedVideoPlayers[newMessage.id] = controller;
+            } catch (e) {
+              debugPrint("Error initializing video player: $e");
+            }
+          }
+          if (newMessage.type == "image") {
+            try {
+              final image = Image.network(newMessage.content);
+              updatedImages[newMessage.id] = image;
+            } catch (e) {
+              debugPrint("Error loading image: $e");
+            }
+          }
+
+          emit(
+            currentState.copyWith(
+              messages: messages,
+              videoPlayers: updatedVideoPlayers,
+              images: updatedImages,
+            ),
+          );
         }
       } catch (error) {
         debugPrint('Error handling realtime message: $error');
@@ -240,44 +286,115 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     }
   }
 
+  String generateUrl(File file) {
+    return "https://fra.cloud.appwrite.io/v1/storage/buckets/${AppWriteService.bucketId}/files/${file.$id}/view?project=${AppWriteService.projectId}";
+  }
+
   void _onMessageSendEvent(
     MessageSendEvent event,
     Emitter<MessageState> emit,
   ) async {
     if (state is MessageLoaded) {
-      final String message = event.message;
       final currentState = state as MessageLoaded;
       final String me = await meId;
       final GroupMessage groupMessage = currentState.groupMessage;
       List<MessageModel> messages = List<MessageModel>.from(
         currentState.messages,
       );
-      final newMessage = MessageModel(
-        idFrom: me,
-        content: message,
-        type: "text",
-        groupMessagesId: groupMessage.groupMessagesId,
-        status: MessageStatus.sending,
+      Map<String, VideoPlayerController> videoPlayers = Map.from(
+        currentState.videoPlayers,
       );
-      messages.insert(0, newMessage);
-      emit(currentState.copyWith(messages: messages));
-      final updatedMessages = List<MessageModel>.from(messages);
-      final result = await chatRepository.sendMessage(newMessage, groupMessage);
-      result.fold(
-        (error) {
-          debugPrint("Error sending message: $error");
-          updatedMessages[0] = newMessage.copyWith(
-            status: MessageStatus.failed,
+
+      late final newMessage;
+      Map<String, Image> images = Map.from(currentState.images);
+      switch (event.message.runtimeType) {
+        case String:
+          newMessage = MessageModel(
+            idFrom: me,
+            content: event.message,
+            type: "text",
+            groupMessagesId: groupMessage.groupMessagesId,
+            status: MessageStatus.sending,
+          );
+          break;
+        case XFile
+            when event.message.name.endsWith('.mp4') ||
+                event.message.name.endsWith('.mov') ||
+                event.message.mimeType?.startsWith('video/') == true:
+          final XFile video = event.message;
+          final String filePath = video.path;
+          final File file = await chatRepository.uploadFile(filePath, me);
+          final String url = generateUrl(file);
+          newMessage = MessageModel(
+            idFrom: me,
+            content: url,
+            type: "video",
+            groupMessagesId: groupMessage.groupMessagesId,
+            status: MessageStatus.sending,
           );
 
-          emit(currentState.copyWith(messages: updatedMessages));
-        },
-        (success) {
-          debugPrint("Message sent successfully");
-          updatedMessages[0] = newMessage.copyWith(status: MessageStatus.sent);
-          emit(currentState.copyWith(messages: updatedMessages));
-        },
+          // Initialize video player for the new video message
+          try {
+            final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+            await controller.initialize();
+            videoPlayers[newMessage.id] = controller;
+          } catch (e) {
+            debugPrint("Error initializing video player: $e");
+          }
+          break;
+        default:
+          final XFile image = event.message;
+
+          final String filePath = image.path;
+          final Image imageStore = Image.file(io.File(image.path));
+          final File file = await chatRepository.uploadFile(filePath, me);
+          final String url = generateUrl(file);
+          newMessage = MessageModel(
+            idFrom: me,
+            content: url,
+            type: "image",
+            groupMessagesId: groupMessage.groupMessagesId,
+            status: MessageStatus.sending,
+          );
+          images[newMessage.id] = imageStore;
+      }
+      debugPrint("Sending message: $newMessage");
+      messages.insert(0, newMessage);
+      emit(
+        currentState.copyWith(
+          messages: messages,
+          videoPlayers: videoPlayers,
+          images: images,
+        ),
       );
+      final result = await chatRepository.sendMessage(newMessage, groupMessage);
+      final String tempId = newMessage.id;
+      if (state is MessageLoaded) {
+        final latestState = state as MessageLoaded;
+        final latestMessages = List<MessageModel>.from(latestState.messages);
+        final int index = latestMessages.indexWhere(
+          (message) => message.id == tempId,
+        );
+
+        if (index != -1) {
+          result.fold(
+            (error) {
+              debugPrint("Error sending message: $error");
+              latestMessages[index] = latestMessages[index].copyWith(
+                status: MessageStatus.failed,
+              );
+            },
+            (success) {
+              debugPrint("Message sent successfully");
+              latestMessages[index] = latestMessages[index].copyWith(
+                id: tempId,
+                status: MessageStatus.sent,
+              );
+            },
+          );
+          emit(latestState.copyWith(messages: latestMessages));
+        }
+      }
     }
   }
 
@@ -297,7 +414,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
         final currentState = state as MessageLoaded;
         emit(currentState.copyWith(isLoadingMore: true));
         final offset = currentState.messages.length;
-        final result = await chatRepository
+        final List<MessageModel> newMessages = await chatRepository
             .getMessages(
               currentState.groupMessage.groupMessagesId,
               _limit,
@@ -307,17 +424,41 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
               const Duration(seconds: 10),
               onTimeout:
                   () =>
-                      Left("Request timed out. Please check your connection."),
+                      throw Exception(
+                        "Request timed out. Please check your connection.",
+                      ),
             );
 
-        result.fold(
-          (error) => emit(MessageError(error)),
-          (newMessages) => emit(
-            currentState.copyWith(
-              messages: [...currentState.messages, ...newMessages],
-              isLoadingMore: false,
-              hasMoreMessages: newMessages.length >= _limit,
-            ),
+        Map<String, VideoPlayerController> newVideoPlayers = {};
+        Map<String, Image> newImages = {};
+        for (MessageModel message in newMessages) {
+          if (message.type == "video") {
+            try {
+              final controller = VideoPlayerController.networkUrl(
+                Uri.parse(message.content),
+              );
+              await controller.initialize();
+              newVideoPlayers[message.id] = controller;
+            } catch (e) {
+              debugPrint("Error initializing video player: $e");
+            }
+          }
+          if (message.type == "image") {
+            try {
+              final image = Image.network(message.content);
+              newImages[message.id] = image;
+            } catch (e) {
+              debugPrint("Error loading image: $e");
+            }
+          }
+        }
+        emit(
+          currentState.copyWith(
+            messages: [...currentState.messages, ...newMessages],
+            isLoadingMore: false,
+            hasMoreMessages: newMessages.length >= _limit,
+            videoPlayers: {...currentState.videoPlayers, ...newVideoPlayers},
+            images: {...currentState.images, ...newImages},
           ),
         );
       }
@@ -335,11 +476,10 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     Emitter<MessageState> emit,
   ) async {
     emit(MessageLoading());
-
     try {
       final String me = await meId;
       final GroupMessage? groupMessage = event.groupMessage;
-      final User? otherUser = event.otherUser;
+      final appUser.User? otherUser = event.otherUser;
 
       final Either<String, GroupMessage> groupResult =
           await _getOrCreateGroupMessage(groupMessage, otherUser, me);
@@ -351,25 +491,60 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
 
       final finalGroupMessage =
           groupResult.fold((_) => null, (group) => group)!;
-      final List<User> others =
+      final List<appUser.User> others =
           (finalGroupMessage.users.length > 1)
               ? finalGroupMessage.users.where((user) => user.id != me).toList()
               : (finalGroupMessage.users).toList();
 
-      final result = await chatRepository.getMessages(
-        finalGroupMessage.groupMessagesId,
-        _limit,
-        0,
-      );
-      result.fold((error) => emit(MessageError(error)), (messages) {
-        final state = MessageLoaded(
+      // Fetch messages with timeout handling
+      final List<MessageModel> messages = await chatRepository
+          .getMessages(finalGroupMessage.groupMessagesId, _limit, 0)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout:
+                () =>
+                    throw Exception(
+                      "Request timed out. Please check your connection.",
+                    ),
+          );
+
+      Map<String, VideoPlayerController> videoPlayers = {};
+      Map<String, Image> images = {};
+
+      for (final MessageModel message in messages) {
+        if (message.type == "video") {
+          try {
+            final controller = VideoPlayerController.networkUrl(
+              Uri.parse(message.content),
+            );
+            videoPlayers[message.id] = controller;
+            controller.initialize().then((_) {
+              videoPlayers[message.id] = controller;
+            });
+          } catch (e) {
+            debugPrint("Error initializing video player for ${message.id}: $e");
+          }
+        }
+        if (message.type == "image") {
+          try {
+            final image = Image.network(message.content);
+            images[message.id] = image;
+          } catch (e) {
+            debugPrint("Error loading image for ${message.id}: $e");
+          }
+        }
+      }
+      emit(
+        MessageLoaded(
           messages: messages,
           groupMessage: finalGroupMessage,
           others: others,
           meId: me,
-        );
-        emit(state);
-      });
+          hasMoreMessages: messages.length >= _limit,
+          videoPlayers: videoPlayers,
+          images: images,
+        ),
+      );
     } catch (error) {
       debugPrint("Error loading messages: $error");
       emit(MessageError(error.toString()));
@@ -378,7 +553,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
 
   Future<Either<String, GroupMessage>> _getOrCreateGroupMessage(
     GroupMessage? groupMessage,
-    User? otherUser,
+    appUser.User? otherUser,
     String currentUserId,
   ) async {
     if (groupMessage != null) {

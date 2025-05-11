@@ -18,12 +18,15 @@ class AppWriteService {
   static Account get account => Account(_client);
   static Databases get databases => Databases(_client);
   static Realtime get realtime => Realtime(_client);
+  static Storage get storage => Storage(_client);
 
+  static const String projectId = '67e7a7eb001c9cd8d6ad';
   static const String databaseId = '67e90080000a47b1eba4';
   static const String userCollectionid = '67e904b9002db65c933b';
   static const String _deviceCollection = '67ed42540013471695d3';
   static const String groupMessagesCollectionId = '67e908ed003b62a3f44a';
   static const String messageCollectionId = '67e9013c002a978980fa';
+  static const String bucketId = '67e8ee480012c2579b40';
 
   static Future<models.User> signUp({
     required String email,

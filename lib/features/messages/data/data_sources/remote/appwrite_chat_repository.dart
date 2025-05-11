@@ -1,10 +1,12 @@
 import 'package:appwrite/appwrite.dart';
+import 'dart:io' as dart;
 import 'package:appwrite/models.dart';
 import 'package:flutter/foundation.dart';
 import 'package:messenger_clone/common/constants/appwrite_database_constants.dart';
 import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AppwriteChatRepository {
   Future<MessageModel> updateMessage(MessageModel message) async {
@@ -188,16 +190,18 @@ class AppwriteChatRepository {
             documentId: ID.unique(),
             data: {
               'groupName': groupName,
-              // 'users': userIds,
               'avatarGroupUrl': avatarGroupUrl,
               'isGroup': isGroup,
               'groupId': groupId,
             },
           );
-
+      List<Future<void>> userUpdates = [];
       for (String userId in userIds) {
-        _addGroupChatIdToUser(userId, groupMessageDocument.$id);
+        userUpdates.add(
+          _addGroupChatIdToUser(userId, groupMessageDocument.$id),
+        );
       }
+      await Future.wait(userUpdates);
       final Document groupMessageDoc = await AppWriteService.databases
           .getDocument(
             databaseId: AppWriteService.databaseId,
@@ -234,6 +238,79 @@ class AppwriteChatRepository {
     } catch (error) {
       debugPrint("Failed to get group message existence: $error");
       throw Exception("Failed to get group message existence: $error");
+    }
+  }
+
+  // Future<File> uploadFile(String filePath, String senderId) async {
+  //   try {
+  //     final InputFile inputFile = InputFile.fromPath(path: filePath);
+  //     List<String> permissions = [
+  //       Permission.write(Role.user(senderId)),
+  //       Permission.read(Role.user(senderId)),
+  //     ];
+  //     return await AppWriteService.storage.createFile(
+  //       bucketId: AppWriteService.bucketId,
+  //       fileId: ID.unique(),
+  //       file: inputFile,
+  //       permissions: permissions,
+  //     );
+  //   } catch (error) {
+  //     debugPrint("Failed to upload file: $error");
+  //     throw Exception("Failed to upload file: $error");
+  //   }
+  // }
+  Future<File> uploadFile(String filePath, String senderId) async {
+    try {
+      debugPrint("Attempting to upload file from path: $filePath");
+
+      final fileObject = dart.File(filePath);
+      if (!await fileObject.exists()) {
+        throw Exception('File does not exist at path: $filePath');
+      }
+
+      final fileSize = await fileObject.length();
+      debugPrint("File size: $fileSize bytes");
+
+      if (fileSize == 0) {
+        throw Exception('File is empty: $filePath');
+      }
+
+      final String fileName = filePath.split('/').last;
+      InputFile inputFile;
+
+      if (fileName.toLowerCase().endsWith('.mp4') ||
+          fileName.toLowerCase().endsWith('.mov') ||
+          fileName.toLowerCase().endsWith('.avi')) {
+        final bytes = await fileObject.readAsBytes();
+        inputFile = InputFile.fromBytes(bytes: bytes, filename: fileName);
+        debugPrint(
+          "Using bytes method for video: $fileName with ${bytes.length} bytes",
+        );
+      } else {
+        inputFile = InputFile.fromPath(path: filePath);
+        debugPrint("Using path method for file: $fileName");
+      }
+
+      List<String> permissions = [
+        Permission.write(Role.user(senderId)),
+        Permission.read(Role.user(senderId)),
+        Permission.read(Role.any()),
+      ];
+
+      return await AppWriteService.storage.createFile(
+        bucketId: AppWriteService.bucketId,
+        fileId: ID.unique(),
+        file: inputFile,
+        permissions: permissions,
+      );
+    } catch (error) {
+      if (error is AppwriteException) {
+        debugPrint("Appwrite error code: ${error.code}");
+        debugPrint("Appwrite error message: ${error.message}");
+        debugPrint("Appwrite response details: ${error.response}");
+      }
+      debugPrint("Failed to upload file: $error");
+      throw Exception("Failed to upload file: $error");
     }
   }
 }

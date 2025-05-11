@@ -26,7 +26,7 @@ class User {
       photoUrl: map['photoUrl'] ?? '',
       chattingWith: map['chattingWith'] ?? '',
       email: map['email'] ?? '',
-      id: map['id'] ?? '',
+      id: map['\$id'] ?? '',
       isActive: map['isActive'] ?? false,
       lastSeen:
           DateTime.tryParse(map['lastSeen'] ?? '') ?? DateTime.now().toUtc(),

@@ -34,10 +34,6 @@ class ChatItemWidget extends StatelessWidget {
         if (currentUserIdSnapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        // final List<User> others =
-        //     item.groupMessage.users
-        //         .where((user) => user.id != currentUserIdSnapshot.data)
-        //         .toList();
         List<User> others = CommonFunction.getOthers(
           item.groupMessage.users,
           currentUserIdSnapshot.data!,
@@ -45,7 +41,31 @@ class ChatItemWidget extends StatelessWidget {
         if (others.isEmpty) {
           others = [item.groupMessage.users.first];
         }
-
+        late final String content;
+        final lastMessage = item.groupMessage.lastMessage;
+        if (lastMessage != null) {
+          final List<User> users = item.groupMessage.users;
+          late final String senderName;
+          if (lastMessage.idFrom == currentUserIdSnapshot.data) {
+            senderName = "Bạn";
+          } else {
+            senderName =
+                users
+                    .firstWhere((user) => user.id == lastMessage.idFrom)
+                    .name
+                    .split(" ")
+                    .last;
+          }
+          if (lastMessage.type == "text") {
+            content = senderName + " : " + lastMessage.content;
+          } else if (lastMessage.type == "image") {
+            content = senderName + " : " + "Đã gửi một ảnh";
+          } else if (lastMessage.type == "video") {
+            content = senderName + " : " + "Đã gửi một video";
+          }
+        } else {
+          content = "";
+        }
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(
             vertical: 12,
@@ -97,7 +117,7 @@ class ChatItemWidget extends StatelessWidget {
                               maxWidth: MediaQuery.of(context).size.width * 0.6,
                             ),
                             child: ContentText(
-                              item.groupMessage.lastMessage?.content,
+                              content,
                               color:
                                   item.hasUnread
                                       ? context.theme.textColor

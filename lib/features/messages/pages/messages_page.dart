@@ -1,7 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:appwrite/appwrite.dart';
-
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -92,6 +93,10 @@ class _MessagesPageState extends State<MessagesPage> {
     textEditingController.clear();
   }
 
+  void _onSendMediaMessage(XFile media) {
+    context.read<MessageBloc>().add(MessageSendEvent(media));
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<MessageBloc, MessageState>(
@@ -131,6 +136,7 @@ class _MessagesPageState extends State<MessagesPage> {
                     onSendMessage: () {
                       _onSendMessage();
                     },
+                    onSendMediaMessage: _onSendMediaMessage,
                     textController: textEditingController,
                   ),
                 ),
@@ -170,8 +176,9 @@ class _MessagesPageState extends State<MessagesPage> {
                   controller: _scrollController,
                   reverse: true,
                   itemBuilder: (context, index) {
+                    debugPrint('builder status');
                     if (index == 0) {
-                      Row(
+                      return Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           Padding(
@@ -181,6 +188,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                         state.messages.first.idFrom ==
                                             state.meId)
                                     ? switch (state.messages.first.status) {
+                                      null => const SizedBox(),
                                       MessageStatus.seen => const ContentText(
                                         'Seen',
                                         fontSize: 12,
@@ -192,7 +200,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                           fontSize: 12,
                                           color: Colors.grey,
                                         ),
-                                      null => const SizedBox(),
+
                                       MessageStatus.failed => const ContentText(
                                         'Failed',
                                         fontSize: 12,
@@ -209,7 +217,7 @@ class _MessagesPageState extends State<MessagesPage> {
                         ],
                       );
                     }
-                    if (index == state.messages.length) {
+                    if (index == state.messages.length + 1) {
                       final bool isLoadingMore = state.isLoadingMore;
                       return (isLoadingMore)
                           ? Center(
@@ -220,7 +228,7 @@ class _MessagesPageState extends State<MessagesPage> {
                           )
                           : SizedBox.shrink();
                     }
-                    final message = state.messages[index];
+                    final message = state.messages[index - 1];
                     return Row(
                       mainAxisAlignment:
                           message.idFrom == state.meId
@@ -239,16 +247,12 @@ class _MessagesPageState extends State<MessagesPage> {
                           child: CustomMessageItem(
                             message: message,
                             isMe: message.idFrom == state.meId,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: ContentText(message.content),
-                            ),
                           ),
                         ),
                       ],
                     );
                   },
-                  itemCount: state.messages.length + 1,
+                  itemCount: state.messages.length + 2,
                 ),
               ),
             ],
