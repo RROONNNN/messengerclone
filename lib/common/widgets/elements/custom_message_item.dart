@@ -1,45 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:messenger_clone/common/widgets/elements/video_player_widget.dart';
+import 'package:messenger_clone/features/messages/bloc/message_bloc.dart';
+import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
+import 'package:video_player/video_player.dart';
 import '../../extensions/custom_theme_extension.dart';
 import '../custom_text_style.dart';
 
 class CustomMessageItem extends StatefulWidget {
   final bool isMe;
-  final bool isTextMessage;
-  final bool isImageMessage;
-  final Widget child;
+  final MessageModel message;
   const CustomMessageItem({
     super.key,
     required this.isMe,
-    required this.child,
-    this.isImageMessage = false,
-    this.isTextMessage = false,
-  }) : assert(
-         (isTextMessage ? 1 : 0) + (isImageMessage ? 1 : 0) < 2,
-         "only and must be one of isImageMessage, isTextMessage can be true",
-       );
+    required this.message,
+  });
 
   @override
   State<CustomMessageItem> createState() => _CustomMessageItemState();
 }
 
 class _CustomMessageItemState extends State<CustomMessageItem> {
-  late List<String> reactions;
-
   @override
   void initState() {
     super.initState();
-    reactions = [];
-  }
-
-  void addReaction(String reaction) {
-    setState(() {
-      reactions.add(reaction);
-    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final messageBloc = context.read<MessageBloc>();
+    List<String> reactions = widget.message.reactions;
+
     return Stack(
+      clipBehavior: Clip.none,
       children: [
         Padding(
           padding: const EdgeInsets.all(8.0),
@@ -62,7 +55,12 @@ class _CustomMessageItemState extends State<CustomMessageItem> {
                               ) {
                                 return GestureDetector(
                                   onTap: () {
-                                    addReaction(reaction);
+                                    messageBloc.add(
+                                      AddReactionEvent(
+                                        widget.message.id,
+                                        reaction,
+                                      ),
+                                    );
                                     Navigator.of(context).pop();
                                   },
                                   child: ContentText(
@@ -80,7 +78,8 @@ class _CustomMessageItemState extends State<CustomMessageItem> {
             child: Container(
               decoration: BoxDecoration(
                 color:
-                    widget.isImageMessage
+                    widget.message.type == "image" ||
+                            widget.message.type == "video"
                         ? null
                         : widget.isMe
                         ? context.theme.blue
@@ -90,18 +89,20 @@ class _CustomMessageItemState extends State<CustomMessageItem> {
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth:
-                      widget.isImageMessage
+                      widget.message.type == "image" ||
+                              widget.message.type == "video"
                           ? MediaQuery.of(context).size.width * 0.6
-                          : MediaQuery.of(context).size.width * 0.8,
+                          : MediaQuery.of(context).size.width * 0.7,
                   maxHeight:
-                      widget.isImageMessage
+                      widget.message.type == "image" ||
+                              widget.message.type == "video"
                           ? MediaQuery.of(context).size.width * 0.5
                           : double.infinity,
                   minWidth: 0,
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(15),
-                  child: widget.child,
+                  child: _buildMessageContent(widget.message),
                 ),
               ),
             ),
@@ -130,5 +131,57 @@ class _CustomMessageItemState extends State<CustomMessageItem> {
           ),
       ],
     );
+  }
+
+  Widget _buildMessageContent(MessageModel message) {
+    final messageBloc = context.read<MessageBloc>();
+    if (messageBloc.state is! MessageLoaded) return Container();
+    switch (message.type) {
+      case "text":
+        return Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: ContentText(
+            message.content,
+            fontSize: 14,
+            color: widget.isMe ? Colors.white : context.theme.textColor,
+          ),
+        );
+      case "image":
+        return Image.network(
+          message.content,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value:
+                    loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                        : null,
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Center(child: Icon(Icons.error, color: Colors.red));
+          },
+        );
+      case "video":
+        VideoPlayerController? videoPlayer =
+            (messageBloc.state as MessageLoaded).videoPlayers[message.id];
+        return VideoPlayerWidget(
+          videoUrl: message.content,
+          controller: videoPlayer,
+          aspectRatio: 1 / 1.777777,
+        );
+      default:
+        return Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: ContentText(
+            message.content,
+            fontSize: 14,
+            color: widget.isMe ? Colors.white : context.theme.textColor,
+          ),
+        );
+    }
   }
 }

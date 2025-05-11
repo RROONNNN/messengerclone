@@ -8,7 +8,6 @@ import 'package:mailer/smtp_server.dart';
 import 'app_write_service.dart';
 
 class OTPEmailService {
-
   const OTPEmailService._();
 
   static const String _databaseId = '67e90080000a47b1eba4';
@@ -16,14 +15,11 @@ class OTPEmailService {
   static const int _maxAttempts = 5;
   static const Duration _otpExpiry = Duration(minutes: 5);
 
-  static Future<void> sendOTPEmail(String email , String otp ) async {
+  static Future<void> sendOTPEmail(String email, String otp) async {
     return AppWriteService.withNetworkCheck(() async {
       final expiry = DateTime.now().add(_otpExpiry);
-
-      final smtpServer = gmail(
-          'nguyen902993@gmail.com',
-          'lqpn cxdp tlti blhv'
-      );
+      debugPrint("otp: $otp");
+      final smtpServer = gmail('nguyen902993@gmail.com', 'lqpn cxdp tlti blhv');
       await AppWriteService.databases.createDocument(
         databaseId: _databaseId,
         collectionId: _userCollectionSMTPSERVER,
@@ -36,11 +32,13 @@ class OTPEmailService {
         },
       );
 
-      final message = Message()
-        ..from = Address('nguyen902993@gmail.com', 'Messenger Clone')
-        ..recipients.add(email)
-        ..subject = 'Mã OTP xác thực'
-        ..text = 'Messenger Clone đã cho bạn mã OTP: $otp (hiệu lực 5 phút). \nCảm ơn bạn đã sử dụng dịch vụ của chúng tôi.';
+      final message =
+          Message()
+            ..from = Address('nguyen902993@gmail.com', 'Messenger Clone')
+            ..recipients.add(email)
+            ..subject = 'Mã OTP xác thực'
+            ..text =
+                'Messenger Clone đã cho bạn mã OTP: $otp (hiệu lực 5 phút). \nCảm ơn bạn đã sử dụng dịch vụ của chúng tôi.';
 
       try {
         final sendOTP = await send(message, smtpServer);
@@ -50,6 +48,7 @@ class OTPEmailService {
       }
     });
   }
+
   static Future<bool> verifyOTP(String email, String userInput) async {
     return AppWriteService.withNetworkCheck(() async {
       final response = await AppWriteService.databases.listDocuments(
@@ -65,7 +64,6 @@ class OTPEmailService {
       if (response.documents.isEmpty) return false;
       final doc = response.documents.first;
       final data = doc.data;
-
 
       if ((data['attempts'] ?? 0) >= _maxAttempts) {
         await _deleteOTP(doc.$id);
@@ -86,7 +84,11 @@ class OTPEmailService {
       return true;
     });
   }
-  static Future<void> _increaseAttemptCount(String documentId, int currentAttempts) async {
+
+  static Future<void> _increaseAttemptCount(
+    String documentId,
+    int currentAttempts,
+  ) async {
     await AppWriteService.databases.updateDocument(
       databaseId: _databaseId,
       collectionId: _userCollectionSMTPSERVER,

@@ -3,22 +3,11 @@ import 'package:flutter/material.dart';
 import '../../../common/widgets/custom_text_style.dart';
 import '../../../common/widgets/elements/custom_round_avatar.dart';
 import '../../../common/extensions/custom_theme_extension.dart';
-
-class FakeUser {
-  final String name;
-  final bool isActive;
-  final Duration offlineDuration;
-
-  FakeUser({
-    required this.name,
-    required this.isActive,
-    required this.offlineDuration,
-  });
-}
+import '../../chat/model/user.dart';
 
 class CustomMessagesAppBar extends StatelessWidget
     implements PreferredSizeWidget {
-  final FakeUser user;
+  final User user;
   final bool isMe;
   final Color? backgroundColor;
   final void Function()? callFunc;
@@ -34,12 +23,16 @@ class CustomMessagesAppBar extends StatelessWidget
     this.onTapAvatar,
   });
   String _getOfflineDurationText() {
-    if (user.offlineDuration.inDays > 0) {
-      return "Hoạt động ${user.offlineDuration.inDays} ngày trước";
-    } else if (user.offlineDuration.inHours > 0) {
-      return "Hoạt động ${user.offlineDuration.inHours} giờ trước";
+    final duration = DateTime.now().difference(user.lastSeen);
+
+    if (duration.inDays > 0) {
+      return "Hoạt động ${duration.inDays} ngày trước";
+    } else if (duration.inHours > 0) {
+      return "Hoạt động ${duration.inHours} giờ trước";
+    } else if (duration.inMinutes > 0) {
+      return "Hoạt động ${duration.inMinutes} phút trước";
     } else {
-      return "Hoạt động ${user.offlineDuration.inMinutes} phút trước";
+      return "Đang hoạt động";
     }
   }
 
@@ -57,7 +50,11 @@ class CustomMessagesAppBar extends StatelessWidget
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            CustomRoundAvatar(isActive: user.isActive, radius: 16),
+            CustomRoundAvatar(
+              isActive: user.isActive,
+              radius: 18,
+              avatarUrl: user.photoUrl,
+            ),
             SizedBox(width: 8),
             Expanded(
               child: Column(

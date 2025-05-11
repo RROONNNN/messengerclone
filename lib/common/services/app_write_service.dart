@@ -6,6 +6,7 @@ import 'package:appwrite/models.dart' as models;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:messenger_clone/common/services/hive_service.dart';
 
 class AppWriteService {
   const AppWriteService._();
@@ -16,10 +17,16 @@ class AppWriteService {
 
   static Account get account => Account(_client);
   static Databases get databases => Databases(_client);
+  static Realtime get realtime => Realtime(_client);
+  static Storage get storage => Storage(_client);
 
-  static const String _databaseId = '67e90080000a47b1eba4';
-  static const String _userCollectionUser = '67e904b9002db65c933b';
+  static const String projectId = '67e7a7eb001c9cd8d6ad';
+  static const String databaseId = '67e90080000a47b1eba4';
+  static const String userCollectionid = '67e904b9002db65c933b';
   static const String _deviceCollection = '67ed42540013471695d3';
+  static const String groupMessagesCollectionId = '67e908ed003b62a3f44a';
+  static const String messageCollectionId = '67e9013c002a978980fa';
+  static const String bucketId = '67e8ee480012c2579b40';
 
   static Future<models.User> signUp({
     required String email,
@@ -46,13 +53,10 @@ class AppWriteService {
     return withNetworkCheck(() async {
       try {
         await databases.createDocument(
-          databaseId: _databaseId,
-          collectionId: _userCollectionUser,
+          databaseId: databaseId,
+          collectionId: userCollectionid,
           documentId: user.$id,
-          data: {
-            'email': user.email,
-            'name': user.name,
-          },
+          data: {'email': user.email, 'name': user.name},
         );
       } on AppwriteException catch (e) {
         throw Exception('Failed to register email: ${e.message}');
@@ -65,10 +69,17 @@ class AppWriteService {
     required String password,
   }) async {
     return withNetworkCheck(() async {
-      return await account.createEmailPasswordSession(
+      final session = await account.createEmailPasswordSession(
         email: email,
         password: password,
       );
+      final currentUser = await getCurrentUser();
+      if (currentUser != null) {
+        final hiveService = HiveService();
+        await hiveService.saveCurrentUserId(currentUser.$id);
+      }
+
+      return session;
     });
   }
 
@@ -76,6 +87,8 @@ class AppWriteService {
     return withNetworkCheck(() async {
       try {
         await account.deleteSession(sessionId: 'current');
+        final hiveService = HiveService();
+        await hiveService.clearCurrentUserId();
       } on AppwriteException {
         return;
       }
@@ -83,18 +96,20 @@ class AppWriteService {
   }
 
   static Future<models.User?> getCurrentUser() async {
-      try {
-        return await account.get();
-      } on AppwriteException catch (e) {
-        if (e.code == 401) {
-          return null;
-        }
+    try {
+      return await account.get();
+    } on AppwriteException catch (e) {
+      if (e.code == 401) {
         return null;
       }
+      return null;
+    }
   }
 
   static Future<String?> getUserIdFromEmailAndPassword(
-      String email, String password) async {
+    String email,
+    String password,
+  ) async {
     return withNetworkCheck(() async {
       try {
         await signIn(email: email, password: password);
@@ -112,8 +127,8 @@ class AppWriteService {
     return withNetworkCheck(() async {
       try {
         final result = await databases.listDocuments(
-          databaseId: _databaseId,
-          collectionId: _userCollectionUser,
+          databaseId: databaseId,
+          collectionId: userCollectionid,
           queries: [Query.equal('email', email)],
         );
         return result.documents.isNotEmpty;
@@ -140,12 +155,12 @@ class AppWriteService {
         }
 
         final isExitUserAndDevice = await databases.listDocuments(
-          databaseId: _databaseId,
+          databaseId: databaseId,
           collectionId: _deviceCollection,
           queries: [
             Query.equal('userId', userId),
             Query.equal('deviceId', deviceId),
-            Query.limit(1)
+            Query.limit(1),
           ],
         );
         if (isExitUserAndDevice.documents.isNotEmpty) {
@@ -181,7 +196,7 @@ class AppWriteService {
         }
 
         final existingDevice = await databases.listDocuments(
-          databaseId: _databaseId,
+          databaseId: databaseId,
           collectionId: _deviceCollection,
           queries: [
             Query.equal('userId', userId),
@@ -192,16 +207,14 @@ class AppWriteService {
 
         if (existingDevice.documents.isNotEmpty) {
           await databases.updateDocument(
-            databaseId: _databaseId,
+            databaseId: databaseId,
             collectionId: _deviceCollection,
             documentId: existingDevice.documents.first.$id,
-            data: {
-              'lastLogin': DateTime.now().toIso8601String(),
-            },
+            data: {'lastLogin': DateTime.now().toIso8601String()},
           );
         } else {
           await databases.createDocument(
-            databaseId: _databaseId,
+            databaseId: databaseId,
             collectionId: _deviceCollection,
             documentId: ID.unique(),
             data: {
@@ -225,9 +238,9 @@ class AppWriteService {
         return false;
       }
 
-      final response = await http.get(
-          Uri.parse('https://cloud.appwrite.io/v1/avatars/initials')
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .get(Uri.parse('https://cloud.appwrite.io/v1/avatars/initials'))
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         return true;
@@ -254,7 +267,7 @@ class AppWriteService {
   static Future<void> deleteAccount() async {
     return withNetworkCheck(() async {
       try {
-        final user =  await getCurrentUser();
+        final user = await getCurrentUser();
         final userId = user?.$id;
 
         await _deleteUserDocuments(userId!);
@@ -263,7 +276,6 @@ class AppWriteService {
 
         await account.updateStatus();
         //= block + function = delete ( do khoong xoa truc tiep duoc )
-
       } on AppwriteException catch (e) {
         throw Exception('Failed to delete account: ${e.message}');
       } catch (e) {
@@ -275,8 +287,8 @@ class AppWriteService {
   static Future<void> _deleteUserDocuments(String userId) async {
     try {
       await databases.deleteDocument(
-        databaseId: _databaseId,
-        collectionId: _userCollectionUser,
+        databaseId: databaseId,
+        collectionId: userCollectionid,
         documentId: userId,
       );
     } on AppwriteException catch (e) {
@@ -288,17 +300,15 @@ class AppWriteService {
 
   static Future<void> _deleteDeviceRecords(String userId) async {
     try {
-
       final deviceRecords = await databases.listDocuments(
-        databaseId: _databaseId,
+        databaseId: databaseId,
         collectionId: _deviceCollection,
         queries: [Query.equal('userId', userId)],
       );
 
-
       for (final doc in deviceRecords.documents) {
         await databases.deleteDocument(
-          databaseId: _databaseId,
+          databaseId: databaseId,
           collectionId: _deviceCollection,
           documentId: doc.$id,
         );

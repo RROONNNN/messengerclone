@@ -31,12 +31,13 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () async {
             final email = await Store.getEmailRegistered();
+            if (!context.mounted) return;
             Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context)  => ConfirmationCodeScreen(
-                        email: email)
-                ));
+              context,
+              MaterialPageRoute(
+                builder: (context) => ConfirmationCodeScreen(email: email),
+              ),
+            );
           },
         ),
       ),
@@ -57,10 +58,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
             const SizedBox(height: 12),
             const Text(
               "Create a password with at least 8 characters including letters and numbers . It should be something others can't guess .",
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.white),
             ),
             const SizedBox(height: 40),
             TextField(
@@ -70,8 +68,11 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                 labelText: 'Password',
                 isDense: true,
                 labelStyle: TextStyle(
-                    color: _passwordError != null ? Colors.red
-                        : const Color(0xFF9eabb3)),
+                  color:
+                      _passwordError != null
+                          ? Colors.red
+                          : const Color(0xFF9eabb3),
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(15),
                   borderSide: const BorderSide(color: Colors.grey),
@@ -80,7 +81,10 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                   borderRadius: BorderRadius.circular(15),
                   borderSide: const BorderSide(color: Colors.blue),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 15,
+                  vertical: 20,
+                ),
                 errorText: _passwordError,
                 suffixIcon: Padding(
                   padding: const EdgeInsets.only(right: 10),
@@ -89,7 +93,9 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                     children: [
                       IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                           color: Colors.grey,
                         ),
                         onPressed: () {
@@ -105,9 +111,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                 ),
                 errorStyle: const TextStyle(color: Colors.red),
               ),
-              style: const TextStyle(
-                color: Colors.white,
-              ),
+              style: const TextStyle(color: Colors.white),
               onChanged: (value) {
                 setState(() {
                   _passwordError = null;
@@ -125,9 +129,10 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                     showDialog(
                       context: context,
                       barrierDismissible: false,
-                      builder: (context) => const LoadingDialog(
-                        message: "Creating an account...",
-                      ),
+                      builder:
+                          (context) => const LoadingDialog(
+                            message: "Creating an account...",
+                          ),
                     );
 
                     try {
@@ -136,7 +141,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                         password: _passwordController.text,
                         name: await Store.getNameRegistered(),
                       );
-
+                      if (!context.mounted) return;
                       Navigator.of(context).pop();
 
                       await CustomAlertDialog.show(
@@ -147,14 +152,14 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
 
                       await Store.setEmailRegistered("");
                       await Store.setNameRegistered("");
-
+                      if (!context.mounted) return;
                       Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(builder: (context) => LoginScreen()),
                         (route) => false,
                       );
-
                     } on AppwriteException catch (e) {
+                      if (!context.mounted) return;
                       Navigator.of(context).pop();
 
                       String errorMessage = "Error creating account";
@@ -169,13 +174,14 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                         title: "Error",
                         message: errorMessage,
                       );
-
                     } catch (e) {
+                      if (!context.mounted) return;
                       Navigator.of(context).pop();
                       await CustomAlertDialog.show(
                         context: context,
                         title: "Error ",
-                        message: "An unexpected error occurred. : ${e.toString()}",
+                        message:
+                            "An unexpected error occurred. : ${e.toString()}",
                       );
                     }
                   }
@@ -188,10 +194,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                 ),
                 child: const Text(
                   'Next',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
             ),
@@ -206,10 +209,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                 },
                 child: const Text(
                   'I already have an account',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.blue,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.blue),
                 ),
               ),
             ),
@@ -219,6 +219,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
       ),
     );
   }
+
   void _validatePassword() {
     setState(() {
       if (_passwordController.text.isEmpty) {
@@ -227,7 +228,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
         _passwordError = 'Password must be greater than 8 characters long.';
       } else if (!_isStrongPassword(_passwordController.text)) {
         _passwordError =
-        'Password must contain at least one uppercase letter, one lowercase letter, and one number.';
+            'Password must contain at least one uppercase letter, one lowercase letter, and one number.';
       } else {
         _passwordError = null;
       }

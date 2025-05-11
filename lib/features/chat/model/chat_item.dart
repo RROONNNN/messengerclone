@@ -1,17 +1,15 @@
-class ChatItem {
-  final String title;
-  final String subtitle;
-  final String time;
-  final bool hasUnread;
-  final String avatar;
-  final bool isActive;
+import 'package:messenger_clone/features/chat/model/group_message.dart';
 
-  ChatItem({
-    required this.avatar,
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    this.hasUnread = false,
-    this.isActive = true,
-  });
+class ChatItem {
+  final GroupMessage groupMessage;
+  late final DateTime _time;
+  final bool hasUnread;
+
+  ChatItem({required this.groupMessage, this.hasUnread = false}) {
+    _time = groupMessage.lastMessage?.createdAt ?? DateTime.now().toUtc();
+  }
+  DateTime get vietnamTime {
+    final utcTime = _time.toUtc();
+    return utcTime.add(const Duration(hours: 7));
+  }
 }
