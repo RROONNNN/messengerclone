@@ -1,14 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 import 'package:messenger_clone/features/tin/pages/detail_tinPage.dart';
 import 'package:messenger_clone/features/tin/pages/gallery_uploadTin.dart';
 import 'package:messenger_clone/common/services/app_write_service.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
 import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../widgets/story_item.dart';
 
@@ -194,71 +190,17 @@ class StoryCard extends StatefulWidget {
 }
 
 class _StoryCardState extends State<StoryCard> {
-  String? _thumbnailPath;
-
-  @override
-  void initState() {
-    super.initState();
-    _generateThumbnail();
-  }
-
-  Future<void> _generateThumbnail() async {
-    if (kIsWeb || widget.isFirst || !(widget.story.isVideo ?? false)) {
-      return;
-    }
-
-    try {
-      final directory = await getTemporaryDirectory();
-      final thumbnailPath = await VideoThumbnail.thumbnailFile(
-        video: widget.story.imageUrl,
-        thumbnailPath: '${directory.path}/thumb_${DateTime.now().millisecondsSinceEpoch}.jpg',
-        imageFormat: ImageFormat.JPEG,
-        maxHeight: 150,
-        maxWidth: 150,
-        timeMs: 1000,
-        quality: 75,
-      );
-      if (thumbnailPath != null && mounted) {
-        if (File(thumbnailPath).existsSync()) {
-          print('Thumbnail file exists: $thumbnailPath');
-          setState(() {
-            _thumbnailPath = thumbnailPath;
-          });
-        } else {
-          print('Thumbnail file does not exist: $thumbnailPath');
-        }
-      }
-    } catch (e) {
-      print('Lỗi khi tạo thumbnail: $e');
-      if (mounted) {
-        CustomAlertDialog.show(
-          context: context,
-          title: 'Lỗi',
-          message: 'Không thể tạo thumbnail: $e',
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16.0),
       child: Stack(
         children: [
-          (widget.story.isVideo ?? false) && _thumbnailPath != null && File(_thumbnailPath!).existsSync()
-              ? Image.file(
-            File(_thumbnailPath!),
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.red),
-          )
-              : CachedNetworkImage(
+          CachedNetworkImage(
             imageUrl: widget.isFirst
                 ? widget.story.imageUrl
-                : (widget.story.isVideo ?? false)
-                ? 'https://via.placeholder.com/150' // Fallback nếu không tạo được thumbnail
+                : (widget.story.isVideo)
+                ? 'https://images.hcmcpv.org.vn/res/news/2024/02/24-02-2024-ve-su-dung-co-dang-va-hinh-anh-co-dang-cong-san-viet-nam-FE119635-details.jpg?vs=24022024094023'
                 : widget.story.imageUrl,
             fit: BoxFit.cover,
             width: double.infinity,
@@ -294,7 +236,7 @@ class _StoryCardState extends State<StoryCard> {
                 child: Icon(
                   Icons.add,
                   size: 36,
-                  color: context.theme.grey,
+                  color: context.theme.blue,
                 ),
               ),
             ),
@@ -315,6 +257,16 @@ class _StoryCardState extends State<StoryCard> {
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
+                ),
+              ),
+            ),
+          if ((widget.story.isVideo) && !widget.isFirst)
+            Positioned(
+              child: Center(
+                child: Icon(
+                  Icons.play_circle_outline,
+                  color: context.theme.white.withOpacity(0.7),
+                  size: 40,
                 ),
               ),
             ),
