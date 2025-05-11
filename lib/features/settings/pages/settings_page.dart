@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:messenger_clone/features/settings/pages/system_theme_settings_page.dart';
-import 'package:messenger_clone/features/settings/pages/change_password_page.dart'; // Import the new page
+import 'package:messenger_clone/features/settings/pages/change_password_page.dart';
 import '../../../common/extensions/custom_theme_extension.dart';
 import '../../../common/services/app_write_service.dart';
 import '../../../common/widgets/custom_text_style.dart';
+import '../../menu/pages/edit_profile_page.dart';
+import 'device_management.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -18,7 +20,10 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   String? userName;
   String? userId;
+  String? email;
+  String? aboutMe;
   String? photoUrl;
+  int _devicesCount = 0;
   bool isLoading = true;
   String? errorMessage;
 
@@ -31,17 +36,34 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _fetchUserData() async {
-    final result = await AppWriteService.fetchUserData();
-    if (result.containsKey('error')) {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final result = await AppWriteService.fetchUserData();
+      if (result.containsKey('error')) {
+        throw Exception(result['error']);
+      }
+
+      userName = result['userName'] as String?;
+      userId = result['userId'] as String?;
+      email = result['email'] as String?;
+      aboutMe = result['aboutMe'] as String?;
+      photoUrl = result['photoUrl'] as String?;
+
+      if (userId != null) {
+        final devices = await AppWriteService.getUserDevices(userId!);
+        _devicesCount = devices.length;
+      }
+
       setState(() {
-        errorMessage = result['error'] as String?;
         isLoading = false;
       });
-    } else {
+    } catch (e) {
       setState(() {
-        userName = result['userName'] as String?;
-        userId = result['userId'] as String?;
-        photoUrl = result['photoUrl'] as String?;
+        errorMessage = "Error fetching data: $e";
         isLoading = false;
       });
     }
@@ -209,13 +231,33 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: Icons.account_box,
             title: "Account",
             subtitle: userId ?? "No ID",
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditProfilePage(
+                    initialName: userName,
+                    initialEmail: email,
+                    initialAboutMe: aboutMe,
+                    initialPhotoUrl: photoUrl,
+                    userId: userId ?? '',
+                  ),
+                ),
+              );
+            },
           ),
           _buildSettingItem(
             icon: Icons.shield,
             title: "Device Management",
-            notificationCount: 1,
-            onTap: () {},
+            notificationCount: _devicesCount == 0 ? null : _devicesCount, // Hiển thị số lượng thiết bị
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DeviceManagementPage(),
+                ),
+              );
+            },
           ),
           _buildSettingItem(
             icon: Icons.person_outline,

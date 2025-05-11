@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
@@ -5,8 +7,14 @@ import 'package:messenger_clone/features/auth/pages/login_screen.dart';
 import 'package:messenger_clone/features/meta_ai/pages/meta_ai_page.dart';
 import 'package:messenger_clone/features/settings/pages/settings_page.dart';
 import 'package:messenger_clone/common/services/app_write_service.dart';
-import '../dialog/dialog_utils.dart';
-import 'edit_profile_page.dart';
+import 'package:messenger_clone/common/widgets/dialog/custom_alert_dialog.dart';
+import 'package:messenger_clone/common/widgets/dialog/loading_dialog.dart';
+import 'package:messenger_clone/features/menu/dialog/dialog_utils.dart';
+import 'package:messenger_clone/features/menu/pages/edit_profile_page.dart';
+import 'package:messenger_clone/features/menu/pages/find_friend_page.dart';
+
+import 'friends_request_pagee.dart';
+import 'list_friends_page.dart';
 
 class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
@@ -23,29 +31,152 @@ class _MenuPageState extends State<MenuPage> {
   String? photoUrl;
   bool isLoading = true;
   String? errorMessage;
+  int? _pendingMessagesCount;
+  int? _friendRequestsCount;
 
   @override
   void initState() {
     super.initState();
     _fetchUserData();
+    _fetchNotificationCounts();
   }
 
   Future<void> _fetchUserData() async {
     final result = await AppWriteService.fetchUserData();
-    if (result.containsKey('error')) {
-      setState(() {
+    setState(() {
+      if (result.containsKey('error')) {
         errorMessage = result['error'] as String?;
         isLoading = false;
-      });
-    } else {
-      setState(() {
+      } else {
         userName = result['userName'] as String?;
         userId = result['userId'] as String?;
         email = result['email'] as String?;
         aboutMe = result['aboutMe'] as String?;
         photoUrl = result['photoUrl'] as String?;
         isLoading = false;
-      });
+      }
+    });
+  }
+
+  Future<void> _fetchNotificationCounts() async {
+    try {
+      final user = await AppWriteService.getCurrentUser();
+      if (user != null) {
+        final friendRequestsCount = await AppWriteService.getPendingFriendRequestsCount(user.$id);
+        setState(() {
+          _friendRequestsCount = friendRequestsCount;
+          _pendingMessagesCount = 2;
+        });
+      }
+    } catch (e) {
+      print('Error fetching notification counts: $e');
+    }
+  }
+
+  Future<String?> _promptForPassword() async {
+    final controller = TextEditingController();
+    final password = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text("Enter Password"),
+        content: TextField(
+          controller: controller,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: "Password"),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          TextButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text("Confirm")),
+        ],
+      ),
+    );
+
+    if (password == null || password.isEmpty) {
+      if (!mounted) return null;
+      await CustomAlertDialog.show(
+        context: context,
+        title: "Password Required",
+        message: "Please enter your current password to proceed.",
+      );
+      return null;
+    }
+    return password;
+  }
+
+  Future<bool> _verifyPassword(String password) async {
+    try {
+      await AppWriteService.account.updatePassword(password: password, oldPassword: password);
+      return true;
+    } catch (e) {
+      if (e is AppwriteException) {
+        if (e.code == 400) return true;
+        if (e.code == 401) return false;
+        if (e.code == 429) throw Exception("Rate limit exceeded. Please try again later.");
+      }
+      throw Exception("Verification failed: $e");
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    final password = await _promptForPassword();
+    if (password == null) return;
+
+    if (!mounted) return;
+    showDialog(context: context, barrierDismissible: false, builder: (_) => const LoadingDialog(message: "Checking..."));
+
+    try {
+      final user = await AppWriteService.getCurrentUser();
+      if (user == null) throw Exception("User not logged in.");
+      if (await _verifyPassword(password)) {
+        if (!mounted) return;
+        Navigator.pop(context);
+        await DialogUtils.executeWithLoading(
+          context: context,
+          action: AppWriteService.deleteAccount,
+          loadingMessage: 'Deleting account...',
+          errorMessage: 'Failed to delete account.',
+          onSuccess: () async {
+            if (!mounted) return;
+            await DialogUtils.showConfirmationDialog(
+              context: context,
+              title: 'Notification',
+              message: 'Your request has been submitted. The account will be deleted shortly.',
+              confirmText: 'Close',
+            );
+            if (!mounted) return;
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+            );
+          },
+        );
+      } else {
+        if (!mounted) return;
+        Navigator.pop(context);
+        await CustomAlertDialog.show(
+          context: context,
+          title: "Incorrect Password",
+          message: "The password you entered is incorrect. Please try again.",
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      if (e.toString().contains("Rate limit exceeded")) {
+        await CustomAlertDialog.show(
+          context: context,
+          title: "Rate Limit Exceeded",
+          message: "Too many requests. Please try again after some time.",
+        );
+      } else {
+        await CustomAlertDialog.show(
+          context: context,
+          title: "Error",
+          message: "An error occurred: $e. Please try again or contact support.",
+        );
+      }
     }
   }
 
@@ -56,61 +187,38 @@ class _MenuPageState extends State<MenuPage> {
       appBar: AppBar(
         backgroundColor: context.theme.bg,
         elevation: 0,
-        title: const TitleText(
-          'Menu',
-          fontSize: 25,
-          fontWeight: FontWeight.bold,
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.qr_code),
-            onPressed: () {},
-          ),
-        ],
+        title: const TitleText('Menu', fontSize: 25, fontWeight: FontWeight.bold),
+        actions: [IconButton(icon: const Icon(Icons.qr_code), onPressed: () {})],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildUserInfo(context),
-                const SizedBox(height: 16),
-                _buildMenuItem(context, icon: Icons.settings, title: 'Cài đặt', onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SettingsPage()),
-                  );
-                }),
-                _buildMenuItem(context, icon: Icons.chat_bubble, title: 'Tin nhắn đang chờ', onTap: () {}),
-                _buildMenuItem(context, icon: Icons.archive, title: 'Kho lưu trữ', onTap: () {}),
-                const SizedBox(height: 16),
-                TitleText(
-                  'Xem thêm',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: context.theme.textColor.withOpacity(0.7),
-                ),
-                const SizedBox(height: 8),
-                _buildMenuItem(context, icon: Icons.group, title: 'Lời mời kết bạn', onTap: () {}),
-                _buildMenuItem(context, icon: Icons.group_add, title: 'Tìm bạn bè', onTap: () {}),
-                _buildMenuItem(context, icon: Icons.star, title: 'Đoạn chat trong AI Studio', onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const MetaAiPage()),
-                  );
-                }),
-                TitleText(
-                  'Vùng nguy hiểm',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: context.theme.textColor.withOpacity(0.7),
-                ),
-                const SizedBox(height: 16),
-                _buildMenuGroupActions(context),
-              ],
-            ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildUserInfo(context),
+              const SizedBox(height: 16),
+              _buildMenuItem(context, Icons.settings, 'Settings', () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage()));
+              }),
+              _buildMenuItem(context, Icons.chat_bubble, 'Pending Messages', () {}, notificationCount: _pendingMessagesCount),
+              _buildMenuItem(context, Icons.archive, 'Archive', () {}),
+              const SizedBox(height: 16),
+              TitleText('More Options', fontSize: 16, fontWeight: FontWeight.w400, color: context.theme.textColor.withOpacity(0.7)),
+              const SizedBox(height: 8),
+              _buildMenuItem(context, Icons.group, 'Friend Requests', () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendRequestPage()));
+              }, notificationCount: _friendRequestsCount),
+              _buildMenuItem(context, Icons.group_add, 'Find Friends', () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const FindFriendsPage()));
+              }),
+              _buildMenuItem(context, Icons.star, 'List Friends', () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ListFriendsPage()));
+              }),
+              TitleText('Danger Zone', fontSize: 16, fontWeight: FontWeight.w400, color: context.theme.textColor.withOpacity(0.7)),
+              const SizedBox(height: 16),
+              _buildMenuGroupActions(context),
+            ],
           ),
         ),
       ),
@@ -118,115 +226,82 @@ class _MenuPageState extends State<MenuPage> {
   }
 
   Widget _buildUserInfo(BuildContext context) {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    if (isLoading) return const Center(child: CircularProgressIndicator());
     if (errorMessage != null) {
-      return TitleText(
-        errorMessage!,
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        color: context.theme.red,
-      );
+      return TitleText(errorMessage!, fontSize: 16, fontWeight: FontWeight.w400, color: context.theme.red);
     }
     return Container(
-      decoration: BoxDecoration(
-        color: context.theme.grey,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundImage: photoUrl != null
-                  ? (photoUrl!.startsWith('http')
-                  ? NetworkImage(photoUrl!)
-                  : const AssetImage('assets/images/avatar.png') as ImageProvider)
-                  : const AssetImage('assets/images/avatar.png'),
+      decoration: BoxDecoration(color: context.theme.grey, borderRadius: BorderRadius.circular(15)),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundImage: photoUrl != null
+                ? (photoUrl!.startsWith('http') ? NetworkImage(photoUrl!) : const AssetImage('assets/images/avatar.png'))
+                : const AssetImage('assets/images/avatar.png'),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TitleText(userName ?? 'No Name', fontSize: 24, fontWeight: FontWeight.bold, color: context.theme.textColor),
+                TitleText('@${userId ?? 'No ID'}', fontSize: 16, fontWeight: FontWeight.w400, color: context.theme.textColor.withOpacity(0.7)),
+                TitleText(aboutMe?.isNotEmpty == true ? aboutMe! : 'Ruby chan (>ω<)', fontSize: 16, fontWeight: FontWeight.w400,
+                    color: context.theme.textColor.withOpacity(0.7)),
+              ],
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TitleText(
-                    userName ?? 'Không có tên',
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: context.theme.textColor,
-                  ),
-                  TitleText(
-                    '@${userId ?? 'Không có ID'}',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    color: context.theme.textColor.withOpacity(0.7),
-                  ),
-                  TitleText(
-                    aboutMe ?? 'Ruby chan (>ω<)',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    color: context.theme.textColor.withOpacity(0.7),
-                  ),
-                ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EditProfilePage(
+                  initialName: userName,
+                  initialEmail: email,
+                  initialAboutMe: aboutMe,
+                  initialPhotoUrl: photoUrl,
+                  userId: userId ?? '',
+                ),
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EditProfilePage(
-                      initialName: userName,
-                      initialEmail: email,
-                      initialAboutMe: aboutMe,
-                      initialPhotoUrl: photoUrl,
-                      userId: userId ?? '',
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildMenuItem(
-      BuildContext context, {
-        required IconData icon,
-        required String title,
-        required VoidCallback onTap,
-      }) {
+  Widget _buildMenuItem(BuildContext context, IconData icon, String title, VoidCallback onTap, {int? notificationCount}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(15),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: context.theme.textColor.withOpacity(0.7),
-              size: 24,
-            ),
+            Icon(icon, color: context.theme.textColor.withOpacity(0.7), size: 24),
             const SizedBox(width: 16),
-            Expanded(
-              child: TitleText(
-                title,
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: context.theme.textColor,
+            Expanded(child: TitleText(title, fontSize: 16, fontWeight: FontWeight.w400, color: context.theme.textColor)),
+            if (notificationCount != null && notificationCount > 0)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: context.theme.red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: TitleText(
+                    notificationCount.toString(),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: context.theme.white,
+                  ),
+                ),
               ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: context.theme.textColor.withOpacity(0.7),
-              size: 16,
-            ),
+            Icon(Icons.arrow_forward_ios, color: context.theme.textColor.withOpacity(0.7), size: 16),
           ],
         ),
       ),
@@ -235,83 +310,45 @@ class _MenuPageState extends State<MenuPage> {
 
   Widget _buildMenuGroupActions(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: context.theme.grey,
-        borderRadius: BorderRadius.circular(15),
-      ),
+      decoration: BoxDecoration(color: context.theme.grey, borderRadius: BorderRadius.circular(15)),
       child: Column(
         children: [
-          _buildMenuItem(
-            context,
-            icon: Icons.logout,
-            title: 'Đăng xuất',
-            onTap: () async {
-              final confirm = await DialogUtils.showConfirmationDialog(
+          _buildMenuItem(context, Icons.logout, 'Log Out', () async {
+            if (await DialogUtils.showConfirmationDialog(
+              context: context,
+              title: 'Confirm',
+              message: 'Are you sure you want to log out?',
+              confirmText: 'Log Out',
+              cancelText: 'Cancel',
+            )) {
+              await DialogUtils.executeWithLoading(
                 context: context,
-                title: 'Xác nhận',
-                message: 'Bạn có chắc chắn muốn đăng xuất?',
-                confirmText: 'Đăng xuất',
-                cancelText: 'Hủy',
+                action: AppWriteService.signOut,
+                loadingMessage: 'Logging out...',
+                errorMessage: 'Failed to log out.',
+                onSuccess: () => Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (route) => false,
+                ),
               );
-              if (confirm) {
-                await DialogUtils.executeWithLoading(
-                  context: context,
-                  action: () async => await AppWriteService.signOut(),
-                  loadingMessage: 'Đang đăng xuất...',
-                  errorMessage: 'Đăng xuất thất bại.',
-                  onSuccess: () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
-                          (route) => false,
-                    );
-                  },
-                );
-              }
-            },
-          ),
+            }
+          }),
           Padding(
-            padding: const EdgeInsets.only(left: 72.0),
-            child: Divider(
-              color: context.theme.textColor.withOpacity(0.3),
-              thickness: 0.5,
-            ),
+            padding: const EdgeInsets.only(left: 72),
+            child: Divider(color: context.theme.textColor.withOpacity(0.3), thickness: 0.5),
           ),
-          _buildMenuItem(
-            context,
-            icon: Icons.delete_forever,
-            title: 'Xóa tài khoản',
-            onTap: () async {
-              final confirm = await DialogUtils.showConfirmationDialog(
-                context: context,
-                title: 'Xác nhận',
-                message: 'Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác.',
-                confirmText: 'Xóa',
-                cancelText: 'Hủy',
-              );
-              if (confirm) {
-                await DialogUtils.executeWithLoading(
-                  context: context,
-                  action: () async => await AppWriteService.deleteAccount(),
-                  loadingMessage: 'Đang xóa tài khoản...',
-                  errorMessage: 'Xóa tài khoản thất bại.',
-                  onSuccess: () async {
-                    await DialogUtils.showConfirmationDialog(
-                      context: context,
-                      title: 'Thông báo',
-                      message: 'Yêu cầu đã được gửi đi. Tài khoản sẽ được xóa hoàn toàn sau ít phút.',
-                      confirmText: 'Đóng',
-                    );
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
-                          (route) => false,
-                    );
-                  },
-                );
-              }
-            },
-          ),
+          _buildMenuItem(context, Icons.delete_forever, 'Delete Account', () async {
+            if (await DialogUtils.showConfirmationDialog(
+              context: context,
+              title: 'Confirm',
+              message: 'Are you sure you want to delete your account? This action cannot be undone.',
+              confirmText: 'Next',
+              cancelText: 'Cancel',
+            )) {
+              await _deleteAccount();
+            }
+          }),
         ],
       ),
     );

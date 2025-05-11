@@ -54,7 +54,7 @@ class _SystemThemeSettingsPageState extends State<SystemThemeSettingsPage> {
             children: [
               RadioListTile<ThemeMode>(
                 title: const TitleText(
-                    "Tắt",
+                    "Off",
                   fontSize: 18,
                   fontWeight: FontWeight.w400,
                 ),
@@ -71,7 +71,7 @@ class _SystemThemeSettingsPageState extends State<SystemThemeSettingsPage> {
               ),
               RadioListTile<ThemeMode>(
                 title: const TitleText(
-                  "Bật",
+                  "On",
                   fontSize: 18,
                   fontWeight: FontWeight.w400,
                 ),
@@ -88,7 +88,7 @@ class _SystemThemeSettingsPageState extends State<SystemThemeSettingsPage> {
               ),
               RadioListTile<ThemeMode>(
                 title: const TitleText(
-                  "Hệ thống",
+                  "System",
                   fontSize: 18,
                   fontWeight: FontWeight.w400,
                 ),
