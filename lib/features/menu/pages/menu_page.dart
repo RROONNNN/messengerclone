@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 import 'package:messenger_clone/features/auth/pages/login_screen.dart';
-import 'package:messenger_clone/features/meta_ai/pages/meta_ai_page.dart';
 import 'package:messenger_clone/features/settings/pages/settings_page.dart';
 import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/common/widgets/dialog/custom_alert_dialog.dart';

@@ -2,7 +2,6 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.messenger_clone">
 
-    <!-- Thêm các quyền (permissions) ở đây -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
@@ -31,7 +30,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- Keep only this CallbackActivity (with your AppWrite callback scheme) -->
         <activity
             android:name="com.linusu.flutter_web_auth_2.CallbackActivity"
             android:exported="true">
@@ -42,7 +40,6 @@
                 <data android:scheme="appwrite-callback-[67e7a7eb001c9cd8d6ad]" />
             </intent-filter>
         </activity>
-        <!-- Delete the duplicate CallbackActivity below -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

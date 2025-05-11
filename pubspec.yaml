@@ -23,9 +23,9 @@ dependencies:
   cached_network_image: ^3.4.1
   image: ^4.2.0
   image_picker: ^1.1.2
-  video_player: ^2.9.1
-  chewie: ^1.7.1
-  camera: ^0.10.5+5
+  video_player: ^2.9.5
+  chewie: ^1.11.3
+  camera: ^0.11.1
 flutter_launcher_icons:
   android: true
   ios: true
@@ -61,6 +61,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/sticker/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

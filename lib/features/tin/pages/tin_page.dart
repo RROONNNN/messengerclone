@@ -1,12 +1,13 @@
-import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
-import 'package:messenger_clone/features/tin/story_item.dart';
 import 'package:messenger_clone/features/tin/pages/detail_tinPage.dart';
-import 'package:messenger_clone/features/tin/pages/tin_uploadPage.dart';
-import 'package:messenger_clone/features/tin/pages/gallery_uploadTin.dart'; // Add this import
+import 'package:messenger_clone/features/tin/pages/gallery_uploadTin.dart';
+import 'package:messenger_clone/common/services/app_write_service.dart';
+import '../../../common/widgets/dialog/custom_alert_dialog.dart';
+import '../widgets/story_item.dart';
+
 
 class TinPage extends StatefulWidget {
   const TinPage({super.key});
@@ -16,92 +17,83 @@ class TinPage extends StatefulWidget {
 }
 
 class _TinPageState extends State<TinPage> {
-  final List<StoryItem> stories = [
-    StoryItem(
-      userId: 'add_to_tin',
-      title: 'Thêm vào tin',
-      imageUrl: 'https://picsum.photos/150?random=1',
-      avatarUrl: 'https://picsum.photos/50?random=1',
-      notificationCount: 0,
-      postedAt: DateTime.now().subtract(const Duration(hours: 12)),
-    ),
-    StoryItem(
-      userId: 'hong_nhung',
-      title: 'Hồng Nhung',
-      imageUrl: 'https://picsum.photos/4000/4000?random=20',
-      avatarUrl: 'https://picsum.photos/50?random=20',
-      notificationCount: 3,
-      isVideo: false,
-      postedAt: DateTime.now().subtract(const Duration(hours: 6)),
-      totalStories: 1,
-      textOverlays: const [],
-    ),
-    StoryItem(
-      userId: 'ha_vi',
-      title: 'Nguyễn Thị Hà Vi',
-      imageUrl: 'https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4',
-      avatarUrl: 'https://picsum.photos/50?random=21',
-      notificationCount: 1,
-      isVideo: true,
-      postedAt: DateTime.now().subtract(const Duration(hours: 12)),
-      totalStories: 5,
-      textOverlays: const [
-        TextOverlay(content: '@PhanTuongLinh'),
-        TextOverlay(
-          content: 'Cùng chụp đồ rét code đây chứ 😎',
-          position: Offset(16, 180),
-        ),
-      ],
-    ),
-    StoryItem(
-      userId: 'ha_vi',
-      title: 'Nguyễn Thị Hà Vi',
-      imageUrl: 'https://picsum.photos/1600/900?random=22',
-      avatarUrl: 'https://picsum.photos/50?random=21',
-      notificationCount: 1,
-      isVideo: false,
-      postedAt: DateTime.now().subtract(const Duration(hours: 12)),
-      totalStories: 5,
-      textOverlays: const [],
-    ),
-    StoryItem(
-      userId: 'ha_vi',
-      title: 'Nguyễn Thị Hà Vi',
-      imageUrl: 'https://picsum.photos/900/1600?random=23',
-      avatarUrl: 'https://picsum.photos/50?random=21',
-      notificationCount: 1,
-      isVideo: false,
-      postedAt: DateTime.now().subtract(const Duration(hours: 12)),
-      totalStories: 5,
-      textOverlays: const [],
-    ),
-    StoryItem(
-      userId: 'ha_vi',
-      title: 'Nguyễn Thị Hà Vi',
-      imageUrl: 'https://picsum.photos/4000/4000?random=24',
-      avatarUrl: 'https://picsum.photos/50?random=21',
-      notificationCount: 1,
-      isVideo: false,
-      postedAt: DateTime.now().subtract(const Duration(hours: 12)),
-      totalStories: 5,
-      textOverlays: const [],
-    ),
-    StoryItem(
-      userId: 'ha_vi',
-      title: 'Nguyễn Thị Hà Vi',
-      imageUrl: 'https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4',
-      avatarUrl: 'https://picsum.photos/50?random=21',
-      notificationCount: 1,
-      isVideo: true,
-      postedAt: DateTime.now().subtract(const Duration(hours: 12)),
-      totalStories: 5,
-      textOverlays: const [],
-    ),
-  ];
+  final List<StoryItem> stories = [];
+  String? _currentUserAvatarUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCurrentUserData();
+    _fetchStoriesFromAppwrite();
+  }
+
+  Future<void> _fetchCurrentUserData() async {
+    try {
+      final userId = await AppWriteService.isLoggedIn();
+      if (userId != null) {
+        final userData = await AppWriteService.fetchUserDataById(userId);
+        setState(() {
+          _currentUserAvatarUrl = userData['photoUrl'] as String? ?? 'https://via.placeholder.com/150';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomAlertDialog.show(
+          context: context,
+          title: 'Lỗi',
+          message: 'Không thể lấy thông tin người dùng: $e',
+        );
+      }
+    }
+  }
+
+  Future<void> _fetchStoriesFromAppwrite() async {
+    try {
+      final userId = await AppWriteService.isLoggedIn();
+      if (userId == null) {
+        if (mounted) {
+          CustomAlertDialog.show(
+            context: context,
+            title: 'Lỗi',
+            message: 'Vui lòng đăng nhập để xem tin!',
+          );
+        }
+        return;
+      }
+
+      final fetchedStories = await AppWriteService.fetchFriendsStories(userId);
+
+      final storyItems = await Future.wait(fetchedStories.map((data) async {
+        final userData = await AppWriteService.fetchUserDataById(data['userId'] as String);
+        return StoryItem(
+          userId: data['userId'] as String,
+          title: userData['userName'] as String? ?? 'Unknown',
+          imageUrl: data['mediaUrl'] as String,
+          avatarUrl: userData['photoUrl'] as String? ?? '',
+          isVideo: data['mediaType'] == 'video',
+          postedAt: DateTime.parse(data['createdAt'] as String),
+          totalStories: data['totalStories'] as int,
+        );
+      }).toList());
+
+      if (mounted) {
+        setState(() {
+          stories.addAll(storyItems);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomAlertDialog.show(
+          context: context,
+          title: 'Lỗi',
+          message: 'Lỗi khi lấy danh sách tin: $e',
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Group stories by userId to display only the first story per user
     final Map<String, List<StoryItem>> groupedStories = {};
     for (var story in stories) {
       if (groupedStories.containsKey(story.userId)) {
@@ -111,9 +103,18 @@ class _TinPageState extends State<TinPage> {
       }
     }
 
-    final displayStories = groupedStories.entries.map((entry) {
-      return entry.value.first;
-    }).toList();
+    final displayStories = [
+      StoryItem(
+        userId: 'add_to_tin',
+        title: 'Thêm vào tin',
+        imageUrl: _currentUserAvatarUrl
+            ?? 'https://images.hcmcpv.org.vn/res/news/2024/02/24-02-2024-ve-su-dung-co-dang-va-hinh-anh-co-dang-cong-san-viet-nam-FE119635-details.jpg?vs=24022024094023',
+        avatarUrl: '',
+        notificationCount: 0,
+        postedAt: DateTime.now(),
+      ),
+      ...groupedStories.entries.map((entry) => entry.value.first),
+    ];
 
     return Scaffold(
       backgroundColor: context.theme.bg,
@@ -137,23 +138,21 @@ class _TinPageState extends State<TinPage> {
           return GestureDetector(
             onTap: () async {
               if (isFirst) {
-                // Navigate to GallerySelectionPage for adding a new story
                 final newStory = await Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const GallerySelectionPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const GallerySelectionPage()),
                 );
-                if (newStory != null && newStory is StoryItem) {
+                if (newStory != null && newStory is StoryItem && mounted) {
                   setState(() {
                     stories.add(newStory);
                   });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đã thêm tin mới (mô phỏng)!')),
+                  CustomAlertDialog.show(
+                    context: context,
+                    title: 'Thành công',
+                    message: 'Đã thêm tin mới!',
                   );
                 }
               } else {
-                // Navigate to StoryDetailPage for viewing existing stories
                 final userStories = stories.where((s) => s.userId == story.userId).toList();
                 Navigator.push(
                   context,
@@ -182,32 +181,17 @@ class StoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Check if imageUrl is a local file path
-    bool isLocalImage = story.imageUrl.startsWith('/');
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(16.0),
       child: Stack(
         children: [
-          // Display image (local or network)
-          if (isLocalImage)
-            Image.file(
-              File(story.imageUrl),
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.error, color: Colors.red),
-            )
-          else
-            Image(
-              image: CachedNetworkImageProvider(story.imageUrl),
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.error, color: Colors.red),
-            ),
+          CachedNetworkImage(
+            imageUrl: story.imageUrl,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorWidget: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.red),
+          ),
           if (!isFirst)
             Positioned(
               top: 8,
@@ -230,14 +214,14 @@ class StoryCard extends StatelessWidget {
               left: 8,
               child: Container(
                 padding: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white,
+                  color: context.theme.white.withOpacity(0.9),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.add,
                   size: 36,
-                  color: Colors.black,
+                  color: context.theme.grey,
                 ),
               ),
             ),
@@ -248,13 +232,13 @@ class StoryCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
+                  color: context.theme.grey.withOpacity(0.7),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   story.notificationCount.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.theme.white,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -267,8 +251,8 @@ class StoryCard extends StatelessWidget {
             right: 8,
             child: Text(
               story.title,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: context.theme.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
