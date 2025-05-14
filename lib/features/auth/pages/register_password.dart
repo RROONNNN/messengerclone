@@ -2,7 +2,7 @@ import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/features/auth/pages/confirmation_code_screen.dart';
 
-import '../../../common/services/app_write_service.dart';
+import '../../../common/services/auth_service.dart';
 import '../../../common/services/store.dart';
 import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../../../common/widgets/dialog/loading_dialog.dart';
@@ -136,7 +136,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                     );
 
                     try {
-                      await AppWriteService.signUp(
+                      await AuthService.signUp(
                         email: await Store.getEmailRegistered(),
                         password: _passwordController.text,
                         name: await Store.getNameRegistered(),

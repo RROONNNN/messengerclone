@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 import 'package:messenger_clone/common/routes/routes.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
+import 'package:messenger_clone/common/services/app_write_config.dart';
 import 'package:messenger_clone/common/services/chat_stream_manager.dart';
 import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/common/widgets/elements/custom_round_avatar.dart';
@@ -78,13 +78,13 @@ class _ChatPageState extends State<ChatPage> {
     if (currentUserId == null) return;
     if (message.events.any(
       (event) =>
-          event.contains('collections.${AppWriteService.userCollectionid}') &&
+          event.contains('collections.${AppwriteConfig.userCollectionId}') &&
           event.contains(currentUserId!),
     )) {
       _getChatItemAgain();
     } else if (message.events.any(
       (event) => event.contains(
-        'collections.${AppWriteService.groupMessagesCollectionId}',
+        'collections.${AppwriteConfig.groupMessagesCollectionId}',
       ),
     )) {
       _refreshChatItems(message.payload);

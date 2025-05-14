@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
+import 'package:messenger_clone/common/services/auth_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
+
+import '../../../common/services/friend_service.dart';
 
 class ListFriendsPage extends StatefulWidget {
   const ListFriendsPage({super.key});
@@ -44,11 +46,11 @@ class _ListFriendsPageState extends State<ListFriendsPage> with SingleTickerProv
     });
 
     try {
-      final currentUser = await AppWriteService.getCurrentUser();
+      final currentUser = await AuthService.getCurrentUser();
       if (currentUser == null) throw Exception('User not logged in');
       _currentUserId = currentUser.$id;
 
-      final friends = await AppWriteService.getFriendsList(_currentUserId);
+      final friends = await FriendService.getFriendsList(_currentUserId);
       setState(() {
         _friendsList = friends;
         _isLoading = false;
@@ -182,7 +184,7 @@ class _ListFriendsPageState extends State<ListFriendsPage> with SingleTickerProv
 
             if (confirmed == true) {
               try {
-                await AppWriteService.cancelFriendRequest(friend['requestId']);
+                await FriendService.cancelFriendRequest(friend['requestId']);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Unfriended ${friend['name']}')),

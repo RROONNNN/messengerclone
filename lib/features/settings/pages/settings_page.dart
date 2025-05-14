@@ -5,7 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:messenger_clone/features/settings/pages/system_theme_settings_page.dart';
 import 'package:messenger_clone/features/settings/pages/change_password_page.dart';
 import '../../../common/extensions/custom_theme_extension.dart';
-import '../../../common/services/app_write_service.dart';
+import '../../../common/services/device_service.dart';
+import '../../../common/services/user_service.dart';
 import '../../../common/widgets/custom_text_style.dart';
 import '../../menu/pages/edit_profile_page.dart';
 import 'device_management.dart';
@@ -42,7 +43,7 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      final result = await AppWriteService.fetchUserData();
+      final result = await UserService.fetchUserData();
       if (result.containsKey('error')) {
         throw Exception(result['error']);
       }
@@ -54,7 +55,7 @@ class _SettingsPageState extends State<SettingsPage> {
       photoUrl = result['photoUrl'] as String?;
 
       if (userId != null) {
-        final devices = await AppWriteService.getUserDevices(userId!);
+        final devices = await DeviceService.getUserDevices(userId!);
         _devicesCount = devices.length;
       }
 
@@ -73,7 +74,7 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final XFile? image = await _picker.pickImage(source: source);
       if (image != null) {
-        final newPhotoUrl = await AppWriteService.uploadAndUpdatePhoto(
+        final newPhotoUrl = await UserService.uploadAndUpdatePhoto(
           File(image.path),
           userId!,
         );

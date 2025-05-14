@@ -1,9 +1,16 @@
 import 'dart:async';
 import 'package:appwrite/appwrite.dart';
 import 'package:flutter/foundation.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
+
+import 'app_write_config.dart';
 
 class ChatStreamManager {
+  static final Client _client = Client()
+      .setEndpoint(AppwriteConfig.endpoint)
+      .setProject(AppwriteConfig.projectId);
+
+  static Realtime get realtime => Realtime(_client);
+
   StreamSubscription<RealtimeMessage>? _subscription;
   final Set<String> _subscribedGroupIds = <String>{};
   final Function(RealtimeMessage) _onMessageReceived;
@@ -25,15 +32,15 @@ class ChatStreamManager {
 
   void _createSubscription(String userId) {
     List<String> channels = [
-      'databases.${AppWriteService.databaseId}.collections.${AppWriteService.userCollectionid}.documents.$userId',
+      'databases.${AppwriteConfig.databaseId}.collections.${AppwriteConfig.userCollectionId}.documents.$userId',
     ];
     for (String groupId in _subscribedGroupIds) {
       channels.add(
-        'databases.${AppWriteService.databaseId}.collections.${AppWriteService.groupMessagesCollectionId}.documents.$groupId',
+        'databases.${AppwriteConfig.databaseId}.collections.${AppwriteConfig.groupMessagesCollectionId}.documents.$groupId',
       );
     }
     debugPrint('Subscribing to channels: $channels');
-    final subscription = AppWriteService.realtime.subscribe(channels);
+    final subscription = realtime.subscribe(channels);
     _subscription = subscription.stream.listen(
       _onMessageReceived,
       onError: _onError,

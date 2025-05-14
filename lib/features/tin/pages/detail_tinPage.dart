@@ -105,7 +105,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
     setState(() => _isLoading = true);
 
     final story = widget.stories[_currentIndex];
-    if (story.isVideo ?? false) {
+    if (story.isVideo) {
       try {
         _videoPlayerController = VideoPlayerController.network(story.imageUrl);
         await _videoPlayerController!.initialize();
@@ -128,7 +128,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
   void _togglePlayPause() {
     if (_isDisposed) return;
     final story = widget.stories[_currentIndex];
-    if ((story.isVideo ?? false) && _videoPlayerController?.value.isInitialized == true) {
+    if ((story.isVideo) && _videoPlayerController?.value.isInitialized == true) {
       setState(() {
         if (_isPlaying) {
           _videoPlayerController!.pause();
@@ -183,7 +183,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
     if (details.localPosition.dx < width * 0.3 && _currentIndex > 0) _previousStory();
     else if (details.localPosition.dx > width * 0.7 && _currentIndex < widget.stories.length - 1)
       _nextStory();
-    else if ((widget.stories[_currentIndex].isVideo ?? false) && _videoPlayerController != null)
+    else if ((widget.stories[_currentIndex].isVideo) && _videoPlayerController != null)
       _togglePlayPause();
   }
 

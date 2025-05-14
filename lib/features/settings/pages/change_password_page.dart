@@ -1,11 +1,11 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 import 'package:messenger_clone/common/widgets/dialog/custom_alert_dialog.dart';
 import 'package:messenger_clone/common/widgets/dialog/loading_dialog.dart';
 
+import '../../../common/services/auth_service.dart';
 import '../../main_page/main_page.dart';
 
 class ChangePasswordPage extends StatefulWidget {
@@ -59,10 +59,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
 
     try {
-      final user = await AppWriteService.getCurrentUser();
+      final user = await AuthService.getCurrentUser();
       if (user == null) throw Exception("User not logged in.");
 
-      await AppWriteService.account.updatePassword(
+      await AuthService.account.updatePassword(
         password: newPassword,
         oldPassword: oldPassword,
       );

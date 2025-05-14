@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
+import 'package:messenger_clone/common/services/auth_service.dart';
+import 'package:messenger_clone/common/services/friend_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 
 class FindFriendsPage extends StatefulWidget {
@@ -57,13 +58,13 @@ class _FindFriendsPageState extends State<FindFriendsPage> with SingleTickerProv
     });
 
     try {
-      final results = await AppWriteService.searchUsersByName(query);
-      final currentUser = await AppWriteService.getCurrentUser();
+      final results = await FriendService.searchUsersByName(query);
+      final currentUser = await AuthService.getCurrentUser();
       if (currentUser == null) throw Exception('User not logged in');
 
       _currentUserId = currentUser.$id;
       final updatedResults = await Future.wait(results.map((user) async {
-        final status = await AppWriteService.getFriendshipStatus(_currentUserId, user['userId']);
+        final status = await FriendService.getFriendshipStatus(_currentUserId, user['userId']);
         return {
           ...user,
           'friendshipStatus': status['status'],
@@ -265,7 +266,7 @@ class _FindFriendsPageState extends State<FindFriendsPage> with SingleTickerProv
                 ),
                 onPressed: () async {
                   try {
-                    await AppWriteService.acceptFriendRequest(requestId, currentUserId);
+                    await FriendService.acceptFriendRequest(requestId, currentUserId);
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Friend request accepted')),
@@ -291,7 +292,7 @@ class _FindFriendsPageState extends State<FindFriendsPage> with SingleTickerProv
                 ),
                 onPressed: () async {
                   try {
-                    await AppWriteService.declineFriendRequest(requestId);
+                    await FriendService.declineFriendRequest(requestId);
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Friend request declined')),
@@ -365,7 +366,7 @@ class _FindFriendsPageState extends State<FindFriendsPage> with SingleTickerProv
 
             if (confirmed == true) {
               try {
-                await AppWriteService.sendFriendRequest(currentUserId, user['userId']);
+                await FriendService.sendFriendRequest(currentUserId, user['userId']);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Friend request sent!')),
@@ -411,7 +412,7 @@ class _FindFriendsPageState extends State<FindFriendsPage> with SingleTickerProv
 
             if (confirmed == true) {
               try {
-                await AppWriteService.cancelFriendRequest(requestId);
+                await FriendService.cancelFriendRequest(requestId);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Friend request canceled')),

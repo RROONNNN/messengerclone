@@ -3,18 +3,20 @@ import 'dart:io' as dart;
 import 'package:appwrite/models.dart';
 import 'package:flutter/foundation.dart';
 import 'package:messenger_clone/common/constants/appwrite_database_constants.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
+import 'package:messenger_clone/common/services/auth_service.dart';
+import 'package:messenger_clone/common/services/story_service.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
-import 'package:image_picker/image_picker.dart';
+
+import '../../../../../common/services/app_write_config.dart';
 
 class AppwriteChatRepository {
   Future<MessageModel> updateMessage(MessageModel message) async {
     try {
-      final Document messageDocument = await AppWriteService.databases
+      final Document messageDocument = await AuthService.databases
           .updateDocument(
-            databaseId: AppWriteService.databaseId,
-            collectionId: AppWriteService.messageCollectionId,
+            databaseId: AppwriteConfig.databaseId,
+            collectionId: AppwriteConfig.messageCollectionId,
             documentId: message.id,
             data: message.toJson(),
           );
@@ -30,17 +32,17 @@ class AppwriteChatRepository {
   ) async {
     try {
       debugPrint('Fetching messages stream for messageIds: $messageIds');
-      final String messageCollectionId = AppWriteService.messageCollectionId;
+      final String messageCollectionId = AppwriteConfig.messageCollectionId;
 
       List<String> subscriptions =
           messageIds
               .map(
                 (messageId) =>
-                    'databases.${AppWriteService.databaseId}.collections.$messageCollectionId.documents.$messageId',
+                    'databases.${AppwriteConfig.databaseId}.collections.$messageCollectionId.documents.$messageId',
               )
               .toList();
 
-      final subscription = AppWriteService.realtime.subscribe(subscriptions);
+      final subscription = AuthService.realtime.subscribe(subscriptions);
       return subscription.stream;
     } catch (error) {
       throw Exception("Failed to fetch messages stream: $error");
@@ -51,17 +53,17 @@ class AppwriteChatRepository {
     try {
       debugPrint('Fetching chat stream for groupChatId: $groupMessId');
       final String groupMessagesCollectionId =
-          AppWriteService.groupMessagesCollectionId;
-      final Document groupMessageDoc = await AppWriteService.databases
+          AppwriteConfig.groupMessagesCollectionId;
+      final Document groupMessageDoc = await AuthService.databases
           .getDocument(
-            databaseId: AppWriteService.databaseId,
-            collectionId: AppWriteService.groupMessagesCollectionId,
+            databaseId: AppwriteConfig.databaseId,
+            collectionId: AppwriteConfig.groupMessagesCollectionId,
             documentId: groupMessId,
           );
       String documentId = groupMessageDoc.$id;
 
-      final subscription = AppWriteService.realtime.subscribe([
-        'databases.${AppWriteService.databaseId}.collections.$groupMessagesCollectionId.documents.$documentId',
+      final subscription = AuthService.realtime.subscribe([
+        'databases.${AppwriteConfig.databaseId}.collections.$groupMessagesCollectionId.documents.$documentId',
       ]);
       return subscription.stream;
     } catch (error) {
@@ -75,10 +77,10 @@ class AppwriteChatRepository {
     int offset,
   ) async {
     try {
-      final DocumentList response = await AppWriteService.databases
+      final DocumentList response = await AuthService.databases
           .listDocuments(
-            databaseId: AppWriteService.databaseId,
-            collectionId: AppWriteService.messageCollectionId,
+            databaseId: AppwriteConfig.databaseId,
+            collectionId: AppwriteConfig.messageCollectionId,
             queries: [
               Query.equal(
                 AppwriteDatabaseConstants.groupMessagesId,
@@ -112,19 +114,19 @@ class AppwriteChatRepository {
       debugPrint('Sending message: ${message.toJson()}');
       List<String> receivers =
           groupMessage.users.map((user) => user.id).toList();
-      final Document messageDocument = await AppWriteService.databases
+      final Document messageDocument = await AuthService.databases
           .createDocument(
-            databaseId: AppWriteService.databaseId,
-            collectionId: AppWriteService.messageCollectionId,
+            databaseId: AppwriteConfig.databaseId,
+            collectionId: AppwriteConfig.messageCollectionId,
             documentId: message.id,
             data: message.toJson(),
           );
 
       final String messageId = messageDocument.$id;
 
-      await AppWriteService.databases.updateDocument(
-        databaseId: AppWriteService.databaseId,
-        collectionId: AppWriteService.groupMessagesCollectionId,
+      await AuthService.databases.updateDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.groupMessagesCollectionId,
         documentId: groupMessage.groupMessagesId,
         data: {AppwriteDatabaseConstants.lastMessage: messageId},
       );
@@ -141,9 +143,9 @@ class AppwriteChatRepository {
     try {
       debugPrint('Adding groupMessId $groupMessId to user $userId');
 
-      final Document userDoc = await AppWriteService.databases.getDocument(
-        databaseId: AppWriteService.databaseId,
-        collectionId: AppWriteService.userCollectionid,
+      final Document userDoc = await AuthService.databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.userCollectionId,
         documentId: userId,
       );
       final List<dynamic> groupMessages = userDoc.data['groupMessages'] ?? [];
@@ -160,9 +162,9 @@ class AppwriteChatRepository {
               )
               .toList();
       if (!groupMessIds.contains(groupMessId)) {
-        await AppWriteService.databases.updateDocument(
-          databaseId: AppWriteService.databaseId,
-          collectionId: AppWriteService.userCollectionid,
+        await AuthService.databases.updateDocument(
+          databaseId: AppwriteConfig.databaseId,
+          collectionId: AppwriteConfig.userCollectionId,
           documentId: userId,
           data: {
             'groupMessages': [...groupMessIds, groupMessId],
@@ -183,10 +185,10 @@ class AppwriteChatRepository {
     required String groupId,
   }) async {
     try {
-      final Document groupMessageDocument = await AppWriteService.databases
+      final Document groupMessageDocument = await AuthService.databases
           .createDocument(
-            databaseId: AppWriteService.databaseId,
-            collectionId: AppWriteService.groupMessagesCollectionId,
+            databaseId: AppwriteConfig.databaseId,
+            collectionId: AppwriteConfig.groupMessagesCollectionId,
             documentId: ID.unique(),
             data: {
               'groupName': groupName,
@@ -202,10 +204,10 @@ class AppwriteChatRepository {
         );
       }
       await Future.wait(userUpdates);
-      final Document groupMessageDoc = await AppWriteService.databases
+      final Document groupMessageDoc = await AuthService.databases
           .getDocument(
-            databaseId: AppWriteService.databaseId,
-            collectionId: AppWriteService.groupMessagesCollectionId,
+            databaseId: AppwriteConfig.databaseId,
+            collectionId: AppwriteConfig.groupMessagesCollectionId,
             documentId: groupMessageDocument.$id,
           );
       final GroupMessage returnVal = GroupMessage.fromJson({
@@ -221,10 +223,10 @@ class AppwriteChatRepository {
 
   Future<GroupMessage?> getGroupMessagesByGroupId(String groupId) async {
     try {
-      final DocumentList documentList = await AppWriteService.databases
+      final DocumentList documentList = await AuthService.databases
           .listDocuments(
-            databaseId: AppWriteService.databaseId,
-            collectionId: AppWriteService.groupMessagesCollectionId,
+            databaseId: AppwriteConfig.databaseId,
+            collectionId: AppwriteConfig.groupMessagesCollectionId,
             queries: [Query.equal('groupId', groupId)],
           );
       if (documentList.documents.isNotEmpty) {
@@ -297,8 +299,8 @@ class AppwriteChatRepository {
         Permission.read(Role.any()),
       ];
 
-      return await AppWriteService.storage.createFile(
-        bucketId: AppWriteService.bucketId,
+      return await StoryService.storage.createFile(
+        bucketId: AppwriteConfig.bucketId,
         fileId: ID.unique(),
         file: inputFile,
         permissions: permissions,
