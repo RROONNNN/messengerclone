@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
+import 'package:messenger_clone/common/services/auth_service.dart';
+import 'package:messenger_clone/common/services/friend_service.dart';
+import 'package:messenger_clone/common/services/user_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 
 class FriendRequestPage extends StatefulWidget {
@@ -29,13 +31,13 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
     });
 
     try {
-      final user = await AppWriteService.getCurrentUser();
+      final user = await AuthService.getCurrentUser();
       if (user == null) throw Exception('User not logged in');
 
       _currentUserId = user.$id;
-      final requests = await AppWriteService.getPendingFriendRequests(user.$id);
+      final requests = await FriendService.getPendingFriendRequests(user.$id);
       final detailedRequests = await Future.wait(requests.map((request) async {
-        final userData = await AppWriteService.fetchUserDataById(request['userId']);
+        final userData = await UserService.fetchUserDataById(request['userId']);
         return {
           'requestId': request['requestId'],
           'userId': request['userId'],
@@ -58,7 +60,7 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
 
   Future<void> _acceptRequest(String requestId) async {
     try {
-      await AppWriteService.acceptFriendRequest(requestId, _currentUserId);
+      await FriendService.acceptFriendRequest(requestId, _currentUserId);
       await _fetchFriendRequests();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -76,7 +78,7 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
 
   Future<void> _declineRequest(String requestId) async {
     try {
-      await AppWriteService.declineFriendRequest(requestId);
+      await FriendService.declineFriendRequest(requestId);
       await _fetchFriendRequests();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

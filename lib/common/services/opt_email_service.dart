@@ -4,8 +4,8 @@ import 'package:appwrite/appwrite.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server.dart';
-
-import 'app_write_service.dart';
+import 'package:messenger_clone/common/services/auth_service.dart';
+import 'package:messenger_clone/common/services/network_utils.dart';
 
 class OTPEmailService {
   const OTPEmailService._();
@@ -16,11 +16,11 @@ class OTPEmailService {
   static const Duration _otpExpiry = Duration(minutes: 5);
 
   static Future<void> sendOTPEmail(String email, String otp) async {
-    return AppWriteService.withNetworkCheck(() async {
+    return NetworkUtils.withNetworkCheck(() async {
       final expiry = DateTime.now().add(_otpExpiry);
       debugPrint("otp: $otp");
       final smtpServer = gmail('nguyen902993@gmail.com', 'lqpn cxdp tlti blhv');
-      await AppWriteService.databases.createDocument(
+      await AuthService.databases.createDocument(
         databaseId: _databaseId,
         collectionId: _userCollectionSMTPSERVER,
         documentId: ID.unique(),
@@ -50,8 +50,8 @@ class OTPEmailService {
   }
 
   static Future<bool> verifyOTP(String email, String userInput) async {
-    return AppWriteService.withNetworkCheck(() async {
-      final response = await AppWriteService.databases.listDocuments(
+    return NetworkUtils.withNetworkCheck(() async {
+      final response = await AuthService.databases.listDocuments(
         databaseId: _databaseId,
         collectionId: _userCollectionSMTPSERVER,
         queries: [
@@ -89,7 +89,7 @@ class OTPEmailService {
     String documentId,
     int currentAttempts,
   ) async {
-    await AppWriteService.databases.updateDocument(
+    await AuthService.databases.updateDocument(
       databaseId: _databaseId,
       collectionId: _userCollectionSMTPSERVER,
       documentId: documentId,
@@ -98,7 +98,7 @@ class OTPEmailService {
   }
 
   static Future<void> _deleteOTP(String documentId) async {
-    await AppWriteService.databases.deleteDocument(
+    await AuthService.databases.deleteDocument(
       databaseId: _databaseId,
       collectionId: _userCollectionSMTPSERVER,
       documentId: documentId,
@@ -106,9 +106,9 @@ class OTPEmailService {
   }
 
   static Future<num> getRemainingAttempts(String email) async {
-    return AppWriteService.withNetworkCheck(() async {
+    return NetworkUtils.withNetworkCheck(() async {
       try {
-        final response = await AppWriteService.databases.listDocuments(
+        final response = await AuthService.databases.listDocuments(
           databaseId: _databaseId,
           collectionId: _userCollectionSMTPSERVER,
           queries: [

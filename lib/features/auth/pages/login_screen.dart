@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:messenger_clone/features/auth/pages/register_name.dart';
 import 'package:messenger_clone/features/main_page/main_page.dart';
 
-import '../../../common/services/app_write_service.dart';
+import '../../../common/services/auth_service.dart';
+import '../../../common/services/device_service.dart';
 import '../../../common/services/opt_email_service.dart';
 import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../../../common/widgets/dialog/loading_dialog.dart';
 import 'confirmation_code_screen.dart';
+import 'forgot_password.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -131,7 +133,7 @@ class LoginScreenState extends State<LoginScreen> {
                     );
                     try {
                       final String? userID =
-                          await AppWriteService.getUserIdFromEmailAndPassword(
+                          await AuthService.getUserIdFromEmailAndPassword(
                             _emailController.text,
                             _passwordController.text,
                           );
@@ -145,15 +147,15 @@ class LoginScreenState extends State<LoginScreen> {
                         );
                       } else {
                         bool check =
-                            await AppWriteService.hasUserLoggedInFromThisDevice(
+                            await DeviceService.hasUserLoggedInFromThisDevice(
                               userID,
                             );
                         if (check) {
-                          await AppWriteService.signIn(
+                          await AuthService.signIn(
                             email: _emailController.text,
                             password: _passwordController.text,
                           );
-                          await AppWriteService.saveLoginDeviceInfo(userID);
+                          await DeviceService.saveLoginDeviceInfo(userID);
                           if (!context.mounted) return;
                           Navigator.pushAndRemoveUntil(
                             context,
@@ -176,11 +178,11 @@ class LoginScreenState extends State<LoginScreen> {
                                     email: _emailController.text,
                                     nextScreen: () => MainPage(),
                                     action: () async {
-                                      await AppWriteService.signIn(
+                                      await AuthService.signIn(
                                         email: _emailController.text,
                                         password: _passwordController.text,
                                       );
-                                      await AppWriteService.saveLoginDeviceInfo(
+                                      await DeviceService.saveLoginDeviceInfo(
                                         userID,
                                       );
                                     },
@@ -217,10 +219,15 @@ class LoginScreenState extends State<LoginScreen> {
             ),
             SizedBox(height: 10),
             GestureDetector(
-              onTap: () {},
-              child: Center(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                );
+              },
+              child: const Center(
                 child: Text(
-                  'Forgot your password ?',
+                  'Forgot your password?',
                   style: TextStyle(color: Colors.white, fontSize: 20),
                 ),
               ),

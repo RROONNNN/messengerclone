@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
+
+import '../../../common/services/auth_service.dart';
+import '../../../common/services/device_service.dart';
 
 class DeviceManagementPage extends StatefulWidget {
   const DeviceManagementPage({super.key});
@@ -44,11 +46,11 @@ class _DeviceManagementPageState extends State<DeviceManagementPage> with Single
     });
 
     try {
-      final currentUser = await AppWriteService.getCurrentUser();
+      final currentUser = await AuthService.getCurrentUser();
       if (currentUser == null) throw Exception('User not logged in');
       _currentUserId = currentUser.$id;
 
-      final devices = await AppWriteService.getUserDevices(_currentUserId);
+      final devices = await DeviceService.getUserDevices(_currentUserId);
       setState(() {
         _devicesList = devices;
         _isLoading = false;
@@ -205,7 +207,7 @@ class _DeviceManagementPageState extends State<DeviceManagementPage> with Single
 
             if (confirmed == true) {
               try {
-                await AppWriteService.removeDevice(device['documentId']);
+                await DeviceService.removeDevice(device['documentId']);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Device removed successfully')),

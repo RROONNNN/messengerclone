@@ -5,13 +5,12 @@ import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:messenger_clone/common/constants/appwrite_database_constants.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
+import 'package:messenger_clone/common/services/app_write_config.dart';
 import 'package:messenger_clone/common/services/common_function.dart';
 import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
@@ -287,7 +286,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
   }
 
   String generateUrl(File file) {
-    return "https://fra.cloud.appwrite.io/v1/storage/buckets/${AppWriteService.bucketId}/files/${file.$id}/view?project=${AppWriteService.projectId}";
+    return "https://fra.cloud.appwrite.io/v1/storage/buckets/${AppwriteConfig.bucketId}/files/${file.$id}/view?project=${AppwriteConfig.projectId}";
   }
 
   void _onMessageSendEvent(

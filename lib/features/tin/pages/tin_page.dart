@@ -1,10 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
+import 'package:messenger_clone/common/services/auth_service.dart';
+import 'package:messenger_clone/common/services/story_service.dart';
+import 'package:messenger_clone/common/services/user_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 import 'package:messenger_clone/features/tin/pages/detail_tinPage.dart';
 import 'package:messenger_clone/features/tin/pages/gallery_uploadTin.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
 import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../widgets/story_item.dart';
 
@@ -28,9 +30,9 @@ class _TinPageState extends State<TinPage> {
 
   Future<void> _fetchCurrentUserData() async {
     try {
-      final userId = await AppWriteService.isLoggedIn();
+      final userId = await AuthService.isLoggedIn();
       if (userId != null) {
-        final userData = await AppWriteService.fetchUserDataById(userId);
+        final userData = await UserService.fetchUserDataById(userId);
         setState(() {
           _currentUserAvatarUrl = userData['photoUrl'] as String? ??
               'https://images.hcmcpv.org.vn/res/news/2024/02/24-02-2024-ve-su-dung-co-dang-va-hinh-anh-co-dang-cong-san-viet-nam-FE119635-details.jpg?vs=24022024094023';
@@ -49,7 +51,7 @@ class _TinPageState extends State<TinPage> {
 
   Future<void> _fetchStoriesFromAppwrite() async {
     try {
-      final userId = await AppWriteService.isLoggedIn();
+      final userId = await AuthService.isLoggedIn();
       if (userId == null) {
         if (mounted) {
           CustomAlertDialog.show(
@@ -61,10 +63,10 @@ class _TinPageState extends State<TinPage> {
         return;
       }
 
-      final fetchedStories = await AppWriteService.fetchFriendsStories(userId);
+      final fetchedStories = await StoryService.fetchFriendsStories(userId);
 
       final storyItems = await Future.wait(fetchedStories.map((data) async {
-        final userData = await AppWriteService.fetchUserDataById(data['userId'] as String);
+        final userData = await UserService.fetchUserDataById(data['userId'] as String);
         int totalStories = data['totalStories'] as int;
         if (data['mediaType'] == 'video') {
           totalStories = 10;

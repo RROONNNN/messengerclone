@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
+import 'package:messenger_clone/common/services/user_service.dart';
 import 'dart:io';
 import 'package:messenger_clone/features/tin/widgets/story_item.dart';
 
-import '../../../common/services/app_write_service.dart';
+import '../../../common/services/auth_service.dart';
+import '../../../common/services/story_service.dart';
 
 class StoryUploadPage extends StatefulWidget {
   final File? selectedImage;
@@ -37,9 +39,9 @@ class _StoryUploadPageState extends State<StoryUploadPage> {
       );
       return;
     }
-    final userId = await AppWriteService.isLoggedIn() ?? 'current_user';
+    final userId = await AuthService.isLoggedIn() ?? 'current_user';
     try {
-      await AppWriteService.postStory(
+      await StoryService.postStory(
         userId: userId,
         mediaFile: _selectedImage!,
         mediaType: 'image',
@@ -48,7 +50,7 @@ class _StoryUploadPageState extends State<StoryUploadPage> {
         userId: userId,
         title: 'Bạn',
         imageUrl: '',
-        avatarUrl: (await AppWriteService.fetchUserDataById(userId))['photoUrl'] as String? ?? '',
+        avatarUrl: (await UserService.fetchUserDataById(userId))['photoUrl'] as String? ?? '',
         isVideo: false,
         postedAt: DateTime.now(),
         totalStories: 1,

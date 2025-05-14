@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../../common/services/app_write_service.dart';
+import '../../../common/services/meta_ai_service.dart';
 import '../../../common/services/store.dart';
 
 class MetaAiPage extends StatefulWidget {
@@ -175,7 +175,7 @@ class _MetaAiPageState extends State<MetaAiPage> {
     """;
       history.add({'role': 'user', 'content': enhancedPrompt});
 
-      final responseData = await AppWriteService.callMetaAIFunction(
+      final responseData = await AIService.callMetaAIFunction(
         history,
         5000,
       );

@@ -3,9 +3,11 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/rendering.dart';
+import 'package:messenger_clone/common/services/story_service.dart';
+import 'package:messenger_clone/common/services/user_service.dart';
 import 'package:messenger_clone/features/main_page/main_page.dart';
 import 'dart:ui' as ui;
-import '../../../common/services/app_write_service.dart';
+import '../../../common/services/auth_service.dart';
 import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../../../common/widgets/dialog/loading_dialog.dart';
 import '../widgets/story_item.dart';
@@ -282,7 +284,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
       barrierDismissible: false,
       builder: (context) => const LoadingDialog(message: 'Đang tải lên...'),
     );
-    final userId = await AppWriteService.isLoggedIn();
+    final userId = await AuthService.isLoggedIn();
     if (userId == null) {
       Navigator.of(context).pop();
       if (mounted) {
@@ -295,12 +297,12 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
       return null;
     }
     try {
-      final mediaUrl = await AppWriteService.postStory(
+      final mediaUrl = await StoryService.postStory(
         userId: userId,
         mediaFile: file,
         mediaType: isVideo ? 'video' : 'image',
       );
-      final userData = await AppWriteService.fetchUserDataById(userId);
+      final userData = await UserService.fetchUserDataById(userId);
       final newStory = StoryItem(
         userId: userId,
         title: userData['userName'] as String? ?? 'Bạn',

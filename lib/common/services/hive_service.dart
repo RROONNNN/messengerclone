@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
+
+import 'auth_service.dart';
 
 class HiveService {
   static final HiveService instance = HiveService._internal();
@@ -32,7 +33,7 @@ class HiveService {
     try {
       final box = await _box;
       return box.get('currentUserId') ??
-          (await AppWriteService.getCurrentUser())!.$id;
+          (await AuthService.getCurrentUser())!.$id;
     } catch (e) {
       debugPrint('Error getting current user ID: $e');
     }

@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:messenger_clone/common/services/app_write_config.dart';
+import 'package:messenger_clone/common/services/call_service.dart';
 import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
 import 'package:zego_uikit_signaling_plugin/zego_uikit_signaling_plugin.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/common/widgets/dialog/custom_alert_dialog.dart';
 import 'package:messenger_clone/features/chat/model/user.dart';
 import '../../../common/widgets/dialog/custom_call_dialog.dart';
@@ -15,7 +16,7 @@ void _initZegoUIKit() {
   ZegoUIKit().initLog();
   ZegoUIKitPrebuiltCallInvitationService().init(
     appID: 890267908,
-    appSign: AppWriteService.zegoSignId,
+    appSign: AppwriteConfig.zegoSignId,
     userID: '',
     userName: '',
     plugins: [ZegoUIKitSignalingPlugin()],
@@ -61,7 +62,7 @@ class _CallPageState extends State<CallPage> {
     ZegoUIKitPrebuiltCallInvitationService().setNavigatorKey(navigatorKey);
     ZegoUIKitPrebuiltCallInvitationService().init(
       appID: 890267908,
-      appSign: AppWriteService.zegoSignId,
+      appSign: AppwriteConfig.zegoSignId,
       userID: widget.userID,
       userName: widget.userName,
       plugins: [ZegoUIKitSignalingPlugin()],
@@ -71,7 +72,7 @@ class _CallPageState extends State<CallPage> {
   Future<void> _checkAndJoinOrInitiateCall() async {
     try {
       if (widget.caller != null) {
-        final existingCall = await AppWriteService.checkExistingCall(
+        final existingCall = await CallService.checkExistingCall(
           userId: widget.userID,
           callerId: widget.caller!.id,
         );
@@ -133,12 +134,12 @@ class _CallPageState extends State<CallPage> {
 
   Future<void> _initiateCall() async {
     try {
-      _callDocumentId = await AppWriteService.createCall(
+      _callDocumentId = await CallService.createCall(
         callID: widget.callID,
         initiatorId: widget.userID,
         participants: widget.participants!,
       );
-      await AppWriteService.updateCallStatus(
+      await CallService.updateCallStatus(
         callDocumentId: _callDocumentId!,
         status: 'pending',
       );
@@ -160,7 +161,7 @@ class _CallPageState extends State<CallPage> {
       }
     });
     if (_callDocumentId != null) {
-      AppWriteService.updateCallStatus(
+      CallService.updateCallStatus(
         callDocumentId: _callDocumentId!,
         status: 'active',
       );
@@ -170,7 +171,7 @@ class _CallPageState extends State<CallPage> {
   void _endCall() {
     setState(() => _isInCall = false);
     if (_callDocumentId != null) {
-      AppWriteService.updateCallStatus(
+      CallService.updateCallStatus(
         callDocumentId: _callDocumentId!,
         status: 'ended',
       );
@@ -181,7 +182,7 @@ class _CallPageState extends State<CallPage> {
   @override
   void dispose() {
     if (_isInCall && _callDocumentId != null) {
-      AppWriteService.updateCallStatus(
+      CallService.updateCallStatus(
         callDocumentId: _callDocumentId!,
         status: 'ended',
       ).catchError((e) => print('Error ending call: $e'));
@@ -215,7 +216,7 @@ class _CallPageState extends State<CallPage> {
           if (_isInCall)
             ZegoUIKitPrebuiltCall(
               appID: 890267908,
-              appSign: AppWriteService.zegoSignId,
+              appSign: AppwriteConfig.zegoSignId,
               userID: widget.userID,
               userName: widget.userName,
               callID: _effectiveCallID, // Sử dụng callID thực tế

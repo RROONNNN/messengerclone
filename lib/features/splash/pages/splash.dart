@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:messenger_clone/features/main_page/main_page.dart';
 
-import '../../../common/services/app_write_service.dart';
+import '../../../common/services/auth_service.dart';
 import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../../auth/pages/login_screen.dart';
 
@@ -35,7 +35,7 @@ class _SplashPageState extends State<SplashPage> {
   Future<void> redirect() async {
     await Future.delayed(const Duration(seconds: 1));
     try {
-      final currentUser = await AppWriteService.getCurrentUser();
+      final currentUser = await AuthService.getCurrentUser();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
