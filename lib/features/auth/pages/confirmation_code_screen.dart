@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/features/auth/pages/register_password.dart';
 
-import '../../../common/services/app_write_service.dart';
+import '../../../common/services/auth_service.dart';
 import '../../../common/services/opt_email_service.dart';
 import '../../../common/services/store.dart';
 import '../../../common/widgets/dialog/custom_alert_dialog.dart';
@@ -41,7 +41,7 @@ class _ConfirmationCodeScreenState extends State<ConfirmationCodeScreen> {
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () async {
-            final userId = await AppWriteService.isLoggedIn();
+            final userId = await AuthService.isLoggedIn();
             if (userId == null) {
               Navigator.pushAndRemoveUntil(
                 context,

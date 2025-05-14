@@ -2,16 +2,18 @@ import 'dart:async';
 import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
+import 'package:messenger_clone/common/services/auth_service.dart';
+import 'package:messenger_clone/common/services/user_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 import 'package:messenger_clone/features/auth/pages/login_screen.dart';
 import 'package:messenger_clone/features/settings/pages/settings_page.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/common/widgets/dialog/custom_alert_dialog.dart';
 import 'package:messenger_clone/common/widgets/dialog/loading_dialog.dart';
 import 'package:messenger_clone/features/menu/dialog/dialog_utils.dart';
 import 'package:messenger_clone/features/menu/pages/edit_profile_page.dart';
 import 'package:messenger_clone/features/menu/pages/find_friend_page.dart';
 
+import '../../../common/services/friend_service.dart';
 import 'friends_request_pagee.dart';
 import 'list_friends_page.dart';
 
@@ -41,7 +43,7 @@ class _MenuPageState extends State<MenuPage> {
   }
 
   Future<void> _fetchUserData() async {
-    final result = await AppWriteService.fetchUserData();
+    final result = await UserService.fetchUserData();
     setState(() {
       if (result.containsKey('error')) {
         errorMessage = result['error'] as String?;
@@ -59,9 +61,9 @@ class _MenuPageState extends State<MenuPage> {
 
   Future<void> _fetchNotificationCounts() async {
     try {
-      final user = await AppWriteService.getCurrentUser();
+      final user = await AuthService.getCurrentUser();
       if (user != null) {
-        final friendRequestsCount = await AppWriteService.getPendingFriendRequestsCount(user.$id);
+        final friendRequestsCount = await FriendService.getPendingFriendRequestsCount(user.$id);
         setState(() {
           _friendRequestsCount = friendRequestsCount;
           _pendingMessagesCount = 2;
@@ -105,7 +107,7 @@ class _MenuPageState extends State<MenuPage> {
 
   Future<bool> _verifyPassword(String password) async {
     try {
-      await AppWriteService.account.updatePassword(password: password, oldPassword: password);
+      await AuthService.account.updatePassword(password: password, oldPassword: password);
       return true;
     } catch (e) {
       if (e is AppwriteException) {
@@ -125,14 +127,14 @@ class _MenuPageState extends State<MenuPage> {
     showDialog(context: context, barrierDismissible: false, builder: (_) => const LoadingDialog(message: "Checking..."));
 
     try {
-      final user = await AppWriteService.getCurrentUser();
+      final user = await AuthService.getCurrentUser();
       if (user == null) throw Exception("User not logged in.");
       if (await _verifyPassword(password)) {
         if (!mounted) return;
         Navigator.pop(context);
         await DialogUtils.executeWithLoading(
           context: context,
-          action: AppWriteService.deleteAccount,
+          action: AuthService.deleteAccount,
           loadingMessage: 'Deleting account...',
           errorMessage: 'Failed to delete account.',
           onSuccess: () async {
@@ -322,7 +324,7 @@ class _MenuPageState extends State<MenuPage> {
             )) {
               await DialogUtils.executeWithLoading(
                 context: context,
-                action: AppWriteService.signOut,
+                action: AuthService.signOut,
                 loadingMessage: 'Logging out...',
                 errorMessage: 'Failed to log out.',
                 onSuccess: () => Navigator.pushAndRemoveUntil(

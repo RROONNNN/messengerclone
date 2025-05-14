@@ -3,8 +3,9 @@ import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
+import 'package:messenger_clone/common/services/auth_service.dart';
+import 'package:messenger_clone/common/services/user_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/features/main_page/main_page.dart';
 import 'package:messenger_clone/features/menu/pages/menu_page.dart';
 import '../../../common/services/opt_email_service.dart';
@@ -131,7 +132,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ),
           );
           try {
-            final isRegistered = await AppWriteService.isEmailRegistered(_email!);
+            final isRegistered = await AuthService.isEmailRegistered(_email!);
             Navigator.of(context).pop();
             if (isRegistered) {
               await CustomAlertDialog.show(
@@ -164,21 +165,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                       );
                       try {
-                        await AppWriteService.updateUserProfile(
+                        await UserService.updateUserProfile(
                           userId: widget.userId,
                           name: _name,
                           email: _email,
                           aboutMe: _aboutMe,
                           photoUrl: _photoUrl,
                         );
-                        await AppWriteService.updateUserAuth(
+                        await UserService.updateUserAuth(
                           userId: widget.userId,
                           name: nameChanged ? _name : null,
                           email: emailChanged ? _email : null,
                           password: password,
                         );
                         if (_selectedImage != null) {
-                          final newPhotoUrl = await AppWriteService.updatePhotoUrl(
+                          final newPhotoUrl = await UserService.updatePhotoUrl(
                             imageFile: _selectedImage!,
                             userId: widget.userId,
                           );
@@ -233,21 +234,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ),
           );
           try {
-            await AppWriteService.updateUserProfile(
+            await UserService.updateUserProfile(
               userId: widget.userId,
               name: _name,
               email: _email,
               aboutMe: _aboutMe,
               photoUrl: _photoUrl,
             );
-            await AppWriteService.updateUserAuth(
+            await UserService.updateUserAuth(
               userId: widget.userId,
               name: nameChanged ? _name : null,
               email: emailChanged ? _email : null,
               password: password,
             );
             if (_selectedImage != null) {
-              final newPhotoUrl = await AppWriteService.updatePhotoUrl(
+              final newPhotoUrl = await UserService.updatePhotoUrl(
                 imageFile: _selectedImage!,
                 userId: widget.userId,
               );
@@ -283,7 +284,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               message: "Updating profile...",
             ),
           );
-          await AppWriteService.updateUserProfile(
+          await UserService.updateUserProfile(
             userId: widget.userId,
             name: _name,
             email: _email,
@@ -291,7 +292,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             photoUrl: _photoUrl,
           );
           if (_selectedImage != null) {
-            final newPhotoUrl = await AppWriteService.updatePhotoUrl(
+            final newPhotoUrl = await UserService.updatePhotoUrl(
               imageFile: _selectedImage!,
               userId: widget.userId,
             );
