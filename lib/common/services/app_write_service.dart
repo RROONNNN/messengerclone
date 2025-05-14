@@ -16,6 +16,8 @@ class AppWriteService {
       .setEndpoint('https://cloud.appwrite.io/v1')
       .setProject('67e7a7eb001c9cd8d6ad');
 
+  static final zegoSignId = '8666a74a545ad2e21e688a29faee944e14648db378dbf3974a2f7bc538e1dff6';
+
   static Account get account => Account(_client);
   static Databases get databases => Databases(_client);
   static Storage get storage => Storage(_client);
@@ -29,7 +31,6 @@ class AppWriteService {
   static const String _storiesCollectionId = '6820ad53003e5e2b783e';
   static Realtime get realtime => Realtime(_client);
 
-
   static const String projectId = '67e7a7eb001c9cd8d6ad';
   static const String databaseId = '67e90080000a47b1eba4';
   static const String groupMessagesCollectionId = '67e908ed003b62a3f44a';
@@ -37,6 +38,88 @@ class AppWriteService {
   static const String bucketId = '67e8ee480012c2579b40';
   static const String _functionMetaAIId = '680b45a1003d0c997a24';
   static const String userCollectionid = '67e904b9002db65c933b';
+
+  static const String _callsCollectionId = '68216a0900371e85d22e';
+
+  static Future<String> createCall({
+    required String callID,
+    required String initiatorId,
+    required List<String> participants,
+  }) async {
+    return withNetworkCheck(() async {
+      try {
+        final document = await databases.createDocument(
+          databaseId: _databaseId,
+          collectionId: _callsCollectionId,
+          documentId: ID.unique(),
+          data: {
+            'callID': callID,
+            'initiatorId': initiatorId,
+            'participants': participants,
+            'status': 'pending',
+            'createdAt': DateTime.now().toIso8601String(),
+          },
+        );
+        return document.$id;
+      } on AppwriteException catch (e) {
+        throw Exception('Failed to create call: ${e.message}');
+      }
+    });
+  }
+  static Future<Map<String, dynamic>?> checkExistingCall({
+    required String userId,
+    required String callerId,
+  }) async {
+    return withNetworkCheck(() async {
+      try {
+        final response = await databases.listDocuments(
+          databaseId: _databaseId,
+          collectionId: _callsCollectionId,
+          queries: [
+            Query.equal('participants', userId),
+            Query.equal('initiatorId', callerId),
+            Query.or([
+              Query.equal('status', 'pending'),
+              Query.equal('status', 'active'),
+            ]),
+            Query.limit(1),
+          ],
+        );
+
+        if (response.documents.isNotEmpty) {
+          final doc = response.documents.first;
+          return {
+            'callID': doc.data['callID'] as String?,
+            'initiatorId': doc.data['initiatorId'] as String?,
+            'status': doc.data['status'] as String?,
+            'callDocumentId': doc.$id,
+            'participants': List<String>.from(doc.data['participants'] ?? []),
+          };
+        }
+        return null;
+      } on AppwriteException catch (e) {
+        throw Exception('Failed to check existing call: ${e.message}');
+      }
+    });
+  }
+
+  static Future<void> updateCallStatus({
+    required String callDocumentId,
+    required String status,
+  }) async {
+    return withNetworkCheck(() async {
+      try {
+        await databases.updateDocument(
+          databaseId: _databaseId,
+          collectionId: _callsCollectionId,
+          documentId: callDocumentId,
+          data: {'status': status},
+        );
+      } on AppwriteException catch (e) {
+        throw Exception('Failed to update call status: ${e.message}');
+      }
+    });
+  }
 
   static Future<Map<String, dynamic>> callMetaAIFunction(
       List<Map<String, String>> history,

@@ -126,63 +126,63 @@ class _ConfirmationCodeScreenState extends State<ConfirmationCodeScreen> {
               height: 48,
               child: ElevatedButton(
                 onPressed: () async {
-                    _validateInputs();
-                    if (_codeController.text.isNotEmpty) {
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (context) =>
-                        const LoadingDialog(
-                          message: "Checking...",
-                        ),
-                      );
-                      try {
-                        final remainingAttempts = await OTPEmailService
-                            .getRemainingAttempts(widget.email);
-                        if (remainingAttempts <= 0) {
+                  _validateInputs();
+                  if (_codeController.text.isNotEmpty) {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) =>
+                      const LoadingDialog(
+                        message: "Checking...",
+                      ),
+                    );
+                    try {
+                      final remainingAttempts = await OTPEmailService
+                          .getRemainingAttempts(widget.email);
+                      if (remainingAttempts <= 0) {
+                        Navigator.of(context).pop();
+                        await CustomAlertDialog.show(
+                          context: context,
+                          title: "Error ",
+                          message: "You entered the wrong verification code too many times, please try again later.",
+                        );
+                      }
+                      else {
+                        bool isVerified = await OTPEmailService.verifyOTP(
+                            widget.email, _codeController.text);
+                        if (isVerified) {
+                          widget.nextScreen == null ? Store
+                              .setEmailRegistered(widget.email) : null;
+
+                          final nextPage = widget.nextScreen != null
+                              ? widget.nextScreen!()
+                              : CreatePasswordScreen();
+                          widget.action != null ? widget.action!() : null;
+
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => nextPage
+                              ));
+                        }
+                        else {
                           Navigator.of(context).pop();
                           await CustomAlertDialog.show(
                             context: context,
                             title: "Error ",
-                            message: "You entered the wrong verification code too many times, please try again later.",
+                            message: "Invalid or expired code. Remaining attempts: $remainingAttempts",
                           );
                         }
-                        else {
-                          bool isVerified = await OTPEmailService.verifyOTP(
-                              widget.email, _codeController.text);
-                          if (isVerified) {
-                            widget.nextScreen == null ? Store
-                                .setEmailRegistered(widget.email) : null;
-
-                            final nextPage = widget.nextScreen != null
-                                ? widget.nextScreen!()
-                                : CreatePasswordScreen();
-                            widget.action != null ? widget.action!() : null;
-
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => nextPage
-                                ));
-                          }
-                          else {
-                            Navigator.of(context).pop();
-                            await CustomAlertDialog.show(
-                              context: context,
-                              title: "Error ",
-                              message: "Invalid or expired code. Remaining attempts: $remainingAttempts",
-                            );
-                          }
-                        }
-                      }
-                      catch (e) {
-                        Navigator.of(context).pop();
-                        await CustomAlertDialog.show(
-                            context: context,
-                            title: "System error",
-                            message: "Unable to verify OTP. Please try again later.");
                       }
                     }
+                    catch (e) {
+                      Navigator.of(context).pop();
+                      await CustomAlertDialog.show(
+                          context: context,
+                          title: "System error",
+                          message: "Unable to verify OTP. Please try again later.");
+                    }
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
