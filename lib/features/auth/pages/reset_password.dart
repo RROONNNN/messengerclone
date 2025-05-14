@@ -48,7 +48,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     );
 
     try {
-      final userId = await AuthService.getUserIdFromEmailAndPassword(widget.email, '');
+      final userId = await AuthService.getUserIdFromEmail(widget.email);
       if (userId == null) {
         throw Exception('Unable to verify account. Please try again.');
       }
@@ -69,7 +69,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       );
     } catch (e) {
       if (!context.mounted) return;
-      Navigator.of(context).pop();
       await CustomAlertDialog.show(
         context: context,
         title: "Error",

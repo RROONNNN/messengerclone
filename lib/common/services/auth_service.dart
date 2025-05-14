@@ -16,8 +16,8 @@ class AuthService {
   static Realtime get realtime => Realtime(_client);
   static Functions get functions => Functions(_client);
 
-  static Future<String?> getUserIdFromEmailAndPassword(
-      String email, String password) async {
+  static Future<String?> getUserIdFromEmail(
+      String email) async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
         final documents = await databases.listDocuments(
@@ -30,6 +30,22 @@ class AuthService {
         if (documents.documents.isEmpty) return null;
         return documents.documents.first.$id;
       } catch (e) {
+        return null;
+      }
+    });
+  }
+  static Future<String?> getUserIdFromEmailAndPassword(
+      String email,
+      String password,
+      ) async {
+    return NetworkUtils.withNetworkCheck(() async {
+      try {
+        await signIn(email: email, password: password);
+        final user = await account.get();
+        await signOut();
+        return user.$id;
+      } on AppwriteException {
+        await signOut();
         return null;
       }
     });
