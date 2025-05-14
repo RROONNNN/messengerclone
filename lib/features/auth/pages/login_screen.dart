@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:messenger_clone/common/services/auth_service.dart';
+import 'package:messenger_clone/common/services/device_service.dart';
 import 'package:messenger_clone/features/auth/pages/register_name.dart';
 import 'package:messenger_clone/features/main_page/main_page.dart';
-
-import '../../../common/services/auth_service.dart';
-import '../../../common/services/device_service.dart';
 import '../../../common/services/opt_email_service.dart';
 import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../../../common/widgets/dialog/loading_dialog.dart';
@@ -115,8 +114,8 @@ class LoginScreenState extends State<LoginScreen> {
                       message: "Please enter complete information.",
                     );
                   } else if (!RegExp(
-                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                      ).hasMatch(_emailController.text) ||
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  ).hasMatch(_emailController.text) ||
                       _passwordController.text.length <= 8) {
                     await CustomAlertDialog.show(
                       context: context,
@@ -129,14 +128,15 @@ class LoginScreenState extends State<LoginScreen> {
                       barrierDismissible: false,
                       builder:
                           (context) =>
-                              const LoadingDialog(message: "Logging in..."),
+                      const LoadingDialog(message: "Logging in..."),
                     );
                     try {
                       final String? userID =
-                          await AuthService.getUserIdFromEmailAndPassword(
-                            _emailController.text,
-                            _passwordController.text,
-                          );
+                      await AuthService.getUserIdFromEmailAndPassword(
+                        _emailController.text,
+                        _passwordController.text,
+                      );
+                      debugPrint('userID: $userID');
                       if (userID == null) {
                         if (!context.mounted) return;
                         Navigator.of(context).pop();
@@ -147,9 +147,10 @@ class LoginScreenState extends State<LoginScreen> {
                         );
                       } else {
                         bool check =
-                            await DeviceService.hasUserLoggedInFromThisDevice(
-                              userID,
-                            );
+                        await DeviceService.hasUserLoggedInFromThisDevice(
+                          userID,
+                        );
+                        debugPrint('check: $check');
                         if (check) {
                           await AuthService.signIn(
                             email: _emailController.text,
@@ -160,7 +161,7 @@ class LoginScreenState extends State<LoginScreen> {
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(builder: (context) => MainPage()),
-                            (route) => false,
+                                (route) => false,
                           );
                         } else {
                           final otp = OTPEmailService.generateOTP();
@@ -175,20 +176,20 @@ class LoginScreenState extends State<LoginScreen> {
                             MaterialPageRoute(
                               builder:
                                   (context) => ConfirmationCodeScreen(
+                                email: _emailController.text,
+                                nextScreen: () => MainPage(),
+                                action: () async {
+                                  await AuthService.signIn(
                                     email: _emailController.text,
-                                    nextScreen: () => MainPage(),
-                                    action: () async {
-                                      await AuthService.signIn(
-                                        email: _emailController.text,
-                                        password: _passwordController.text,
-                                      );
-                                      await DeviceService.saveLoginDeviceInfo(
-                                        userID,
-                                      );
-                                    },
-                                  ),
+                                    password: _passwordController.text,
+                                  );
+                                  await DeviceService.saveLoginDeviceInfo(
+                                    userID,
+                                  );
+                                },
+                              ),
                             ),
-                            (route) => false,
+                                (route) => false,
                           );
                         }
                       }
