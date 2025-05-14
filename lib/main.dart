@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/features/chat/bloc/chat_item_bloc.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
 import 'package:provider/provider.dart';
@@ -43,7 +44,8 @@ class _MessengerCloneState extends State<MessengerClone> {
         BlocProvider(
           create:
               (context) =>
-                  ChatItemBloc(appwriteRepository: AppwriteRepository()),
+                  ChatItemBloc(appwriteRepository: AppwriteRepository())
+                    ..add(GetChatItemEvent()),
         ),
       ],
       child: MaterialApp(

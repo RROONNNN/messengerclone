@@ -31,6 +31,8 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
   late final Future<String> meId;
   StreamSubscription<RealtimeMessage>? _chatStreamSubscription;
   StreamSubscription<RealtimeMessage>? _messagesStreamSubscription;
+  Timer? _seenStatusDebouncer;
+
   MessageBloc() : super(MessageInitial()) {
     meId = HiveService.instance.getCurrentUserId();
     chatRepository = ChatRepositoryImpl();
@@ -46,7 +48,24 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     on<SubscribeToMessagesEvent>(_onSubscribeToMessagesEvent);
     on<UnsubscribeFromMessagesEvent>(_onUnsubscribeFromMessagesEvent);
     on<UpdateMessageEvent>(_onUpdateMessageEvent);
+    on<AddMeSeenMessageEvent>(_onAddMeSeenMessageEvent);
   }
+
+  void _onAddMeSeenMessageEvent(
+    AddMeSeenMessageEvent event,
+    Emitter<MessageState> emit,
+  ) async {
+    if (state is MessageLoaded) {
+      final currentState = state as MessageLoaded;
+      final MessageModel message = event.message;
+      if (message.idFrom != currentState.meId &&
+          message.isContains(currentState.meId)) {
+        message.addUserSeen(appUser.User.createMeUser(currentState.meId));
+        await chatRepository.updateMessage(message);
+      }
+    }
+  }
+
   void _onUpdateMessageEvent(
     UpdateMessageEvent event,
     Emitter<MessageState> emit,
@@ -58,16 +77,19 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
         final List<MessageModel> messages = List<MessageModel>.from(
           currentState.messages,
         );
+
         final int index = messages.indexWhere(
           (message) => message.id == messageId,
         );
         if (index != -1) {
-          if (messages[index].reactions.length ==
-              event.message.reactions.length) {
-            return;
-          }
+          // if (messages[index].reactions.length ==
+          //     event.message.reactions.length) {
+          //   return;
+          // }
+
           messages[index] = event.message;
           emit(currentState.copyWith(messages: messages));
+          _debouncedUpdateSeenStatus(event.message);
         }
       } catch (error) {
         debugPrint('Error updating message: $error');
@@ -242,6 +264,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
         final MessageModel newMessage = MessageModel.fromMap(
           payload[AppwriteDatabaseConstants.lastMessage],
         );
+        _debouncedUpdateSeenStatus(newMessage);
 
         final String me = await meId;
         if (newMessage.idFrom != me) {
@@ -309,7 +332,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
       switch (event.message.runtimeType) {
         case String:
           newMessage = MessageModel(
-            idFrom: me,
+            sender: appUser.User.createMeUser(me),
             content: event.message,
             type: "text",
             groupMessagesId: groupMessage.groupMessagesId,
@@ -325,7 +348,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
           final File file = await chatRepository.uploadFile(filePath, me);
           final String url = generateUrl(file);
           newMessage = MessageModel(
-            idFrom: me,
+            sender: appUser.User.createMeUser(me),
             content: url,
             type: "video",
             groupMessagesId: groupMessage.groupMessagesId,
@@ -349,7 +372,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
           final File file = await chatRepository.uploadFile(filePath, me);
           final String url = generateUrl(file);
           newMessage = MessageModel(
-            idFrom: me,
+            sender: appUser.User.createMeUser(me),
             content: url,
             type: "image",
             groupMessagesId: groupMessage.groupMessagesId,
@@ -490,6 +513,12 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
 
       final finalGroupMessage =
           groupResult.fold((_) => null, (group) => group)!;
+      MessageModel? lastMessage = finalGroupMessage.lastMessage;
+      if (lastMessage != null &&
+          lastMessage.idFrom != me &&
+          !lastMessage.usersSeen.contains(appUser.User.createMeUser(me))) {
+        lastMessage.addUserSeen(appUser.User.createMeUser(me));
+      }
       final List<appUser.User> others =
           (finalGroupMessage.users.length > 1)
               ? finalGroupMessage.users.where((user) => user.id != me).toList()
@@ -580,5 +609,12 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
       userIds: [currentUserId, otherUser.id],
       groupId: groupId,
     );
+  }
+
+  void _debouncedUpdateSeenStatus(MessageModel message) {
+    _seenStatusDebouncer?.cancel();
+    _seenStatusDebouncer = Timer(const Duration(milliseconds: 500), () {
+      add(AddMeSeenMessageEvent(message));
+    });
   }
 }
