@@ -18,12 +18,12 @@ import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/chat/model/user.dart' as appUser;
+import 'package:messenger_clone/features/messages/data/data_sources/local/hive_chat_repository.dart';
 import 'package:messenger_clone/features/messages/data/repositories/chat_repository_impl.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
 import 'package:messenger_clone/features/messages/enum/message_status.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
-import 'package:http/http.dart' as http;
 
 part 'message_event.dart';
 part 'message_state.dart';
@@ -201,6 +201,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
 
   @override
   Future<void> close() async {
+    add(UnsubscribeFromChatStreamEvent());
     await _chatStreamSubscription?.cancel();
     _chatStreamSubscription = null;
     await _messagesStreamSubscription?.cancel();
@@ -208,11 +209,16 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
 
     if (state is MessageLoaded) {
       final currentState = state as MessageLoaded;
-      // Dispose video players
+      await HiveChatRepository.instance.saveMessages(
+        currentState.groupMessage.groupMessagesId,
+        currentState.messages,
+      );
+
       for (var controller in currentState.videoPlayers.values) {
         await controller.dispose();
       }
     }
+    add(ClearMessageEvent());
 
     return super.close();
   }
@@ -445,6 +451,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
               currentState.groupMessage.groupMessagesId,
               _limit,
               offset,
+              null,
             )
             .timeout(
               const Duration(seconds: 10),
@@ -517,6 +524,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
 
       final finalGroupMessage =
           groupResult.fold((_) => null, (group) => group)!;
+
       MessageModel? lastMessage = finalGroupMessage.lastMessage;
       if (lastMessage != null &&
           lastMessage.idFrom != me &&
@@ -527,10 +535,32 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
           (finalGroupMessage.users.length > 1)
               ? finalGroupMessage.users.where((user) => user.id != me).toList()
               : (finalGroupMessage.users).toList();
+      List<MessageModel> cachedMessages =
+          await HiveChatRepository.instance.getMessages(
+            finalGroupMessage.groupMessagesId,
+          ) ??
+          [];
 
-      // Fetch messages with timeout handling
-      final List<MessageModel> messages = await chatRepository
-          .getMessages(finalGroupMessage.groupMessagesId, _limit, 0)
+      if (cachedMessages.isNotEmpty) {
+        emit(
+          MessageLoaded(
+            messages: cachedMessages,
+            groupMessage: finalGroupMessage,
+            others: others,
+            meId: me,
+            hasMoreMessages: true,
+          ),
+        );
+      }
+      final DateTime? latestTimestamp =
+          cachedMessages.isNotEmpty ? cachedMessages.first.createdAt : null;
+      final List<MessageModel> newMessages = await chatRepository
+          .getMessages(
+            finalGroupMessage.groupMessagesId,
+            _limit,
+            0,
+            latestTimestamp,
+          )
           .timeout(
             const Duration(seconds: 10),
             onTimeout:
@@ -539,11 +569,13 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
                       "Request timed out. Please check your connection.",
                     ),
           );
+      final allMessages = [...newMessages, ...cachedMessages]
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       Map<String, VideoPlayerController> videoPlayers = {};
       Map<String, Image> images = {};
 
-      for (final MessageModel message in messages) {
+      for (final MessageModel message in allMessages) {
         if (message.type == "video") {
           try {
             if (await isCacheFile(message.content, AppWriteService.bucketId)) {
@@ -595,11 +627,11 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
       }
       emit(
         MessageLoaded(
-          messages: messages,
+          messages: allMessages,
           groupMessage: finalGroupMessage,
           others: others,
           meId: me,
-          hasMoreMessages: messages.length >= _limit,
+          hasMoreMessages: true,
           videoPlayers: videoPlayers,
           images: images,
         ),
@@ -648,33 +680,6 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
       add(AddMeSeenMessageEvent(message));
     });
   }
-
-  // Future<String> downloadFile(String url, String filePath) async {
-  //   try {
-  //     final Future<http.Response> responseFuture = http.get(Uri.parse(url));
-  //     final Directory cacheDir = await getTemporaryDirectory();
-  //     final String dirPath = '${cacheDir.path}/$filePath';
-  //     final String fullPath = '$dirPath/$url';
-  //     final file = dart.File(fullPath);
-  //     final Future<void> dirCreationFuture = dart.Directory(
-  //       dirPath,
-  //     ).create(recursive: true);
-  //     final results = await Future.wait([dirCreationFuture, responseFuture]);
-  //     final http.Response response = results[1] as http.Response;
-  //     if (response.statusCode != 200) {
-  //       throw Exception("Failed to download file: ${response.statusCode}");
-  //     }
-  //     final bytes = response.bodyBytes;
-
-  //     await file.writeAsBytes(bytes);
-
-  //     debugPrint("File downloaded and saved to $fullPath");
-  //     return fullPath;
-  //   } catch (error) {
-  //     debugPrint("Failed to download file: $error");
-  //     throw Exception("Failed to download file: $error");
-  //   }
-  // }
 
   Future<bool> isCacheFile(String url, String filePath) async {
     if (filePath.isEmpty) {

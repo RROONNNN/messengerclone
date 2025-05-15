@@ -9,6 +9,7 @@ abstract class AbstractChatRepository {
     String groupChatId,
     int limit,
     int offset,
+    DateTime? newerThan,
   );
   Future<Either<String, void>> sendMessage(
     MessageModel message,

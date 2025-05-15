@@ -77,8 +77,7 @@ class _MessagesPageState extends State<MessagesPage> {
       ..removeListener(_scrollListener)
       ..dispose();
     if (mounted) {
-      _messageBloc.add(UnsubscribeFromChatStreamEvent());
-      _messageBloc.add(ClearMessageEvent());
+      _messageBloc.close();
     }
     super.dispose();
   }

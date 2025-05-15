@@ -131,18 +131,32 @@ class AppwriteChatRepository {
     String groupMessId,
     int limit,
     int offset,
+    DateTime? newerThan,
   ) async {
     try {
-      final DocumentList response = await AuthService.databases.listDocuments(
-        databaseId: AppwriteConfig.databaseId,
-        collectionId: AppwriteConfig.messageCollectionId,
-        queries: [
-          Query.equal(AppwriteDatabaseConstants.groupMessagesId, groupMessId),
-          Query.orderDesc('\$createdAt'),
-          Query.limit(limit),
-          Query.offset(offset),
-        ],
-      );
+      final DocumentList response = await AppWriteService.databases
+          .listDocuments(
+            databaseId: AppWriteService.databaseId,
+            collectionId: AppWriteService.messageCollectionId,
+            queries:
+                (newerThan != null)
+                    ? [
+                      Query.equal(
+                        AppwriteDatabaseConstants.groupMessagesId,
+                        groupMessId,
+                      ),
+                      Query.orderDesc('\$createdAt'),
+                      Query.greaterThan(
+                        AppwriteDatabaseConstants.createdAt,
+                        newerThan.toIso8601String(),
+                      ),
+                    ]
+                    : [
+                      Query.orderDesc('\$createdAt'),
+                      Query.limit(limit),
+                      Query.offset(offset),
+                    ],
+          );
       debugPrint(
         'Fetched ${response.documents.length} messages for groupMessId: $groupMessId',
       );

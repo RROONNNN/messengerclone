@@ -1,20 +1,32 @@
 import 'package:appwrite/appwrite.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:messenger_clone/common/constants/appwrite_database_constants.dart';
 import 'package:messenger_clone/common/services/common_function.dart';
 import 'package:messenger_clone/common/services/date_time_format.dart';
 import 'package:messenger_clone/features/chat/model/user.dart';
 import 'package:messenger_clone/features/messages/enum/message_status.dart';
+part 'message_model.g.dart';
 
-class MessageModel {
+@HiveType(typeId: 0)
+class MessageModel extends HiveObject {
+  @HiveField(0)
   String id;
   late final String idFrom;
+  @HiveField(1)
   DateTime createdAt;
+  @HiveField(2)
   final String content;
+  @HiveField(3)
   final String type;
+  @HiveField(4)
   final String groupMessagesId;
+  @HiveField(5)
   List<String> reactions;
+  @HiveField(6)
   MessageStatus? status;
+  @HiveField(7)
   List<User> usersSeen;
+  @HiveField(8)
   final User sender;
 
   MessageModel({
@@ -28,9 +40,8 @@ class MessageModel {
     this.status,
     this.usersSeen = const [],
   }) : id = id ?? ID.unique(),
-       createdAt = createdAt ?? DateTime.now().toUtc() {
-    idFrom = sender.id;
-  }
+       createdAt = createdAt ?? DateTime.now().toUtc(),
+       idFrom = sender.id;
 
   Map<String, dynamic> toJson() {
     return {

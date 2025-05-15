@@ -29,12 +29,14 @@ class ChatRepositoryImpl implements AbstractChatRepository {
     String groupMessId,
     int limit,
     int offset,
+    DateTime? newerThan,
   ) async {
     try {
       final response = await appwriteChatRepository.getMessages(
         groupMessId,
         limit,
         offset,
+        newerThan,
       );
       return response;
     } catch (error) {
