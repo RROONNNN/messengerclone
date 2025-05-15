@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io' as io;
+import 'dart:io';
+import 'dart:io' as dart;
 
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
@@ -19,7 +21,9 @@ import 'package:messenger_clone/features/chat/model/user.dart' as appUser;
 import 'package:messenger_clone/features/messages/data/repositories/chat_repository_impl.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
 import 'package:messenger_clone/features/messages/enum/message_status.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
+import 'package:http/http.dart' as http;
 
 part 'message_event.dart';
 part 'message_state.dart';
@@ -32,6 +36,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
   StreamSubscription<RealtimeMessage>? _chatStreamSubscription;
   StreamSubscription<RealtimeMessage>? _messagesStreamSubscription;
   Timer? _seenStatusDebouncer;
+  static const videoFileCachePath = 'videoMessage';
 
   MessageBloc() : super(MessageInitial()) {
     meId = HiveService.instance.getCurrentUserId();
@@ -542,6 +547,20 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
       for (final MessageModel message in messages) {
         if (message.type == "video") {
           try {
+            if (await isCacheFile(message.content, videoFileCachePath)) {
+              debugPrint("File already exists in cache: ${message.content}");
+              final controller = VideoPlayerController.file(
+                io.File(
+                  "${(await getTemporaryDirectory()).path}/$videoFileCachePath/${getFileidFromUrl(message.content)}",
+                ),
+              );
+              videoPlayers[message.id] = controller;
+              controller.initialize().then((_) {
+                videoPlayers[message.id] = controller;
+              });
+              continue;
+            }
+            chatRepository.downloadFile(message.content, videoFileCachePath);
             final controller = VideoPlayerController.networkUrl(
               Uri.parse(message.content),
             );
@@ -616,5 +635,70 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     _seenStatusDebouncer = Timer(const Duration(milliseconds: 500), () {
       add(AddMeSeenMessageEvent(message));
     });
+  }
+
+  // Future<String> downloadFile(String url, String filePath) async {
+  //   try {
+  //     final Future<http.Response> responseFuture = http.get(Uri.parse(url));
+  //     final Directory cacheDir = await getTemporaryDirectory();
+  //     final String dirPath = '${cacheDir.path}/$filePath';
+  //     final String fullPath = '$dirPath/$url';
+  //     final file = dart.File(fullPath);
+  //     final Future<void> dirCreationFuture = dart.Directory(
+  //       dirPath,
+  //     ).create(recursive: true);
+  //     final results = await Future.wait([dirCreationFuture, responseFuture]);
+  //     final http.Response response = results[1] as http.Response;
+  //     if (response.statusCode != 200) {
+  //       throw Exception("Failed to download file: ${response.statusCode}");
+  //     }
+  //     final bytes = response.bodyBytes;
+
+  //     await file.writeAsBytes(bytes);
+
+  //     debugPrint("File downloaded and saved to $fullPath");
+  //     return fullPath;
+  //   } catch (error) {
+  //     debugPrint("Failed to download file: $error");
+  //     throw Exception("Failed to download file: $error");
+  //   }
+  // }
+
+  Future<bool> isCacheFile(String url, String filePath) async {
+    if (filePath.isEmpty) {
+      return false;
+    }
+    final String fileid = getFileidFromUrl(url);
+    final Directory cacheDir = await getTemporaryDirectory();
+    final String dirPath = '${cacheDir.path}/$filePath/$fileid';
+    final dart.File file = dart.File(dirPath);
+    return file.existsSync();
+  }
+
+  String getFileidFromUrl(String url) {
+    try {
+      final Uri uri = Uri.parse(url);
+
+      if (!uri.host.contains('appwrite.io') ||
+          !uri.path.contains('/storage/buckets/')) {
+        debugPrint('Not a valid Appwrite storage URL: $url');
+        throw Exception('Not a valid Appwrite storage URL');
+      }
+
+      final List<String> segments = uri.pathSegments;
+      final int filesIndex = segments.indexOf('files');
+
+      if (filesIndex == -1 || filesIndex + 1 >= segments.length) {
+        debugPrint('URL format not recognized: $url');
+        throw Exception('URL format not recognized');
+      }
+
+      final String fileId = segments[filesIndex + 1];
+      debugPrint('Extracted fileId: $fileId from URL');
+      return fileId;
+    } catch (e) {
+      debugPrint('Error extracting file info from URL: $e');
+      throw Exception('Failed to extract fileId from URL');
+    }
   }
 }

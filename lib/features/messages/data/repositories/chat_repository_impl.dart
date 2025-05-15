@@ -114,4 +114,14 @@ class ChatRepositoryImpl implements AbstractChatRepository {
       throw Exception("Failed to upload file: $error");
     }
   }
+
+  @override
+  Future<String> downloadFile(String url, String filePath) async {
+    try {
+      return appwriteChatRepository.downloadFile(url, filePath);
+    } catch (error) {
+      debugPrint("Failed to download file: $error");
+      throw Exception("Failed to download file: $error");
+    }
+  }
 }

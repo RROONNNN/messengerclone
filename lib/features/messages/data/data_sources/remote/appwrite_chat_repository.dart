@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:appwrite/appwrite.dart';
 import 'dart:io' as dart;
 import 'package:appwrite/models.dart';
@@ -7,10 +9,65 @@ import 'package:messenger_clone/common/services/auth_service.dart';
 import 'package:messenger_clone/common/services/story_service.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../../../common/services/app_write_config.dart';
 
 class AppwriteChatRepository {
+  String getFileidFromUrl(String url) {
+    try {
+      final Uri uri = Uri.parse(url);
+
+      if (!uri.host.contains('appwrite.io') ||
+          !uri.path.contains('/storage/buckets/')) {
+        debugPrint('Not a valid Appwrite storage URL: $url');
+        throw Exception('Not a valid Appwrite storage URL');
+      }
+
+      final List<String> segments = uri.pathSegments;
+      final int filesIndex = segments.indexOf('files');
+
+      if (filesIndex == -1 || filesIndex + 1 >= segments.length) {
+        debugPrint('URL format not recognized: $url');
+        throw Exception('URL format not recognized');
+      }
+
+      final String fileId = segments[filesIndex + 1];
+      debugPrint('Extracted fileId: $fileId from URL');
+      return fileId;
+    } catch (e) {
+      debugPrint('Error extracting file info from URL: $e');
+      throw Exception('Failed to extract fileId from URL');
+    }
+  }
+
+  Future<String> downloadFile(String url, String filePath) async {
+    try {
+      final String fileId = getFileidFromUrl(url);
+      final Future<Uint8List> downloadFuture = AppWriteService.storage
+          .getFileDownload(bucketId: AppWriteService.bucketId, fileId: fileId);
+      final Directory cacheDir = await getTemporaryDirectory();
+      final String dirPath = '${cacheDir.path}/$filePath';
+      final String fullPath = '$dirPath/$fileId';
+      final file = dart.File(fullPath);
+
+      final Future<void> dirCreationFuture = dart.Directory(
+        dirPath,
+      ).create(recursive: true);
+
+      final results = await Future.wait([dirCreationFuture, downloadFuture]);
+      final bytes = results[1] as Uint8List;
+
+      await file.writeAsBytes(bytes);
+
+      debugPrint("File downloaded and saved to $fullPath");
+      return fullPath;
+    } catch (error) {
+      debugPrint("Failed to download file: $error");
+      throw Exception("Failed to download file: $error");
+    }
+  }
+
   Future<MessageModel> updateMessage(MessageModel message) async {
     try {
       final Document messageDocument = await AuthService.databases

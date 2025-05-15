@@ -30,4 +30,5 @@ abstract class AbstractChatRepository {
     List<String> messageIds,
   );
   Future<File> uploadFile(String filePath, String senderId);
+  Future<String> downloadFile(String url, String filePath);
 }
