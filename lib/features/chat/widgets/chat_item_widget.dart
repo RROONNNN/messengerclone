@@ -113,8 +113,8 @@ class ChatItemWidget extends StatelessWidget {
         final content = _getMessageContent(currentUserId);
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(
-            vertical: 12,
-            horizontal: 16,
+            vertical: 5,
+            horizontal: 8,
           ),
           dense: true,
           onTap: onTap,
@@ -157,67 +157,69 @@ class ChatItemWidget extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: ContentText(
-                              content,
-                              color:
-                                  item.hasUnread
-                                      ? context.theme.textColor
-                                      : context.theme.textColor.withOpacity(
-                                        0.5,
-                                      ),
-                              fontWeight:
-                                  item.hasUnread
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                              fontSize: 16,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                        ),
-
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            top: 4,
-                            left: 4,
-                            right: 4,
-                          ),
-                          child: Text(
-                            "·",
-                            style: TextStyle(
-                              color:
-                                  item.hasUnread
-                                      ? context.theme.textColor
-                                      : context.theme.textColor.withOpacity(
-                                        0.5,
-                                      ),
-                              fontSize: 16,
-                              fontWeight:
-                                  item.hasUnread
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            DateTimeFormat.dateTimeToString(item.vietnamTime),
-                            style: TextStyle(
-                              fontSize: 14,
-                              color:
-                                  item.hasUnread
-                                      ? context.theme.textColor
-                                      : context.theme.textColor.withOpacity(
-                                        0.5,
-                                      ),
-                              fontWeight:
-                                  item.hasUnread
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                            ),
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: ContentText(
+                                    content,
+                                    color:
+                                        item.hasUnread
+                                            ? context.theme.textColor
+                                            : context.theme.textColor
+                                                .withOpacity(0.5),
+                                    fontWeight:
+                                        item.hasUnread
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                    fontSize: 16,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 4,
+                                  left: 4,
+                                  right: 4,
+                                ),
+                                child: Text(
+                                  "·",
+                                  style: TextStyle(
+                                    color:
+                                        item.hasUnread
+                                            ? context.theme.textColor
+                                            : context.theme.textColor
+                                                .withOpacity(0.5),
+                                    fontSize: 16,
+                                    fontWeight:
+                                        item.hasUnread
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                DateTimeFormat.dateTimeToString(
+                                  item.vietnamTime,
+                                ),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color:
+                                      item.hasUnread
+                                          ? context.theme.textColor
+                                          : context.theme.textColor.withOpacity(
+                                            0.5,
+                                          ),
+                                  fontWeight:
+                                      item.hasUnread
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

@@ -113,6 +113,9 @@ class _ChatPageState extends State<ChatPage> {
                 itemCount: state.chatItems.length,
                 itemBuilder: (context, index) {
                   final item = state.chatItems[index];
+                  if (item.groupMessage.lastMessage == null) {
+                    return const SizedBox.shrink();
+                  }
                   return Column(
                     children: [
                       ChatItemWidget(

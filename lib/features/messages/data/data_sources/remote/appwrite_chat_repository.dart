@@ -152,6 +152,10 @@ class AppwriteChatRepository {
                       ),
                     ]
                     : [
+                      Query.equal(
+                        AppwriteDatabaseConstants.groupMessagesId,
+                        groupMessId,
+                      ),
                       Query.orderDesc('\$createdAt'),
                       Query.limit(limit),
                       Query.offset(offset),
@@ -196,10 +200,10 @@ class AppwriteChatRepository {
         documentId: groupMessage.groupMessagesId,
         data: {AppwriteDatabaseConstants.lastMessage: messageId},
       );
-      await _addGroupChatIdToUser(message.idFrom, message.groupMessagesId);
-      for (String receiver in receivers) {
-        await _addGroupChatIdToUser(receiver, message.groupMessagesId);
-      }
+      // await _addGroupChatIdToUser(message.idFrom, message.groupMessagesId);
+      // for (String receiver in receivers) {
+      //   await _addGroupChatIdToUser(receiver, message.groupMessagesId);
+      // }
     } catch (error) {
       throw Exception("Failed to send message: $error");
     }

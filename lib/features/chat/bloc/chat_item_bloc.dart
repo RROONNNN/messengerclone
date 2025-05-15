@@ -41,9 +41,6 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
         });
         List<ChatItem> chatItems = [];
         for (var groupMessage in groupMessages) {
-          if (groupMessage.lastMessage == null) {
-            continue;
-          }
           chatItems.add(ChatItem(groupMessage: groupMessage, meId: me));
         }
         emit(ChatItemLoaded(meId: me, chatItems: chatItems));
@@ -59,13 +56,26 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
           final GroupMessage groupMessage = await appwriteRepository
               .getGroupMessageById(event.groupChatId);
           List<ChatItem> chatItems = List.from(currentState.chatItems);
-          for (int i = 0; i < chatItems.length; i++) {
-            if (chatItems[i].groupMessage.groupMessagesId ==
-                groupMessage.groupMessagesId) {
-              chatItems[i] = chatItems[i].copyWith(groupMessage: groupMessage);
-              break;
-            }
+          // for (int i = 0; i < chatItems.length; i++) {
+          //   if (chatItems[i].groupMessage.groupMessagesId ==
+          //       groupMessage.groupMessagesId) {
+          //     chatItems[i] = chatItems[i].copyWith(groupMessage: groupMessage);
+          //     break;
+          //   }
+          // }
+          final index = chatItems.indexWhere(
+            (element) =>
+                element.groupMessage.groupMessagesId ==
+                groupMessage.groupMessagesId,
+          );
+          if (index != -1) {
+            final chatItem = chatItems[index].copyWith(
+              groupMessage: groupMessage,
+            );
+            chatItems.removeAt(index);
+            chatItems.insert(0, chatItem);
           }
+
           emit(currentState.copyWith(chatItems: chatItems));
           add(SubscribeToChatStreamEvent());
         }
