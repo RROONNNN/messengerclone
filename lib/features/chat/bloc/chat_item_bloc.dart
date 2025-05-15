@@ -170,6 +170,28 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
         emit(ChatItemError(message: error.toString()));
       }
     });
+    on<UpdateChatItemFromMessagePageEvent>((event, emit) async {
+      try {
+        if (state is ChatItemLoaded) {
+          final currentState = state as ChatItemLoaded;
+          final List<ChatItem> chatItems = (currentState.chatItems).toList();
+          final GroupMessage newGroupMessage = event.groupMessage;
+          final index = chatItems.indexWhere(
+            (element) =>
+                element.groupMessage.groupMessagesId ==
+                newGroupMessage.groupMessagesId,
+          );
+          if (index != -1) {
+            chatItems[index] = chatItems[index].copyWith(
+              groupMessage: newGroupMessage,
+            );
+          }
+          emit(currentState.copyWith(chatItems: chatItems));
+        }
+      } catch (error) {
+        emit(ChatItemError(message: error.toString()));
+      }
+    });
   }
   @override
   Future<void> close() async {

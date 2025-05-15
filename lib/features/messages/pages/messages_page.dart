@@ -244,6 +244,7 @@ class _MessagesPageState extends State<MessagesPage> {
                               children: [
                                 ...state.messages.first.usersSeen
                                     .take(3)
+                                    .where((user) => user.id != state.meId)
                                     .map(
                                       (user) => Padding(
                                         padding: const EdgeInsets.only(

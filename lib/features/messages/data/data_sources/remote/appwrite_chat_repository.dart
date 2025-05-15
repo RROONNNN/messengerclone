@@ -147,7 +147,7 @@ class AppwriteChatRepository {
                       ),
                       Query.orderDesc('\$createdAt'),
                       Query.greaterThan(
-                        AppwriteDatabaseConstants.createdAt,
+                        '\$createdAt',
                         newerThan.toIso8601String(),
                       ),
                     ]

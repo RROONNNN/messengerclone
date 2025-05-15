@@ -32,3 +32,10 @@ final class SubscribeToChatStreamEvent extends ChatItemEvent {
   @override
   List<Object> get props => [];
 }
+
+final class UpdateChatItemFromMessagePageEvent extends ChatItemEvent {
+  final GroupMessage groupMessage;
+  const UpdateChatItemFromMessagePageEvent({required this.groupMessage});
+  @override
+  List<Object> get props => [groupMessage];
+}

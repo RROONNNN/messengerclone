@@ -63,7 +63,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
       final currentState = state as MessageLoaded;
       final MessageModel message = event.message;
       if (message.idFrom != currentState.meId &&
-          message.isContains(currentState.meId)) {
+          !message.isContains(currentState.meId)) {
         message.addUserSeen(appUser.User.createMeUser(currentState.meId));
         await chatRepository.updateMessage(message);
       }
@@ -209,9 +209,17 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
 
     if (state is MessageLoaded) {
       final currentState = state as MessageLoaded;
+      //delete message status failed or sending
+      final List<MessageModel> messages = List<MessageModel>.from(
+        currentState.messages.where(
+          (message) =>
+              message.status != MessageStatus.failed &&
+              message.status != MessageStatus.sending,
+        ),
+      );
       await HiveChatRepository.instance.saveMessages(
         currentState.groupMessage.groupMessagesId,
-        currentState.messages,
+        messages,
       );
 
       for (var controller in currentState.videoPlayers.values) {
@@ -278,6 +286,10 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
 
         final String me = await meId;
         if (newMessage.idFrom != me) {
+          if (messages.first.id == newMessage.id) {
+            debugPrint('Received message is already in the list: $newMessage');
+            return;
+          }
           messages.insert(0, newMessage);
           Map<String, VideoPlayerController> updatedVideoPlayers = Map.from(
             currentState.videoPlayers,
@@ -522,7 +534,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
         return;
       }
 
-      final finalGroupMessage =
+      GroupMessage finalGroupMessage =
           groupResult.fold((_) => null, (group) => group)!;
 
       MessageModel? lastMessage = finalGroupMessage.lastMessage;
@@ -530,6 +542,10 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
           lastMessage.idFrom != me &&
           !lastMessage.usersSeen.contains(appUser.User.createMeUser(me))) {
         lastMessage.addUserSeen(appUser.User.createMeUser(me));
+        chatRepository.updateMessage(lastMessage);
+        finalGroupMessage = finalGroupMessage.copyWith(
+          lastMessage: lastMessage,
+        );
       }
       final List<appUser.User> others =
           (finalGroupMessage.users.length > 1)
