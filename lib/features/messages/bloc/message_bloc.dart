@@ -36,7 +36,6 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
   StreamSubscription<RealtimeMessage>? _chatStreamSubscription;
   StreamSubscription<RealtimeMessage>? _messagesStreamSubscription;
   Timer? _seenStatusDebouncer;
-  static const videoFileCachePath = 'videoMessage';
 
   MessageBloc() : super(MessageInitial()) {
     meId = HiveService.instance.getCurrentUserId();
@@ -547,11 +546,11 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
       for (final MessageModel message in messages) {
         if (message.type == "video") {
           try {
-            if (await isCacheFile(message.content, videoFileCachePath)) {
+            if (await isCacheFile(message.content, AppWriteService.bucketId)) {
               debugPrint("File already exists in cache: ${message.content}");
               final controller = VideoPlayerController.file(
                 io.File(
-                  "${(await getTemporaryDirectory()).path}/$videoFileCachePath/${getFileidFromUrl(message.content)}",
+                  "${(await getTemporaryDirectory()).path}/$AppWriteService.bucketId/${getFileidFromUrl(message.content)}",
                 ),
               );
               videoPlayers[message.id] = controller;
@@ -560,7 +559,10 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
               });
               continue;
             }
-            chatRepository.downloadFile(message.content, videoFileCachePath);
+            chatRepository.downloadFile(
+              message.content,
+              AppWriteService.bucketId,
+            );
             final controller = VideoPlayerController.networkUrl(
               Uri.parse(message.content),
             );
@@ -574,6 +576,16 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
         }
         if (message.type == "image") {
           try {
+            if (await isCacheFile(message.content, AppWriteService.bucketId)) {
+              debugPrint("File already exists in cache: ${message.content}");
+              final image = Image.file(
+                io.File(
+                  "${(await getTemporaryDirectory()).path}/$AppWriteService.bucketId/${getFileidFromUrl(message.content)}",
+                ),
+              );
+              images[message.id] = image;
+              continue;
+            }
             final image = Image.network(message.content);
             images[message.id] = image;
           } catch (e) {
