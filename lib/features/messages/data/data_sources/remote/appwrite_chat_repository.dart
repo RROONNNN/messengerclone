@@ -54,12 +54,11 @@ class AppwriteChatRepository {
       debugPrint('Fetching chat stream for groupChatId: $groupMessId');
       final String groupMessagesCollectionId =
           AppwriteConfig.groupMessagesCollectionId;
-      final Document groupMessageDoc = await AuthService.databases
-          .getDocument(
-            databaseId: AppwriteConfig.databaseId,
-            collectionId: AppwriteConfig.groupMessagesCollectionId,
-            documentId: groupMessId,
-          );
+      final Document groupMessageDoc = await AuthService.databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.groupMessagesCollectionId,
+        documentId: groupMessId,
+      );
       String documentId = groupMessageDoc.$id;
 
       final subscription = AuthService.realtime.subscribe([
@@ -77,20 +76,16 @@ class AppwriteChatRepository {
     int offset,
   ) async {
     try {
-      final DocumentList response = await AuthService.databases
-          .listDocuments(
-            databaseId: AppwriteConfig.databaseId,
-            collectionId: AppwriteConfig.messageCollectionId,
-            queries: [
-              Query.equal(
-                AppwriteDatabaseConstants.groupMessagesId,
-                groupMessId,
-              ),
-              Query.orderDesc('\$createdAt'),
-              Query.limit(limit),
-              Query.offset(offset),
-            ],
-          );
+      final DocumentList response = await AuthService.databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.messageCollectionId,
+        queries: [
+          Query.equal(AppwriteDatabaseConstants.groupMessagesId, groupMessId),
+          Query.orderDesc('\$createdAt'),
+          Query.limit(limit),
+          Query.offset(offset),
+        ],
+      );
       debugPrint(
         'Fetched ${response.documents.length} messages for groupMessId: $groupMessId',
       );
@@ -204,12 +199,11 @@ class AppwriteChatRepository {
         );
       }
       await Future.wait(userUpdates);
-      final Document groupMessageDoc = await AuthService.databases
-          .getDocument(
-            databaseId: AppwriteConfig.databaseId,
-            collectionId: AppwriteConfig.groupMessagesCollectionId,
-            documentId: groupMessageDocument.$id,
-          );
+      final Document groupMessageDoc = await AuthService.databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.groupMessagesCollectionId,
+        documentId: groupMessageDocument.$id,
+      );
       final GroupMessage returnVal = GroupMessage.fromJson({
         ...groupMessageDoc.data,
         'groupMessagesId': groupMessageDocument.$id,

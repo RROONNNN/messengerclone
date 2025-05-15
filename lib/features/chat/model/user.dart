@@ -1,5 +1,3 @@
-import 'package:messenger_clone/features/chat/model/group_message.dart';
-
 class User {
   final String aboutMe;
   final String name;
