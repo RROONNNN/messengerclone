@@ -15,6 +15,8 @@ class AppwriteConfig {
   static const String callsCollectionId = '68216a0900371e85d22e';
   static const String functionMetaAIId = '680b45a1003d0c997a24';
   static const String resetPasswordFunctionId = '6824cc78000907444008';
+  static const String aiChatHistoryCollectionId = '68259ead0035dcd4175a';
+  static const String aiMessagesCollectionId = '6825a0eb000ed00be4dd';
 
   static const String zegoSignId = '8666a74a545ad2e21e688a29faee944e14648db378dbf3974a2f7bc538e1dff6';
 }

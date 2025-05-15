@@ -8,11 +8,14 @@ import 'package:provider/provider.dart';
 import 'common/extensions/custom_theme_extension.dart';
 import 'common/routes/routes.dart';
 import 'common/themes/theme_provider.dart';
+import 'features/meta_ai/bloc/meta_ai_bloc.dart';
+import 'features/meta_ai/data/meta_ai_message_hive.dart';
 import 'features/splash/pages/splash.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
+  await MetaAiServiceHive.init();
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
@@ -40,6 +43,8 @@ class _MessengerCloneState extends State<MessengerClone> {
 
     return MultiBlocProvider(
       providers: [
+        BlocProvider(
+        create: (context) => MetaAiBloc()),
         BlocProvider(
           create:
               (context) =>
