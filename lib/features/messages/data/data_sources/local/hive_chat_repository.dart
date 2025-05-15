@@ -4,7 +4,7 @@ import 'package:messenger_clone/features/messages/domain/models/message_model.da
 class HiveChatRepository {
   static final HiveChatRepository instance = HiveChatRepository._internal();
   static const String _boxName = 'messagesBox';
-  late final Future<Box<List<MessageModel>>> _box;
+  late final Future<Box<List>> _box;
 
   factory HiveChatRepository() {
     return instance;
@@ -14,8 +14,8 @@ class HiveChatRepository {
     _box = _initializeBox();
   }
 
-  Future<Box<List<MessageModel>>> _initializeBox() async {
-    return await Hive.openBox<List<MessageModel>>(_boxName);
+  Future<Box<List>> _initializeBox() async {
+    return await Hive.openBox<List>(_boxName);
   }
 
   Future<void> saveMessages(String groupId, List<MessageModel> messages) async {
@@ -25,7 +25,8 @@ class HiveChatRepository {
 
   Future<List<MessageModel>?> getMessages(String groupId) async {
     final box = await _box;
-    return box.get(groupId);
+    final result = box.get(groupId, defaultValue: [])?.cast<MessageModel>();
+    return result;
   }
 
   Future<void> clearMessages(String groupId) async {

@@ -182,9 +182,9 @@ class AppwriteChatRepository {
   ) async {
     try {
       debugPrint('Sending message: ${message.toJson()}');
-      List<String> receivers =
-          groupMessage.users.map((user) => user.id).toList();
-      final Document messageDocument = await AuthService.databases
+      // List<String> receivers =
+      //     groupMessage.users.map((user) => user.id).toList();
+      final Document messageDocument = await AppWriteService.databases
           .createDocument(
             databaseId: AppwriteConfig.databaseId,
             collectionId: AppwriteConfig.messageCollectionId,
