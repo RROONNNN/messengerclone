@@ -44,8 +44,8 @@ class AppwriteChatRepository {
   Future<String> downloadFile(String url, String filePath) async {
     try {
       final String fileId = getFileidFromUrl(url);
-      final Future<Uint8List> downloadFuture = AppWriteService.storage
-          .getFileDownload(bucketId: AppWriteService.bucketId, fileId: fileId);
+      final Future<Uint8List> downloadFuture = AuthService.storage
+          .getFileDownload(bucketId: AppwriteConfig.bucketId, fileId: fileId);
       final Directory cacheDir = await getTemporaryDirectory();
       final String dirPath = '${cacheDir.path}/$filePath';
       final String fullPath = '$dirPath/$fileId';
@@ -134,33 +134,29 @@ class AppwriteChatRepository {
     DateTime? newerThan,
   ) async {
     try {
-      final DocumentList response = await AppWriteService.databases
-          .listDocuments(
-            databaseId: AppWriteService.databaseId,
-            collectionId: AppWriteService.messageCollectionId,
-            queries:
-                (newerThan != null)
-                    ? [
-                      Query.equal(
-                        AppwriteDatabaseConstants.groupMessagesId,
-                        groupMessId,
-                      ),
-                      Query.orderDesc('\$createdAt'),
-                      Query.greaterThan(
-                        '\$createdAt',
-                        newerThan.toIso8601String(),
-                      ),
-                    ]
-                    : [
-                      Query.equal(
-                        AppwriteDatabaseConstants.groupMessagesId,
-                        groupMessId,
-                      ),
-                      Query.orderDesc('\$createdAt'),
-                      Query.limit(limit),
-                      Query.offset(offset),
-                    ],
-          );
+      final DocumentList response = await AuthService.databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.messageCollectionId,
+        queries:
+            (newerThan != null)
+                ? [
+                  Query.equal(
+                    AppwriteDatabaseConstants.groupMessagesId,
+                    groupMessId,
+                  ),
+                  Query.orderDesc('\$createdAt'),
+                  Query.greaterThan('\$createdAt', newerThan.toIso8601String()),
+                ]
+                : [
+                  Query.equal(
+                    AppwriteDatabaseConstants.groupMessagesId,
+                    groupMessId,
+                  ),
+                  Query.orderDesc('\$createdAt'),
+                  Query.limit(limit),
+                  Query.offset(offset),
+                ],
+      );
       debugPrint(
         'Fetched ${response.documents.length} messages for groupMessId: $groupMessId',
       );
@@ -184,7 +180,7 @@ class AppwriteChatRepository {
       debugPrint('Sending message: ${message.toJson()}');
       // List<String> receivers =
       //     groupMessage.users.map((user) => user.id).toList();
-      final Document messageDocument = await AppWriteService.databases
+      final Document messageDocument = await AuthService.databases
           .createDocument(
             databaseId: AppwriteConfig.databaseId,
             collectionId: AppwriteConfig.messageCollectionId,

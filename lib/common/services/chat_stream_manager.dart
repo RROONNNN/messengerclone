@@ -3,7 +3,6 @@ import 'package:appwrite/appwrite.dart';
 import 'package:flutter/foundation.dart';
 
 import 'app_write_config.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
 
 class ChatStreamManager {
@@ -41,12 +40,12 @@ class ChatStreamManager {
     ];
     for (GroupMessage group in _subscribedGroupIds) {
       channels.add(
-        'databases.${AppWriteService.databaseId}.collections.${AppWriteService.groupMessagesCollectionId}.documents.${group.groupMessagesId}',
+        'databases.${AppwriteConfig.databaseId}.collections.${AppwriteConfig.groupMessagesCollectionId}.documents.${group.groupMessagesId}',
       );
 
       if (group.lastMessage != null) {
         channels.add(
-          'databases.${AppWriteService.databaseId}.collections.${AppWriteService.messageCollectionId}.documents.${group.lastMessage!.id}',
+          'databases.${AppwriteConfig.databaseId}.collections.${AppwriteConfig.messageCollectionId}.documents.${group.lastMessage!.id}',
         );
         debugPrint('Subscribing to message: ${group.lastMessage!.id}');
       }

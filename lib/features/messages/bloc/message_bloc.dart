@@ -594,11 +594,11 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
       for (final MessageModel message in allMessages) {
         if (message.type == "video") {
           try {
-            if (await isCacheFile(message.content, AppWriteService.bucketId)) {
+            if (await isCacheFile(message.content, AppwriteConfig.bucketId)) {
               debugPrint("File already exists in cache: ${message.content}");
               final controller = VideoPlayerController.file(
                 io.File(
-                  "${(await getTemporaryDirectory()).path}/$AppWriteService.bucketId/${getFileidFromUrl(message.content)}",
+                  "${(await getTemporaryDirectory()).path}/$AppwriteConfig.bucketId/${getFileidFromUrl(message.content)}",
                 ),
               );
               videoPlayers[message.id] = controller;
@@ -609,7 +609,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
             }
             chatRepository.downloadFile(
               message.content,
-              AppWriteService.bucketId,
+              AppwriteConfig.bucketId,
             );
             final controller = VideoPlayerController.networkUrl(
               Uri.parse(message.content),
@@ -624,11 +624,11 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
         }
         if (message.type == "image") {
           try {
-            if (await isCacheFile(message.content, AppWriteService.bucketId)) {
+            if (await isCacheFile(message.content, AppwriteConfig.bucketId)) {
               debugPrint("File already exists in cache: ${message.content}");
               final image = Image.file(
                 io.File(
-                  "${(await getTemporaryDirectory()).path}/$AppWriteService.bucketId/${getFileidFromUrl(message.content)}",
+                  "${(await getTemporaryDirectory()).path}/$AppwriteConfig.bucketId/${getFileidFromUrl(message.content)}",
                 ),
               );
               images[message.id] = image;

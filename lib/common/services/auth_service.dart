@@ -15,17 +15,14 @@ class AuthService {
   static Databases get databases => Databases(_client);
   static Realtime get realtime => Realtime(_client);
   static Functions get functions => Functions(_client);
-
-  static Future<String?> getUserIdFromEmail(
-      String email) async {
+  static Storage get storage => Storage(_client);
+  static Future<String?> getUserIdFromEmail(String email) async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
         final documents = await databases.listDocuments(
           databaseId: AppwriteConfig.databaseId,
           collectionId: AppwriteConfig.userCollectionId,
-          queries: [
-            Query.equal('email', email),
-          ],
+          queries: [Query.equal('email', email)],
         );
         if (documents.documents.isEmpty) return null;
         return documents.documents.first.$id;
@@ -34,10 +31,11 @@ class AuthService {
       }
     });
   }
+
   static Future<String?> getUserIdFromEmailAndPassword(
-      String email,
-      String password,
-      ) async {
+    String email,
+    String password,
+  ) async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
         await signIn(email: email, password: password);
@@ -57,9 +55,7 @@ class AuthService {
         final documents = await databases.listDocuments(
           databaseId: AppwriteConfig.databaseId,
           collectionId: AppwriteConfig.userCollectionId,
-          queries: [
-            Query.equal('email', email),
-          ],
+          queries: [Query.equal('email', email)],
         );
         return documents.documents.isNotEmpty;
       } catch (e) {
@@ -76,10 +72,7 @@ class AuthService {
       try {
         final execution = await functions.createExecution(
           functionId: AppwriteConfig.resetPasswordFunctionId,
-          body: jsonEncode({
-            'userId': userId,
-            'newPassword': newPassword,
-          }),
+          body: jsonEncode({'userId': userId, 'newPassword': newPassword}),
         );
         final response = jsonDecode(execution.responseBody);
         if (!response['success']) {
@@ -115,7 +108,9 @@ class AuthService {
           );
         }
       } on AppwriteException catch (e) {
-        throw Exception('Failed to update authentication details: ${e.message}');
+        throw Exception(
+          'Failed to update authentication details: ${e.message}',
+        );
       } catch (e) {
         throw Exception('Error updating authentication details: $e');
       }
@@ -150,10 +145,7 @@ class AuthService {
           databaseId: AppwriteConfig.databaseId,
           collectionId: AppwriteConfig.userCollectionId,
           documentId: user.$id,
-          data: {
-            'email': user.email,
-            'name': user.name,
-          },
+          data: {'email': user.email, 'name': user.name},
         );
       } on AppwriteException catch (e) {
         throw Exception('Failed to register user: ${e.message}');

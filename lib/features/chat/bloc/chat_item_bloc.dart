@@ -4,12 +4,13 @@ import 'package:appwrite/appwrite.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import 'package:messenger_clone/common/services/app_write_service.dart';
 import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
 import 'package:messenger_clone/features/chat/model/chat_item.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
+import 'package:messenger_clone/common/services/app_write_config.dart';
+import 'package:messenger_clone/common/services/auth_service.dart';
 
 part 'chat_item_event.dart';
 part 'chat_item_state.dart';
@@ -115,43 +116,43 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
           List<GroupMessage> groupMessages =
               currentState.chatItems.map((e) => e.groupMessage).toList();
           List<String> channels = [
-            'databases.${AppWriteService.databaseId}.collections.${AppWriteService.userCollectionid}.documents.$userId',
+            'databases.${AppwriteConfig.databaseId}.collections.${AppwriteConfig.userCollectionId}.documents.$userId',
           ];
           for (GroupMessage group in groupMessages) {
             channels.add(
-              'databases.${AppWriteService.databaseId}.collections.${AppWriteService.groupMessagesCollectionId}.documents.${group.groupMessagesId}',
+              'databases.${AppwriteConfig.databaseId}.collections.${AppwriteConfig.groupMessagesCollectionId}.documents.${group.groupMessagesId}',
             );
 
             if (group.lastMessage != null) {
               channels.add(
-                'databases.${AppWriteService.databaseId}.collections.${AppWriteService.messageCollectionId}.documents.${group.lastMessage!.id}',
+                'databases.${AppwriteConfig.databaseId}.collections.${AppwriteConfig.messageCollectionId}.documents.${group.lastMessage!.id}',
               );
               debugPrint('Subscribing to message: ${group.lastMessage!.id}');
             }
           }
           debugPrint('Subscribing to channels: $channels');
-          final subscription = AppWriteService.realtime.subscribe(channels);
+          final subscription = AuthService.realtime.subscribe(channels);
           _chatStreamSubscription = subscription.stream.listen(
             (message) {
               debugPrint('Received update: ${message.events}');
               if (message.events.any(
                 (event) =>
                     event.contains(
-                      'collections.${AppWriteService.userCollectionid}',
+                      'collections.${AppwriteConfig.userCollectionId}',
                     ) &&
                     event.contains(currentState.meId),
               )) {
                 add(GetChatItemEvent());
               } else if (message.events.any(
                 (event) => event.contains(
-                  'collections.${AppWriteService.groupMessagesCollectionId}',
+                  'collections.${AppwriteConfig.groupMessagesCollectionId}',
                 ),
               )) {
                 final groupId = message.payload['\$id'] as String;
                 add(UpdateChatItemEvent(groupChatId: groupId));
               } else if (message.events.any(
                 (event) => event.contains(
-                  'collections.${AppWriteService.messageCollectionId}',
+                  'collections.${AppwriteConfig.messageCollectionId}',
                 ),
               )) {
                 final MessageModel newMessage = MessageModel.fromMap(
