@@ -22,14 +22,16 @@ class MetaAiPage extends StatelessWidget {
             color: context.theme.titleHeaderColor,
             fontSize: 20,
           ),
+          backgroundColor: context.theme.appBar,
           content: StatefulBuilder(
             builder: (context, setState) {
               return DropdownButton<String>(
+                dropdownColor: context.theme.appBar,
                 value: selectedAiMode,
                 items: AIConfig.aiModeLabels.entries
                     .map((entry) => DropdownMenuItem(
                   value: entry.key,
-                  child: Text(entry.value),
+                  child: Text(entry.value , style: TextStyle(color: context.theme.textColor),),
                 ))
                     .toList(),
                 onChanged: (value) {
@@ -45,7 +47,7 @@ class MetaAiPage extends StatelessWidget {
               onPressed: () => Navigator.pop(context),
               child: TitleText(
                 'Hủy',
-                color: context.theme.textColor,
+                color: context.theme.red,
                 fontSize: 16,
               ),
             ),
@@ -179,6 +181,7 @@ class MetaAiPage extends StatelessWidget {
                 if (conversations.isNotEmpty)
                   Container(
                     height: 60,
+                    color: context.theme.grey,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
@@ -195,6 +198,7 @@ class MetaAiPage extends StatelessWidget {
                             ),
                             selected: currentConversationId == conv['id'],
                             selectedColor: context.theme.blue,
+                            backgroundColor: context.theme.bg,
                             onSelected: (selected) {
                               if (selected) context.read<MetaAiBloc>().add(LoadConversation(conv['id']));
                             },
@@ -276,36 +280,38 @@ class MetaAiPage extends StatelessWidget {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: context.read<MetaAiBloc>().messageController,
-                          decoration: InputDecoration(
-                            hintText: 'Nhập tin nhắn...',
-                            filled: true,
-                            fillColor: context.theme.white,
-                            border: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(30)),
-                              borderSide: BorderSide.none,
+                   Container(
+                     color: context.theme.bg,
+                     child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: context.read<MetaAiBloc>().messageController,
+                            decoration: InputDecoration(
+                              hintText: 'Nhập tin nhắn...',
+                              hintStyle: TextStyle(color: context.theme.textGrey),
+                              labelStyle: TextStyle(color: context.theme.textColor),
+                              filled: true,
+                              fillColor: context.theme.grey,
+                              border: const OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(30)),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      FloatingActionButton(
-                        onPressed: currentConversationId == null
-                            ? null
-                            : () => context.read<MetaAiBloc>().add(SendMessage(context.read<MetaAiBloc>().messageController.text)),
-                        backgroundColor: context.theme.blue,
-                        child: Icon(Icons.send, color: context.theme.white),
-                      ),
-                    ],
-                  ),
-                ),
+                        const SizedBox(width: 8),
+                        FloatingActionButton(
+                          onPressed: currentConversationId == null
+                              ? null
+                              : () => context.read<MetaAiBloc>().add(SendMessage(context.read<MetaAiBloc>().messageController.text)),
+                          backgroundColor: context.theme.blue,
+                          child: Icon(Icons.send, color: context.theme.white),
+                        ),
+                      ],
+                                       ),
+                   ),
               ],
             ),
           ),

@@ -9,6 +9,7 @@ import 'common/extensions/custom_theme_extension.dart';
 import 'common/routes/routes.dart';
 import 'common/themes/theme_provider.dart';
 import 'features/meta_ai/bloc/meta_ai_bloc.dart';
+import 'features/meta_ai/bloc/meta_ai_event.dart';
 import 'features/meta_ai/data/meta_ai_message_hive.dart';
 import 'features/splash/pages/splash.dart';
 
@@ -44,7 +45,7 @@ class _MessengerCloneState extends State<MessengerClone> {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-        create: (context) => MetaAiBloc()),
+        create: (context) => MetaAiBloc()..add(InitializeMetaAi())),
         BlocProvider(
           create:
               (context) =>
