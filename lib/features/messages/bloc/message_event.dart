@@ -102,3 +102,10 @@ final class PickImage extends MessageEvent {
   @override
   List<Object> get props => [source];
 }
+
+final class AddMeSeenMessageEvent extends MessageEvent {
+  final MessageModel message;
+  const AddMeSeenMessageEvent(this.message);
+  @override
+  List<Object> get props => [message];
+}

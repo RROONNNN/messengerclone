@@ -29,12 +29,14 @@ class ChatRepositoryImpl implements AbstractChatRepository {
     String groupMessId,
     int limit,
     int offset,
+    DateTime? newerThan,
   ) async {
     try {
       final response = await appwriteChatRepository.getMessages(
         groupMessId,
         limit,
         offset,
+        newerThan,
       );
       return response;
     } catch (error) {
@@ -112,6 +114,16 @@ class ChatRepositoryImpl implements AbstractChatRepository {
     } catch (error) {
       debugPrint("Failed to upload file: $error");
       throw Exception("Failed to upload file: $error");
+    }
+  }
+
+  @override
+  Future<String> downloadFile(String url, String filePath) async {
+    try {
+      return appwriteChatRepository.downloadFile(url, filePath);
+    } catch (error) {
+      debugPrint("Failed to download file: $error");
+      throw Exception("Failed to download file: $error");
     }
   }
 }

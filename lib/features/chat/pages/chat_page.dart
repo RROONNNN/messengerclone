@@ -1,17 +1,11 @@
-import 'dart:async';
-
-import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 import 'package:messenger_clone/common/routes/routes.dart';
-import 'package:messenger_clone/common/services/app_write_config.dart';
-import 'package:messenger_clone/common/services/chat_stream_manager.dart';
-import 'package:messenger_clone/common/services/hive_service.dart';
+
 import 'package:messenger_clone/common/widgets/elements/custom_round_avatar.dart';
 import 'package:messenger_clone/features/chat/bloc/chat_item_bloc.dart';
-import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
-import 'package:messenger_clone/features/chat/model/group_message.dart';
+
 import 'package:messenger_clone/features/chat/pages/searching_page.dart';
 
 import '../model/chat_item.dart';
@@ -25,9 +19,6 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  String? currentUserId;
-  late final AppwriteRepository appwriteRepository;
-  late final ChatStreamManager _chatStreamManager;
   final List<String> friends = [
     'Tôi',
     'Hiển',
@@ -42,85 +33,20 @@ class _ChatPageState extends State<ChatPage> {
     'Tâm',
     'Tuấn',
   ];
-  bool isGetItemAgain = false;
+
   @override
   void initState() {
     super.initState();
-    appwriteRepository = AppwriteRepository();
-
-    _chatStreamManager = ChatStreamManager(
-      onMessageReceived: _handleRealtimeMessage,
-      onError: (error) {
-        debugPrint('Error in realtime stream: $error');
-      },
-    );
-    _initializeChatItems();
-    debugPrint("ChatPage initialized");
-  }
-
-  Future<void> _initializeChatItems() async {
-    currentUserId = await HiveService().getCurrentUserId();
-    setState(() {});
-    if (currentUserId != null) {
-      BlocProvider.of<ChatItemBloc>(
-        context,
-      ).add(GetChatItemEvent(userid: currentUserId!));
-      final groupMessages = await appwriteRepository.getGroupMessagesByUserId(
-        currentUserId!,
-      );
-      final groupIds = groupMessages.map((gm) => gm.groupMessagesId).toList();
-      await _chatStreamManager.initialize(currentUserId!, groupIds);
-    }
-  }
-
-  void _handleRealtimeMessage(RealtimeMessage message) {
-    debugPrint('Received update: ${message.events}');
-    if (currentUserId == null) return;
-    if (message.events.any(
-      (event) =>
-          event.contains('collections.${AppwriteConfig.userCollectionId}') &&
-          event.contains(currentUserId!),
-    )) {
-      _getChatItemAgain();
-    } else if (message.events.any(
-      (event) => event.contains(
-        'collections.${AppwriteConfig.groupMessagesCollectionId}',
-      ),
-    )) {
-      _refreshChatItems(message.payload);
-    }
-  }
-
-  void _getChatItemAgain() {
-    if (mounted && currentUserId != null) {
-      isGetItemAgain = true;
-      BlocProvider.of<ChatItemBloc>(
-        context,
-      ).add(GetChatItemEvent(userid: currentUserId!));
-    }
-  }
-
-  void _refreshChatItems(Map<String, dynamic> groupMessagePayload) async {
-    if (mounted && currentUserId != null) {
-      final groupId = groupMessagePayload['\$id'] as String;
-
-      BlocProvider.of<ChatItemBloc>(
-        context,
-      ).add(UpdateChatItemEvent(groupChatId: groupId));
-    }
   }
 
   @override
   void dispose() {
-    _chatStreamManager.dispose();
     super.dispose();
+    BlocProvider.of<ChatItemBloc>(context).close();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (currentUserId == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -178,26 +104,18 @@ class _ChatPageState extends State<ChatPage> {
               } else if (state is ChatItemError) {
                 return Center(child: Text("Error loading chat items"));
               }
-              if (isGetItemAgain) {
-                isGetItemAgain = false;
-                for (GroupMessage groupMessage
-                    in (state as ChatItemLoaded).groupMessages) {
-                  if (!_chatStreamManager.isSubscribedToGroup(
-                    groupMessage.groupMessagesId,
-                  )) {
-                    _chatStreamManager.addGroupMessage(
-                      currentUserId!,
-                      groupMessage.groupMessagesId,
-                    );
-                  }
-                }
+              if (state is! ChatItemLoaded) {
+                return Center(child: Text("No chat items found"));
               }
               return ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: (state as ChatItemLoaded).chatItems.length,
+                itemCount: state.chatItems.length,
                 itemBuilder: (context, index) {
                   final item = state.chatItems[index];
+                  if (item.groupMessage.lastMessage == null) {
+                    return const SizedBox.shrink();
+                  }
                   return Column(
                     children: [
                       ChatItemWidget(

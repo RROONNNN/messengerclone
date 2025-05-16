@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io' as io;
+import 'dart:io';
+import 'dart:io' as dart;
 
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
@@ -16,9 +18,11 @@ import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/chat/model/user.dart' as appUser;
+import 'package:messenger_clone/features/messages/data/data_sources/local/hive_chat_repository.dart';
 import 'package:messenger_clone/features/messages/data/repositories/chat_repository_impl.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
 import 'package:messenger_clone/features/messages/enum/message_status.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
 part 'message_event.dart';
@@ -31,6 +35,8 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
   late final Future<String> meId;
   StreamSubscription<RealtimeMessage>? _chatStreamSubscription;
   StreamSubscription<RealtimeMessage>? _messagesStreamSubscription;
+  Timer? _seenStatusDebouncer;
+
   MessageBloc() : super(MessageInitial()) {
     meId = HiveService.instance.getCurrentUserId();
     chatRepository = ChatRepositoryImpl();
@@ -46,7 +52,24 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     on<SubscribeToMessagesEvent>(_onSubscribeToMessagesEvent);
     on<UnsubscribeFromMessagesEvent>(_onUnsubscribeFromMessagesEvent);
     on<UpdateMessageEvent>(_onUpdateMessageEvent);
+    on<AddMeSeenMessageEvent>(_onAddMeSeenMessageEvent);
   }
+
+  void _onAddMeSeenMessageEvent(
+    AddMeSeenMessageEvent event,
+    Emitter<MessageState> emit,
+  ) async {
+    if (state is MessageLoaded) {
+      final currentState = state as MessageLoaded;
+      final MessageModel message = event.message;
+      if (message.idFrom != currentState.meId &&
+          !message.isContains(currentState.meId)) {
+        message.addUserSeen(appUser.User.createMeUser(currentState.meId));
+        await chatRepository.updateMessage(message);
+      }
+    }
+  }
+
   void _onUpdateMessageEvent(
     UpdateMessageEvent event,
     Emitter<MessageState> emit,
@@ -58,16 +81,19 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
         final List<MessageModel> messages = List<MessageModel>.from(
           currentState.messages,
         );
+
         final int index = messages.indexWhere(
           (message) => message.id == messageId,
         );
         if (index != -1) {
-          if (messages[index].reactions.length ==
-              event.message.reactions.length) {
-            return;
-          }
+          // if (messages[index].reactions.length ==
+          //     event.message.reactions.length) {
+          //   return;
+          // }
+
           messages[index] = event.message;
           emit(currentState.copyWith(messages: messages));
+          _debouncedUpdateSeenStatus(event.message);
         }
       } catch (error) {
         debugPrint('Error updating message: $error');
@@ -175,6 +201,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
 
   @override
   Future<void> close() async {
+    add(UnsubscribeFromChatStreamEvent());
     await _chatStreamSubscription?.cancel();
     _chatStreamSubscription = null;
     await _messagesStreamSubscription?.cancel();
@@ -182,11 +209,24 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
 
     if (state is MessageLoaded) {
       final currentState = state as MessageLoaded;
-      // Dispose video players
+      //delete message status failed or sending
+      final List<MessageModel> messages = List<MessageModel>.from(
+        currentState.messages.where(
+          (message) =>
+              message.status != MessageStatus.failed &&
+              message.status != MessageStatus.sending,
+        ),
+      );
+      await HiveChatRepository.instance.saveMessages(
+        currentState.groupMessage.groupMessagesId,
+        messages,
+      );
+
       for (var controller in currentState.videoPlayers.values) {
         await controller.dispose();
       }
     }
+    add(ClearMessageEvent());
 
     return super.close();
   }
@@ -242,9 +282,14 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
         final MessageModel newMessage = MessageModel.fromMap(
           payload[AppwriteDatabaseConstants.lastMessage],
         );
+        _debouncedUpdateSeenStatus(newMessage);
 
         final String me = await meId;
         if (newMessage.idFrom != me) {
+          if (messages.first.id == newMessage.id) {
+            debugPrint('Received message is already in the list: $newMessage');
+            return;
+          }
           messages.insert(0, newMessage);
           Map<String, VideoPlayerController> updatedVideoPlayers = Map.from(
             currentState.videoPlayers,
@@ -309,7 +354,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
       switch (event.message.runtimeType) {
         case String:
           newMessage = MessageModel(
-            idFrom: me,
+            sender: appUser.User.createMeUser(me),
             content: event.message,
             type: "text",
             groupMessagesId: groupMessage.groupMessagesId,
@@ -325,7 +370,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
           final File file = await chatRepository.uploadFile(filePath, me);
           final String url = generateUrl(file);
           newMessage = MessageModel(
-            idFrom: me,
+            sender: appUser.User.createMeUser(me),
             content: url,
             type: "video",
             groupMessagesId: groupMessage.groupMessagesId,
@@ -349,7 +394,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
           final File file = await chatRepository.uploadFile(filePath, me);
           final String url = generateUrl(file);
           newMessage = MessageModel(
-            idFrom: me,
+            sender: appUser.User.createMeUser(me),
             content: url,
             type: "image",
             groupMessagesId: groupMessage.groupMessagesId,
@@ -418,6 +463,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
               currentState.groupMessage.groupMessagesId,
               _limit,
               offset,
+              null,
             )
             .timeout(
               const Duration(seconds: 10),
@@ -488,16 +534,49 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
         return;
       }
 
-      final finalGroupMessage =
+      GroupMessage finalGroupMessage =
           groupResult.fold((_) => null, (group) => group)!;
+
+      MessageModel? lastMessage = finalGroupMessage.lastMessage;
+      if (lastMessage != null &&
+          lastMessage.idFrom != me &&
+          !lastMessage.usersSeen.contains(appUser.User.createMeUser(me))) {
+        lastMessage.addUserSeen(appUser.User.createMeUser(me));
+        chatRepository.updateMessage(lastMessage);
+        finalGroupMessage = finalGroupMessage.copyWith(
+          lastMessage: lastMessage,
+        );
+      }
       final List<appUser.User> others =
           (finalGroupMessage.users.length > 1)
               ? finalGroupMessage.users.where((user) => user.id != me).toList()
               : (finalGroupMessage.users).toList();
+      List<MessageModel> cachedMessages =
+          await HiveChatRepository.instance.getMessages(
+            finalGroupMessage.groupMessagesId,
+          ) ??
+          [];
 
-      // Fetch messages with timeout handling
-      final List<MessageModel> messages = await chatRepository
-          .getMessages(finalGroupMessage.groupMessagesId, _limit, 0)
+      if (cachedMessages.isNotEmpty) {
+        emit(
+          MessageLoaded(
+            messages: cachedMessages,
+            groupMessage: finalGroupMessage,
+            others: others,
+            meId: me,
+            hasMoreMessages: true,
+          ),
+        );
+      }
+      final DateTime? latestTimestamp =
+          cachedMessages.isNotEmpty ? cachedMessages.first.createdAt : null;
+      final List<MessageModel> newMessages = await chatRepository
+          .getMessages(
+            finalGroupMessage.groupMessagesId,
+            _limit,
+            0,
+            latestTimestamp,
+          )
           .timeout(
             const Duration(seconds: 10),
             onTimeout:
@@ -506,13 +585,32 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
                       "Request timed out. Please check your connection.",
                     ),
           );
+      final allMessages = [...newMessages, ...cachedMessages]
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       Map<String, VideoPlayerController> videoPlayers = {};
       Map<String, Image> images = {};
 
-      for (final MessageModel message in messages) {
+      for (final MessageModel message in allMessages) {
         if (message.type == "video") {
           try {
+            if (await isCacheFile(message.content, AppwriteConfig.bucketId)) {
+              debugPrint("File already exists in cache: ${message.content}");
+              final controller = VideoPlayerController.file(
+                io.File(
+                  "${(await getTemporaryDirectory()).path}/$AppwriteConfig.bucketId/${getFileidFromUrl(message.content)}",
+                ),
+              );
+              videoPlayers[message.id] = controller;
+              controller.initialize().then((_) {
+                videoPlayers[message.id] = controller;
+              });
+              continue;
+            }
+            chatRepository.downloadFile(
+              message.content,
+              AppwriteConfig.bucketId,
+            );
             final controller = VideoPlayerController.networkUrl(
               Uri.parse(message.content),
             );
@@ -526,6 +624,16 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
         }
         if (message.type == "image") {
           try {
+            if (await isCacheFile(message.content, AppwriteConfig.bucketId)) {
+              debugPrint("File already exists in cache: ${message.content}");
+              final image = Image.file(
+                io.File(
+                  "${(await getTemporaryDirectory()).path}/$AppwriteConfig.bucketId/${getFileidFromUrl(message.content)}",
+                ),
+              );
+              images[message.id] = image;
+              continue;
+            }
             final image = Image.network(message.content);
             images[message.id] = image;
           } catch (e) {
@@ -535,11 +643,11 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
       }
       emit(
         MessageLoaded(
-          messages: messages,
+          messages: allMessages,
           groupMessage: finalGroupMessage,
           others: others,
           meId: me,
-          hasMoreMessages: messages.length >= _limit,
+          hasMoreMessages: true,
           videoPlayers: videoPlayers,
           images: images,
         ),
@@ -580,5 +688,50 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
       userIds: [currentUserId, otherUser.id],
       groupId: groupId,
     );
+  }
+
+  void _debouncedUpdateSeenStatus(MessageModel message) {
+    _seenStatusDebouncer?.cancel();
+    _seenStatusDebouncer = Timer(const Duration(milliseconds: 500), () {
+      add(AddMeSeenMessageEvent(message));
+    });
+  }
+
+  Future<bool> isCacheFile(String url, String filePath) async {
+    if (filePath.isEmpty) {
+      return false;
+    }
+    final String fileid = getFileidFromUrl(url);
+    final Directory cacheDir = await getTemporaryDirectory();
+    final String dirPath = '${cacheDir.path}/$filePath/$fileid';
+    final dart.File file = dart.File(dirPath);
+    return file.existsSync();
+  }
+
+  String getFileidFromUrl(String url) {
+    try {
+      final Uri uri = Uri.parse(url);
+
+      if (!uri.host.contains('appwrite.io') ||
+          !uri.path.contains('/storage/buckets/')) {
+        debugPrint('Not a valid Appwrite storage URL: $url');
+        throw Exception('Not a valid Appwrite storage URL');
+      }
+
+      final List<String> segments = uri.pathSegments;
+      final int filesIndex = segments.indexOf('files');
+
+      if (filesIndex == -1 || filesIndex + 1 >= segments.length) {
+        debugPrint('URL format not recognized: $url');
+        throw Exception('URL format not recognized');
+      }
+
+      final String fileId = segments[filesIndex + 1];
+      debugPrint('Extracted fileId: $fileId from URL');
+      return fileId;
+    } catch (e) {
+      debugPrint('Error extracting file info from URL: $e');
+      throw Exception('Failed to extract fileId from URL');
+    }
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:appwrite/appwrite.dart';
 import 'dart:io' as dart;
 import 'package:appwrite/models.dart';
@@ -7,10 +9,65 @@ import 'package:messenger_clone/common/services/auth_service.dart';
 import 'package:messenger_clone/common/services/story_service.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../../../common/services/app_write_config.dart';
 
 class AppwriteChatRepository {
+  String getFileidFromUrl(String url) {
+    try {
+      final Uri uri = Uri.parse(url);
+
+      if (!uri.host.contains('appwrite.io') ||
+          !uri.path.contains('/storage/buckets/')) {
+        debugPrint('Not a valid Appwrite storage URL: $url');
+        throw Exception('Not a valid Appwrite storage URL');
+      }
+
+      final List<String> segments = uri.pathSegments;
+      final int filesIndex = segments.indexOf('files');
+
+      if (filesIndex == -1 || filesIndex + 1 >= segments.length) {
+        debugPrint('URL format not recognized: $url');
+        throw Exception('URL format not recognized');
+      }
+
+      final String fileId = segments[filesIndex + 1];
+      debugPrint('Extracted fileId: $fileId from URL');
+      return fileId;
+    } catch (e) {
+      debugPrint('Error extracting file info from URL: $e');
+      throw Exception('Failed to extract fileId from URL');
+    }
+  }
+
+  Future<String> downloadFile(String url, String filePath) async {
+    try {
+      final String fileId = getFileidFromUrl(url);
+      final Future<Uint8List> downloadFuture = AuthService.storage
+          .getFileDownload(bucketId: AppwriteConfig.bucketId, fileId: fileId);
+      final Directory cacheDir = await getTemporaryDirectory();
+      final String dirPath = '${cacheDir.path}/$filePath';
+      final String fullPath = '$dirPath/$fileId';
+      final file = dart.File(fullPath);
+
+      final Future<void> dirCreationFuture = dart.Directory(
+        dirPath,
+      ).create(recursive: true);
+
+      final results = await Future.wait([dirCreationFuture, downloadFuture]);
+      final bytes = results[1] as Uint8List;
+
+      await file.writeAsBytes(bytes);
+
+      debugPrint("File downloaded and saved to $fullPath");
+      return fullPath;
+    } catch (error) {
+      debugPrint("Failed to download file: $error");
+      throw Exception("Failed to download file: $error");
+    }
+  }
+
   Future<MessageModel> updateMessage(MessageModel message) async {
     try {
       final Document messageDocument = await AuthService.databases
@@ -54,12 +111,11 @@ class AppwriteChatRepository {
       debugPrint('Fetching chat stream for groupChatId: $groupMessId');
       final String groupMessagesCollectionId =
           AppwriteConfig.groupMessagesCollectionId;
-      final Document groupMessageDoc = await AuthService.databases
-          .getDocument(
-            databaseId: AppwriteConfig.databaseId,
-            collectionId: AppwriteConfig.groupMessagesCollectionId,
-            documentId: groupMessId,
-          );
+      final Document groupMessageDoc = await AuthService.databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.groupMessagesCollectionId,
+        documentId: groupMessId,
+      );
       String documentId = groupMessageDoc.$id;
 
       final subscription = AuthService.realtime.subscribe([
@@ -75,22 +131,32 @@ class AppwriteChatRepository {
     String groupMessId,
     int limit,
     int offset,
+    DateTime? newerThan,
   ) async {
     try {
-      final DocumentList response = await AuthService.databases
-          .listDocuments(
-            databaseId: AppwriteConfig.databaseId,
-            collectionId: AppwriteConfig.messageCollectionId,
-            queries: [
-              Query.equal(
-                AppwriteDatabaseConstants.groupMessagesId,
-                groupMessId,
-              ),
-              Query.orderDesc('\$createdAt'),
-              Query.limit(limit),
-              Query.offset(offset),
-            ],
-          );
+      final DocumentList response = await AuthService.databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.messageCollectionId,
+        queries:
+            (newerThan != null)
+                ? [
+                  Query.equal(
+                    AppwriteDatabaseConstants.groupMessagesId,
+                    groupMessId,
+                  ),
+                  Query.orderDesc('\$createdAt'),
+                  Query.greaterThan('\$createdAt', newerThan.toIso8601String()),
+                ]
+                : [
+                  Query.equal(
+                    AppwriteDatabaseConstants.groupMessagesId,
+                    groupMessId,
+                  ),
+                  Query.orderDesc('\$createdAt'),
+                  Query.limit(limit),
+                  Query.offset(offset),
+                ],
+      );
       debugPrint(
         'Fetched ${response.documents.length} messages for groupMessId: $groupMessId',
       );
@@ -112,8 +178,8 @@ class AppwriteChatRepository {
   ) async {
     try {
       debugPrint('Sending message: ${message.toJson()}');
-      List<String> receivers =
-          groupMessage.users.map((user) => user.id).toList();
+      // List<String> receivers =
+      //     groupMessage.users.map((user) => user.id).toList();
       final Document messageDocument = await AuthService.databases
           .createDocument(
             databaseId: AppwriteConfig.databaseId,
@@ -130,10 +196,10 @@ class AppwriteChatRepository {
         documentId: groupMessage.groupMessagesId,
         data: {AppwriteDatabaseConstants.lastMessage: messageId},
       );
-      await _addGroupChatIdToUser(message.idFrom, message.groupMessagesId);
-      for (String receiver in receivers) {
-        await _addGroupChatIdToUser(receiver, message.groupMessagesId);
-      }
+      // await _addGroupChatIdToUser(message.idFrom, message.groupMessagesId);
+      // for (String receiver in receivers) {
+      //   await _addGroupChatIdToUser(receiver, message.groupMessagesId);
+      // }
     } catch (error) {
       throw Exception("Failed to send message: $error");
     }
@@ -204,12 +270,11 @@ class AppwriteChatRepository {
         );
       }
       await Future.wait(userUpdates);
-      final Document groupMessageDoc = await AuthService.databases
-          .getDocument(
-            databaseId: AppwriteConfig.databaseId,
-            collectionId: AppwriteConfig.groupMessagesCollectionId,
-            documentId: groupMessageDocument.$id,
-          );
+      final Document groupMessageDoc = await AuthService.databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.groupMessagesCollectionId,
+        documentId: groupMessageDocument.$id,
+      );
       final GroupMessage returnVal = GroupMessage.fromJson({
         ...groupMessageDoc.data,
         'groupMessagesId': groupMessageDocument.$id,

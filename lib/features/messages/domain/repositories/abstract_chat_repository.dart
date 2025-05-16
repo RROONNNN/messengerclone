@@ -9,6 +9,7 @@ abstract class AbstractChatRepository {
     String groupChatId,
     int limit,
     int offset,
+    DateTime? newerThan,
   );
   Future<Either<String, void>> sendMessage(
     MessageModel message,
@@ -30,4 +31,5 @@ abstract class AbstractChatRepository {
     List<String> messageIds,
   );
   Future<File> uploadFile(String filePath, String senderId);
+  Future<String> downloadFile(String url, String filePath);
 }

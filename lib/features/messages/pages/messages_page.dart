@@ -20,10 +20,10 @@ class MessagesPage extends StatefulWidget {
   final GroupMessage? groupMessage;
   final User? otherUser;
   const MessagesPage({super.key, this.groupMessage, this.otherUser})
-      : assert(
-  (groupMessage == null) != (otherUser == null),
-  'Either groupMessage or otherUsers must be provided, but not both.',
-  );
+    : assert(
+        (groupMessage == null) != (otherUser == null),
+        'Either groupMessage or otherUsers must be provided, but not both.',
+      );
 
   @override
   State<MessagesPage> createState() => _MessagesPageState();
@@ -63,7 +63,7 @@ class _MessagesPageState extends State<MessagesPage> {
         (currentState as MessageLoaded).hasMoreMessages;
 
     if (_scrollController.offset >=
-        _scrollController.position.maxScrollExtent &&
+            _scrollController.position.maxScrollExtent &&
         !_scrollController.position.outOfRange &&
         (hasMoreMessages)) {
       context.read<MessageBloc>().add(MessageLoadMoreEvent());
@@ -77,8 +77,7 @@ class _MessagesPageState extends State<MessagesPage> {
       ..removeListener(_scrollListener)
       ..dispose();
     if (mounted) {
-      _messageBloc.add(UnsubscribeFromChatStreamEvent());
-      _messageBloc.add(ClearMessageEvent());
+      _messageBloc.close();
     }
     super.dispose();
   }
@@ -97,8 +96,9 @@ class _MessagesPageState extends State<MessagesPage> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<MessageBloc, MessageState>(
-      listenWhen: (previous, current) =>
-      current is MessageLoaded && previous != current,
+      listenWhen:
+          (previous, current) =>
+              current is MessageLoaded && previous != current,
       listener: (context, state) {
         if (state is MessageLoaded) {
           final bloc = context.read<MessageBloc>();
@@ -124,12 +124,13 @@ class _MessagesPageState extends State<MessagesPage> {
                   isMe: true,
                   user: state.others.first,
                   callFunc: () async {
-                    final callID = 'call_${DateTime.now().millisecondsSinceEpoch}';
+                    final callID =
+                        'call_${DateTime.now().millisecondsSinceEpoch}';
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>
-                            CallPage(
+                        builder:
+                            (context) => CallPage(
                               callID: callID,
                               userID: state.meId,
                               userName: state.meId,
@@ -140,17 +141,19 @@ class _MessagesPageState extends State<MessagesPage> {
                     );
                   },
                   videoCallFunc: () async {
-                    final callID = 'video_call_${DateTime.now().millisecondsSinceEpoch}';
+                    final callID =
+                        'video_call_${DateTime.now().millisecondsSinceEpoch}';
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => CallPage(
-                          callID: callID,
-                          userID: state.meId,
-                          userName: state.meId,
-                          caller: state.others.first,
-                          participants: [state.meId, state.others.first.id],
-                        ),
+                        builder:
+                            (context) => CallPage(
+                              callID: callID,
+                              userID: state.meId,
+                              userName: state.meId,
+                              caller: state.others.first,
+                              participants: [state.meId, state.others.first.id],
+                            ),
                       ),
                     );
                   },
@@ -171,9 +174,10 @@ class _MessagesPageState extends State<MessagesPage> {
                   child: Container(
                     color: context.theme.bg,
                     padding: EdgeInsets.symmetric(horizontal: 5),
-                    child: state.messages.isNotEmpty
-                        ? _buildListMessage()
-                        : Container(height: double.infinity),
+                    child:
+                        state.messages.isNotEmpty
+                            ? _buildListMessage()
+                            : Container(height: double.infinity),
                   ),
                 ),
               ),
@@ -207,35 +211,78 @@ class _MessagesPageState extends State<MessagesPage> {
                       return Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: (state.messages.firstOrNull != null &&
-                                state.messages.first.idFrom == state.meId)
-                                ? switch (state.messages.first.status) {
-                              null => const SizedBox(),
-                              MessageStatus.seen => const ContentText(
-                                'Seen',
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                              MessageStatus.sending => const ContentText(
-                                'Sending',
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                              MessageStatus.failed => const ContentText(
-                                'Failed',
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                              MessageStatus.sent => const ContentText(
-                                'Sent',
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            }
-                                : const SizedBox(),
-                          ),
+                          if (state.messages.first.usersSeen.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child:
+                                  (state.messages.first.idFrom == state.meId)
+                                      ? switch (state.messages.first.status) {
+                                        null => const SizedBox(),
+                                        MessageStatus.sending =>
+                                          const ContentText(
+                                            'Sending',
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        MessageStatus.failed =>
+                                          const ContentText(
+                                            'Failed',
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        MessageStatus.sent => const ContentText(
+                                          'Sent',
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      }
+                                      : const SizedBox(),
+                            )
+                          else
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ...state.messages.first.usersSeen
+                                    .take(3)
+                                    .where((user) => user.id != state.meId)
+                                    .map(
+                                      (user) => Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: 4.0,
+                                        ),
+                                        child: Tooltip(
+                                          message: user.name,
+                                          child: CustomRoundAvatar(
+                                            isActive: false,
+                                            radius: 7,
+                                            radiusOfActiveIndicator: 5,
+                                            avatarUrl: user.photoUrl,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                                if (state.messages.first.usersSeen.length > 3)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 4.0),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[200],
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: ContentText(
+                                        '+${state.messages.first.usersSeen.length - 3}',
+                                        fontSize: 12,
+                                        color: Colors.grey[700],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
                         ],
                       );
                     }
@@ -243,26 +290,28 @@ class _MessagesPageState extends State<MessagesPage> {
                       final bool isLoadingMore = state.isLoadingMore;
                       return (isLoadingMore)
                           ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
                           : SizedBox.shrink();
                     }
                     final message = state.messages[index - 1];
                     return Row(
-                      mainAxisAlignment: message.idFrom == state.meId
-                          ? MainAxisAlignment.end
-                          : MainAxisAlignment.start,
+                      mainAxisAlignment:
+                          message.idFrom == state.meId
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
                       children: [
                         message.idFrom == state.meId
                             ? const SizedBox()
                             : CustomRoundAvatar(
-                          isActive: true,
-                          radius: 18,
-                          radiusOfActiveIndicator: 5,
-                        ),
+                              isActive: true,
+                              radius: 18,
+                              radiusOfActiveIndicator: 5,
+                              avatarUrl: message.sender.photoUrl,
+                            ),
                         BlocProvider.value(
                           value: BlocProvider.of<MessageBloc>(context),
                           child: CustomMessageItem(
