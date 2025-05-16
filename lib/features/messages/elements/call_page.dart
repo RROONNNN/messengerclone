@@ -195,7 +195,8 @@ class _CallPageState extends State<CallPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomMessagesAppBar(
-        user: widget.caller ??
+        user:
+            widget.caller ??
             User(
               id: widget.userID,
               name: widget.userName,
@@ -203,7 +204,6 @@ class _CallPageState extends State<CallPage> {
               lastSeen: DateTime.now(),
               isActive: true,
               aboutMe: '',
-              chattingWith: '',
               email: '',
             ),
         isMe: false,
@@ -220,9 +220,10 @@ class _CallPageState extends State<CallPage> {
               userID: widget.userID,
               userName: widget.userName,
               callID: _effectiveCallID, // Sử dụng callID thực tế
-              config: ZegoUIKitPrebuiltCallConfig.groupVideoCall()
-                ..topMenuBarConfig.isVisible = false
-                ..bottomMenuBarConfig.isVisible = true,
+              config:
+                  ZegoUIKitPrebuiltCallConfig.groupVideoCall()
+                    ..topMenuBarConfig.isVisible = false
+                    ..bottomMenuBarConfig.isVisible = true,
               events: ZegoUIKitPrebuiltCallEvents(
                 onCallEnd: (callID, reason) {
                   _endCall();
@@ -237,7 +238,9 @@ class _CallPageState extends State<CallPage> {
                   Text(
                     'Đang chờ cuộc gọi...',
                     style: TextStyle(
-                        fontSize: 20, color: context.theme.textColor),
+                      fontSize: 20,
+                      color: context.theme.textColor,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -251,7 +254,10 @@ class _CallPageState extends State<CallPage> {
                           padding: const EdgeInsets.all(15),
                         ),
                         child: const Icon(
-                            Icons.phone, size: 30, color: Colors.white),
+                          Icons.phone,
+                          size: 30,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(width: 20),
                       ElevatedButton(
@@ -262,7 +268,10 @@ class _CallPageState extends State<CallPage> {
                           padding: const EdgeInsets.all(15),
                         ),
                         child: const Icon(
-                            Icons.call_end, size: 30, color: Colors.white),
+                          Icons.call_end,
+                          size: 30,
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
@@ -282,7 +291,10 @@ class _CallPageState extends State<CallPage> {
                     padding: const EdgeInsets.all(15),
                   ),
                   child: const Icon(
-                      Icons.call_end, size: 30, color: Colors.white),
+                    Icons.call_end,
+                    size: 30,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),

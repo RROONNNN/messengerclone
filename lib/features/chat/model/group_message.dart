@@ -35,6 +35,26 @@ class GroupMessage {
     };
   }
 
+  GroupMessage copyWith({
+    String? groupMessagesId,
+    MessageModel? lastMessage,
+    List<User>? users,
+    bool? isGroup,
+    String? avatarGroupUrl,
+    String? groupName,
+    String? groupId,
+  }) {
+    return GroupMessage(
+      groupMessagesId: groupMessagesId ?? this.groupMessagesId,
+      lastMessage: lastMessage ?? this.lastMessage,
+      users: users ?? this.users,
+      isGroup: isGroup ?? this.isGroup,
+      avatarGroupUrl: avatarGroupUrl ?? this.avatarGroupUrl,
+      groupName: groupName ?? this.groupName,
+      groupId: groupId ?? this.groupId,
+    );
+  }
+
   factory GroupMessage.fromJson(Map<String, dynamic> json) {
     return GroupMessage(
       groupMessagesId: json['groupMessagesId'] as String,

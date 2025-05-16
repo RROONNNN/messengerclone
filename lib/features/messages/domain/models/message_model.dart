@@ -1,43 +1,75 @@
 import 'package:appwrite/appwrite.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:messenger_clone/common/constants/appwrite_database_constants.dart';
 import 'package:messenger_clone/common/services/common_function.dart';
 import 'package:messenger_clone/common/services/date_time_format.dart';
+import 'package:messenger_clone/features/chat/model/user.dart';
 import 'package:messenger_clone/features/messages/enum/message_status.dart';
+part 'message_model.g.dart';
 
-class MessageModel {
+@HiveType(typeId: 0)
+class MessageModel extends HiveObject {
+  @HiveField(0)
   String id;
-  final String idFrom;
+  late final String idFrom;
+  @HiveField(1)
   DateTime createdAt;
+  @HiveField(2)
   final String content;
+  @HiveField(3)
   final String type;
+  @HiveField(4)
   final String groupMessagesId;
+  @HiveField(5)
   List<String> reactions;
+  @HiveField(6)
   MessageStatus? status;
+  @HiveField(7)
+  List<User> usersSeen;
+  @HiveField(8)
+  final User sender;
 
   MessageModel({
     String? id,
-    required this.idFrom,
+    required this.sender,
     required this.content,
     required this.type,
     required this.groupMessagesId,
     DateTime? createdAt,
     this.reactions = const [],
     this.status,
+    this.usersSeen = const [],
   }) : id = id ?? ID.unique(),
-       createdAt = createdAt ?? DateTime.now().toUtc();
+       createdAt = createdAt ?? DateTime.now().toUtc(),
+       idFrom = sender.id;
 
   Map<String, dynamic> toJson() {
     return {
-      AppwriteDatabaseConstants.idFrom: idFrom,
+      'sender': idFrom,
       AppwriteDatabaseConstants.content: content,
       AppwriteDatabaseConstants.type: type,
       AppwriteDatabaseConstants.groupMessagesId: groupMessagesId,
       'reactions': CommonFunction.reactionsToString(reactions),
+      'usersSeen': usersSeen.map((e) => e.id).toList(),
     };
   }
 
   void addReaction(String reaction) {
     reactions.add(reaction);
+  }
+
+  void addUserSeen(User user) {
+    if (!isSeenBy(user.id)) {
+      usersSeen.add(user);
+    }
+  }
+
+  bool isSeenBy(String userId) {
+    return usersSeen.any((element) => element.id == userId);
+  }
+
+  bool isContains(String id) {
+    return usersSeen.any((element) => element.id == id);
   }
 
   DateTime get vietnamTime {
@@ -47,12 +79,17 @@ class MessageModel {
 
   factory MessageModel.fromMap(Map<String, dynamic> map) {
     MessageModel result = MessageModel(
-      idFrom: map[AppwriteDatabaseConstants.idFrom] as String,
+      sender: User.fromMap(map['sender'] as Map<String, dynamic>),
       content: map[AppwriteDatabaseConstants.content] as String,
       type: map[AppwriteDatabaseConstants.type] as String,
       groupMessagesId: map[AppwriteDatabaseConstants.groupMessagesId] as String,
       reactions: CommonFunction.reactionsFromString(map['reactions']),
       id: map['\$id'] as String,
+      usersSeen:
+          (map['usersSeen'] as List<dynamic>?)
+              ?.map((e) => User.fromMap(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
 
     result.createdAt = DateTimeFormat.parseToDateTime(map['\$createdAt']);
@@ -61,23 +98,25 @@ class MessageModel {
   //copyWith
   MessageModel copyWith({
     String? id,
-    String? idFrom,
+    User? sender,
     DateTime? createdAt,
     String? content,
     String? type,
     String? groupMessagesId,
     List<String>? reactions,
     MessageStatus? status,
+    List<User>? usersSeen,
   }) {
     return MessageModel(
       id: id ?? this.id,
-      idFrom: idFrom ?? this.idFrom,
+      sender: sender ?? this.sender,
       createdAt: createdAt ?? this.createdAt,
       content: content ?? this.content,
       type: type ?? this.type,
       groupMessagesId: groupMessagesId ?? this.groupMessagesId,
       reactions: reactions ?? this.reactions,
       status: status ?? this.status,
+      usersSeen: usersSeen ?? this.usersSeen,
     );
   }
 }

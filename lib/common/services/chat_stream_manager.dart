@@ -3,6 +3,7 @@ import 'package:appwrite/appwrite.dart';
 import 'package:flutter/foundation.dart';
 
 import 'app_write_config.dart';
+import 'package:messenger_clone/features/chat/model/group_message.dart';
 
 class ChatStreamManager {
   static final Client _client = Client()
@@ -12,7 +13,7 @@ class ChatStreamManager {
   static Realtime get realtime => Realtime(_client);
 
   StreamSubscription<RealtimeMessage>? _subscription;
-  final Set<String> _subscribedGroupIds = <String>{};
+  final Set<GroupMessage> _subscribedGroupIds = {};
   final Function(RealtimeMessage) _onMessageReceived;
   final Function(dynamic) _onError;
 
@@ -22,7 +23,10 @@ class ChatStreamManager {
   }) : _onMessageReceived = onMessageReceived,
        _onError = onError;
 
-  Future<void> initialize(String userId, List<String> initialGroupIds) async {
+  Future<void> initialize(
+    String userId,
+    List<GroupMessage> initialGroupIds,
+  ) async {
     await _subscription?.cancel();
     _subscribedGroupIds.clear();
     _subscribedGroupIds.addAll(initialGroupIds);
@@ -34,10 +38,17 @@ class ChatStreamManager {
     List<String> channels = [
       'databases.${AppwriteConfig.databaseId}.collections.${AppwriteConfig.userCollectionId}.documents.$userId',
     ];
-    for (String groupId in _subscribedGroupIds) {
+    for (GroupMessage group in _subscribedGroupIds) {
       channels.add(
-        'databases.${AppwriteConfig.databaseId}.collections.${AppwriteConfig.groupMessagesCollectionId}.documents.$groupId',
+        'databases.${AppwriteConfig.databaseId}.collections.${AppwriteConfig.groupMessagesCollectionId}.documents.${group.groupMessagesId}',
       );
+
+      if (group.lastMessage != null) {
+        channels.add(
+          'databases.${AppwriteConfig.databaseId}.collections.${AppwriteConfig.messageCollectionId}.documents.${group.lastMessage!.id}',
+        );
+        debugPrint('Subscribing to message: ${group.lastMessage!.id}');
+      }
     }
     debugPrint('Subscribing to channels: $channels');
     final subscription = realtime.subscribe(channels);
@@ -47,28 +58,32 @@ class ChatStreamManager {
     );
   }
 
-  Future<void> addGroupMessage(String userId, String groupId) async {
-    if (_subscribedGroupIds.contains(groupId)) return;
+  Future<void> addGroupMessage(String userId, GroupMessage group) async {
+    if (_subscribedGroupIds.contains(group)) return;
 
-    debugPrint('Adding group message to subscription: $groupId');
-    _subscribedGroupIds.add(groupId);
+    debugPrint(
+      'Adding group message to subscription: ${group.groupMessagesId}',
+    );
+    _subscribedGroupIds.add(group);
     await _subscription?.cancel();
     _createSubscription(userId);
   }
 
-  Future<void> removeGroupMessage(String userId, String groupId) async {
-    if (!_subscribedGroupIds.contains(groupId)) return;
+  Future<void> removeGroupMessage(String userId, GroupMessage group) async {
+    if (!_subscribedGroupIds.contains(group)) return;
 
-    debugPrint('Removing group message from subscription: $groupId');
-    _subscribedGroupIds.remove(groupId);
+    debugPrint(
+      'Removing group message from subscription: ${group.groupMessagesId}',
+    );
+    _subscribedGroupIds.remove(group);
     await _subscription?.cancel();
     _createSubscription(userId);
   }
 
   List<String> get subscribedGroupIds => List.unmodifiable(_subscribedGroupIds);
 
-  bool isSubscribedToGroup(String groupId) =>
-      _subscribedGroupIds.contains(groupId);
+  bool isSubscribedToGroup(GroupMessage group) =>
+      _subscribedGroupIds.contains(group);
 
   Future<void> dispose() async {
     await _subscription?.cancel();

@@ -22,56 +22,101 @@ class ChatItemWidget extends StatelessWidget {
     this.onLongPress,
     this.avatarRadius = 30,
   });
-  Future<String> _init() async {
+
+  Future<String> _getCurrentUserId() async {
     return await HiveService.instance.getCurrentUserId();
+  }
+
+  String _getMessageContent(String currentUserId) {
+    final lastMessage = item.groupMessage.lastMessage;
+    if (lastMessage == null) return "";
+
+    final List<User> users = item.groupMessage.users;
+    late final String senderName;
+
+    if (lastMessage.idFrom == currentUserId) {
+      senderName = "Bạn";
+    } else {
+      senderName =
+          users
+              .firstWhere((user) => user.id == lastMessage.idFrom)
+              .name
+              .split(" ")
+              .last;
+    }
+
+    switch (lastMessage.type) {
+      case "text":
+        return "$senderName: ${lastMessage.content}";
+      case "image":
+        return "$senderName: Đã gửi một ảnh";
+      case "video":
+        return "$senderName: Đã gửi một video";
+      default:
+        return "$senderName: Đã gửi một tin nhắn";
+    }
+  }
+
+  Widget _buildSeenIndicator(BuildContext context, String currentUserId) {
+    final lastMessage = item.groupMessage.lastMessage;
+    if (lastMessage == null || lastMessage.idFrom != currentUserId)
+      return const SizedBox.shrink();
+
+    final List<User> seenUsers =
+        lastMessage.usersSeen
+            .where((user) => user.id != currentUserId)
+            .toList();
+
+    if (seenUsers.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child:
+          seenUsers.length == 1
+              ? CustomRoundAvatar(
+                radius: 8,
+                isActive: false,
+                avatarUrl: seenUsers.first.photoUrl,
+              )
+              : Text(
+                "${seenUsers.length}",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: context.theme.textColor.withOpacity(0.7),
+                ),
+              ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<String>(
-      future: _init(),
+      future: _getCurrentUserId(),
       builder: (context, currentUserIdSnapshot) {
         if (currentUserIdSnapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
+
+        if (currentUserIdSnapshot.hasError) {
+          return Center(child: Text('Error: ${currentUserIdSnapshot.error}'));
+        }
+
+        final currentUserId = currentUserIdSnapshot.data!;
         List<User> others = CommonFunction.getOthers(
           item.groupMessage.users,
-          currentUserIdSnapshot.data!,
+          currentUserId,
         );
+
         if (others.isEmpty) {
           others = [item.groupMessage.users.first];
         }
-        late final String content;
-        final lastMessage = item.groupMessage.lastMessage;
-        if (lastMessage != null) {
-          final List<User> users = item.groupMessage.users;
-          late final String senderName;
-          if (lastMessage.idFrom == currentUserIdSnapshot.data) {
-            senderName = "Bạn";
-          } else {
-            senderName =
-                users
-                    .firstWhere((user) => user.id == lastMessage.idFrom)
-                    .name
-                    .split(" ")
-                    .last;
-          }
-          if (lastMessage.type == "text") {
-            content = senderName + " : " + lastMessage.content;
-          } else if (lastMessage.type == "image") {
-            content = senderName + " : " + "Đã gửi một ảnh";
-          } else if (lastMessage.type == "video") {
-            content = senderName + " : " + "Đã gửi một video";
-          }
-        } else {
-          content = "";
-        }
+        final content = _getMessageContent(currentUserId);
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(
-            vertical: 12,
-            horizontal: 16,
+            vertical: 5,
+            horizontal: 8,
           ),
-          dense: false,
+          dense: true,
           onTap: onTap,
           onLongPress: () => onLongPress?.call(item),
           title: Row(
@@ -81,6 +126,7 @@ class ChatItemWidget extends StatelessWidget {
                 child: CustomRoundAvatar(
                   radius: avatarRadius,
                   isActive: others.first.isActive,
+                  avatarUrl: others.first.photoUrl,
                 ),
               ),
               Expanded(
@@ -110,70 +156,70 @@ class ChatItemWidget extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: MediaQuery.of(context).size.width * 0.6,
-                            ),
-                            child: ContentText(
-                              content,
-                              color:
-                                  item.hasUnread
-                                      ? context.theme.textColor
-                                      : context.theme.textColor.withOpacity(
-                                        0.5,
-                                      ),
-                              fontWeight:
-                                  item.hasUnread
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                              fontSize: 16,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            top: 4,
-                            left: 4,
-                            right: 4,
-                          ),
-                          child: Text(
-                            "·",
-                            style: TextStyle(
-                              color:
-                                  item.hasUnread
-                                      ? context.theme.textColor
-                                      : context.theme.textColor.withOpacity(
-                                        0.5,
-                                      ),
-                              fontSize: 16,
-                              fontWeight:
-                                  item.hasUnread
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            DateTimeFormat.dateTimeToString(item.vietnamTime),
-                            style: TextStyle(
-                              fontSize: 14,
-                              color:
-                                  item.hasUnread
-                                      ? context.theme.textColor
-                                      : context.theme.textColor.withOpacity(
-                                        0.5,
-                                      ),
-                              fontWeight:
-                                  item.hasUnread
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                            ),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: ContentText(
+                                    content,
+                                    color:
+                                        item.hasUnread
+                                            ? context.theme.textColor
+                                            : context.theme.textColor
+                                                .withOpacity(0.5),
+                                    fontWeight:
+                                        item.hasUnread
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                    fontSize: 16,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 4,
+                                  left: 4,
+                                  right: 4,
+                                ),
+                                child: Text(
+                                  "·",
+                                  style: TextStyle(
+                                    color:
+                                        item.hasUnread
+                                            ? context.theme.textColor
+                                            : context.theme.textColor
+                                                .withOpacity(0.5),
+                                    fontSize: 16,
+                                    fontWeight:
+                                        item.hasUnread
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                DateTimeFormat.dateTimeToString(
+                                  item.vietnamTime,
+                                ),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color:
+                                      item.hasUnread
+                                          ? context.theme.textColor
+                                          : context.theme.textColor.withOpacity(
+                                            0.5,
+                                          ),
+                                  fontWeight:
+                                      item.hasUnread
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -182,6 +228,10 @@ class ChatItemWidget extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          trailing: Container(
+            constraints: BoxConstraints(maxWidth: 40),
+            child: _buildSeenIndicator(context, currentUserId),
           ),
         );
       },

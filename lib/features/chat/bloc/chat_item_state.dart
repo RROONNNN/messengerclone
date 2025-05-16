@@ -10,12 +10,23 @@ sealed class ChatItemState extends Equatable {
 final class ChatItemLoading extends ChatItemState {}
 
 final class ChatItemLoaded extends ChatItemState {
-  final Set<GroupMessage> groupMessages;
   final List<ChatItem> chatItems;
-  const ChatItemLoaded(this.groupMessages, {required this.chatItems});
+  final String meId;
+  const ChatItemLoaded({required this.chatItems, required this.meId});
+
+  ChatItemLoaded copyWith({
+    List<GroupMessage>? groupMessages,
+    List<ChatItem>? chatItems,
+    String? meId,
+  }) {
+    return ChatItemLoaded(
+      chatItems: chatItems ?? this.chatItems,
+      meId: meId ?? this.meId,
+    );
+  }
 
   @override
-  List<Object> get props => [chatItems];
+  List<Object> get props => [chatItems, meId];
 }
 
 final class ChatItemError extends ChatItemState {
