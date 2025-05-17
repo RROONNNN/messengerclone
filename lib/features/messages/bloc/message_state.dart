@@ -42,6 +42,7 @@ final class MessageLoaded extends MessageState {
     meId,
     videoPlayers,
     images,
+    if (lastSuccessMessage != null) lastSuccessMessage!,
   ];
   MessageLoaded copyWith({
     List<MessageModel>? messages,

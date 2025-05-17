@@ -56,11 +56,11 @@ class _MessagesPageState extends State<MessagesPage> {
   void _scrollListener() {
     if (!_scrollController.hasClients) return;
     final currentState = context.read<MessageBloc>();
-    if (currentState is! MessageLoaded) {
+    if (currentState.state is! MessageLoaded) {
       return;
     }
     final bool hasMoreMessages =
-        (currentState as MessageLoaded).hasMoreMessages;
+        (currentState.state as MessageLoaded).hasMoreMessages;
 
     if (_scrollController.offset >=
             _scrollController.position.maxScrollExtent &&

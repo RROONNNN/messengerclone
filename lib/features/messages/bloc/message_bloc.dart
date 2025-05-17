@@ -427,14 +427,16 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
         final String tempId = newMessage.id;
         if (state is MessageLoaded) {
           final latestState = state as MessageLoaded;
-          final latestMessages = List<MessageModel>.from(latestState.messages);
+          final List<MessageModel> latestMessages =
+              (latestState.messages).toList();
           final int index = latestMessages.indexWhere(
             (message) => message.id == tempId,
           );
-
           if (index != -1) {
             debugPrint("Message sent successfully");
-            latestMessages[index] = sentMessage;
+            latestMessages[index] = sentMessage.copyWith(
+              status: MessageStatus.sent,
+            );
             latestMessages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
             emit(
               latestState.copyWith(
