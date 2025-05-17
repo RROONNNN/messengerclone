@@ -39,6 +39,10 @@ class _ChatPageState extends State<ChatPage> {
     super.initState();
   }
 
+  Future<void> _refreshChats() async {
+    BlocProvider.of<ChatItemBloc>(context).add(GetChatItemEvent());
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -94,49 +98,48 @@ class _ChatPageState extends State<ChatPage> {
         ],
       ),
       backgroundColor: context.theme.bg,
-      body: ListView(
-        children: [
-          _buildHeader(),
-          BlocBuilder<ChatItemBloc, ChatItemState>(
-            builder: (context, state) {
-              if (state is ChatItemLoading) {
-                return Center(child: CircularProgressIndicator());
-              } else if (state is ChatItemError) {
-                return Center(child: Text("Error loading chat items"));
-              }
-              if (state is! ChatItemLoaded) {
-                return Center(child: Text("No chat items found"));
-              }
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: state.chatItems.length,
-                itemBuilder: (context, index) {
-                  final item = state.chatItems[index];
-                  if (item.groupMessage.lastMessage == null) {
-                    return const SizedBox.shrink();
-                  }
-                  return Column(
-                    children: [
-                      ChatItemWidget(
-                        item: item,
-                        onTap: () {
-                          Navigator.of(context).pushNamed(
-                            Routes.chat,
-                            arguments: item.groupMessage,
-                          );
-                        },
-                        onLongPress: (item) {
-                          _showChatOptionsBottomSheet(context, item);
-                        },
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
-          ),
-        ],
+      body: RefreshIndicator(
+        onRefresh: _refreshChats,
+        color: Colors.blueAccent,
+        backgroundColor: context.theme.bg,
+        child: BlocBuilder<ChatItemBloc, ChatItemState>(
+          builder: (context, state) {
+            if (state is ChatItemLoading) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (state is ChatItemError) {
+              return Center(child: Text("Error loading chat items"));
+            }
+            final chatItems = state is ChatItemLoaded ? state.chatItems : [];
+            return ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: chatItems.length + 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return _buildHeader();
+                }
+
+                final itemIndex = index - 1;
+                final item = chatItems[itemIndex];
+
+                if (item.groupMessage.lastMessage == null) {
+                  return const SizedBox.shrink();
+                }
+
+                return ChatItemWidget(
+                  item: item,
+                  onTap: () {
+                    Navigator.of(
+                      context,
+                    ).pushNamed(Routes.chat, arguments: item.groupMessage);
+                  },
+                  onLongPress: (item) {
+                    _showChatOptionsBottomSheet(context, item);
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
