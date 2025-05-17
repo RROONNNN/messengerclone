@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart' as models;
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:messenger_clone/common/services/store.dart';
 
 import 'app_write_config.dart';
 import 'network_utils.dart';
@@ -145,7 +147,11 @@ class AuthService {
           databaseId: AppwriteConfig.databaseId,
           collectionId: AppwriteConfig.userCollectionId,
           documentId: user.$id,
-          data: {'email': user.email, 'name': user.name},
+          data: {
+            'email': user.email,
+            'name': user.name,
+            'pushTargets': <String>[],
+          },
         );
       } on AppwriteException catch (e) {
         throw Exception('Failed to register user: ${e.message}');
@@ -158,19 +164,71 @@ class AuthService {
     required String password,
   }) async {
     return NetworkUtils.withNetworkCheck(() async {
-      return await account.createEmailPasswordSession(
-        email: email,
-        password: password,
-      );
+      try {
+        models.Session session = await account.createEmailPasswordSession(
+          email: email,
+          password: password,
+        );
+        final fcmToken = await FirebaseMessaging.instance.getToken();
+        if (fcmToken != null) {
+          final targetId = ID.unique();
+          await account.createPushTarget(
+            targetId: targetId,
+            identifier: fcmToken,
+            providerId: AppwriteConfig.fcmProjectId,
+          );
+          await Store.setTargetId(targetId);
+          final user = await account.get();
+          final document = await databases.getDocument(
+            databaseId: AppwriteConfig.databaseId,
+            collectionId: AppwriteConfig.userCollectionId,
+            documentId: user.$id,
+          );
+          final List<String> pushTargets = List<String>.from(document.data['pushTargets'] ?? []);
+          if (!pushTargets.contains(targetId)) {
+            pushTargets.add(targetId);
+            await databases.updateDocument(
+              databaseId: AppwriteConfig.databaseId,
+              collectionId: AppwriteConfig.userCollectionId,
+              documentId: user.$id,
+              data: {'pushTargets': pushTargets},
+            );
+          }
+        }
+        return session;
+      } on AppwriteException catch (e) {
+        throw Exception('Sign in failed: ${e.message}');
+      }
     });
   }
 
   static Future<void> signOut() async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
+          String targetId = await Store.getTargetId();
+          if(targetId.isNotEmpty) {
+            final user = await account.get();
+            final document = await databases.getDocument(
+              databaseId: AppwriteConfig.databaseId,
+              collectionId: AppwriteConfig.userCollectionId,
+              documentId: user.$id,
+            );
+            await account.deletePushTarget(targetId: targetId);
+            final List<String> pushTargets =
+            List<String>.from(document.data['pushTargets'] ?? []);
+            pushTargets.remove(targetId);
+            await databases.updateDocument(
+              databaseId: AppwriteConfig.databaseId,
+              collectionId: AppwriteConfig.userCollectionId,
+              documentId: user.$id,
+              data: {'pushTargets': pushTargets},
+            );
+          }
         await account.deleteSession(sessionId: 'current');
       } on AppwriteException {
         return;
+      } catch (e) {
+        throw Exception('Error during sign out: $e');
       }
     });
   }

@@ -39,4 +39,12 @@ class Store {
     final preferences = await SharedPreferences.getInstance();
     return preferences.getString('email_registering') ?? '';
   }
+  static Future<void> setTargetId(String value) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString('targetId', value);
+  }
+  static Future<String> getTargetId() async {
+    final preferences = await SharedPreferences.getInstance();
+    return preferences.getString('targetId') ?? '';
+  }
 }

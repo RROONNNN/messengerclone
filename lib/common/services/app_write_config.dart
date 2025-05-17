@@ -19,4 +19,5 @@ class AppwriteConfig {
   static const String aiMessagesCollectionId = '6825a0eb000ed00be4dd';
 
   static const String zegoSignId = '8666a74a545ad2e21e688a29faee944e14648db378dbf3974a2f7bc538e1dff6';
+  static const String fcmProjectId = '6827513800318a5c557b';
 }
