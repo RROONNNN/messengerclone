@@ -170,11 +170,12 @@ class LoginScreenState extends State<LoginScreen> {
                                 .getCurrentUser();
                             if (currentUser != null) {
                               debugPrint('delay 1s');
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => MainPage()),
-                              );
+                              if (context.mounted) {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => MainPage()),
+                                );
+                              }
                               break;
                             }
                             else {
@@ -206,6 +207,15 @@ class LoginScreenState extends State<LoginScreen> {
                                       await DeviceService.saveLoginDeviceInfo(
                                         userID,
                                       );
+                                      final currentUser = await AuthService
+                                          .getCurrentUser();
+                                      while(currentUser == null) {
+                                        await AuthService.signOut();
+                                        await AuthService.signIn(
+                                          email: _emailController.text,
+                                          password: _passwordController.text,
+                                        );
+                                      }
                                     },
                                   ),
                             ),

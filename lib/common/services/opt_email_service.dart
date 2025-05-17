@@ -7,11 +7,13 @@ import 'package:mailer/smtp_server.dart';
 import 'package:messenger_clone/common/services/auth_service.dart';
 import 'package:messenger_clone/common/services/network_utils.dart';
 
+import 'app_write_config.dart';
+
 class OTPEmailService {
   const OTPEmailService._();
 
-  static const String _databaseId = '67e90080000a47b1eba4';
-  static const String _userCollectionSMTPSERVER = '67ec29e0002de8937336';
+  static const String _databaseId = AppwriteConfig.databaseId;
+  static const String _userCollectionSMTPSERVER = AppwriteConfig.smtpServerCollectionId;
   static const int _maxAttempts = 5;
   static const Duration _otpExpiry = Duration(minutes: 5);
 

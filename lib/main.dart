@@ -21,6 +21,9 @@ import 'features/splash/pages/splash.dart';
 import 'firebase_options.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -29,7 +32,7 @@ Future<void> main() async {
     await Permission.notification.request();
   }
   NotificationService().initializeNotifications();
-
+  NotificationService().setNavigatorKey(navigatorKey);
   Hive
     ..init(dir.path)
     ..registerAdapter(MessageModelAdapter())
@@ -76,6 +79,7 @@ class _MessengerCloneState extends State<MessengerClone> {
         ),
       ],
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
         themeMode: themeProvider.themeNotifier.value,
         onGenerateRoute: Routes.onGenerateRoute,

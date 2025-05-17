@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../../features/messages/elements/call_page.dart';
+import 'auth_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('Handling background message: ${message.messageId}');
+  debugPrint('Xử lý thông báo nền: ${message.messageId}');
 }
 
 class NotificationService {
@@ -16,11 +19,16 @@ class NotificationService {
 
   late final FlutterLocalNotificationsPlugin _localNotifications;
   late final FirebaseMessaging _firebaseMessaging;
+  GlobalKey<NavigatorState>? navigatorKey;
 
   NotificationService._internal() {
     _localNotifications = FlutterLocalNotificationsPlugin();
     _firebaseMessaging = FirebaseMessaging.instance;
     initializeNotifications();
+  }
+
+  void setNavigatorKey(GlobalKey<NavigatorState> key) {
+    navigatorKey = key;
   }
 
   Future<void> initializeNotifications() async {
@@ -32,29 +40,67 @@ class NotificationService {
       const InitializationSettings(
         android: androidSettings,
       ),
-      onDidReceiveNotificationResponse: _handleNotificationTap,
+      onDidReceiveNotificationResponse: _handleNotificationResponse,
     );
 
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-    FirebaseMessaging.onMessageOpenedApp.listen(
-        _handleNotificationTapBackground);
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTapBackground);
   }
 
-  void _handleNotificationTap(NotificationResponse response) {
-    debugPrint('Notification tapped: ${response.payload}');
+  void _handleNotificationResponse(NotificationResponse response) {
+    debugPrint('Thông báo được nhấn: ${response.payload}, Hành động: ${response.actionId}');
+    final payloadString = response.payload;
+    if (payloadString != null) {
+      try {
+        final payload = Map<String, dynamic>.from(jsonDecode(payloadString));
+        if (response.actionId == 'accept') {
+          _navigateToCallPage(payload);
+        } else if (response.actionId == 'reject') {
+          debugPrint('Thông báo bị từ chối, đóng thông báo');
+        }
+      } catch (e) {
+        debugPrint('Lỗi phân tích payload thông báo: $e');
+      }
+    }
   }
 
   void _handleNotificationTapBackground(RemoteMessage message) {
-    debugPrint('Background notification tapped: ${message.messageId}');
+    debugPrint('Thông báo nền được nhấn: ${message.messageId}');
+    _navigateToCallPage(message.data);
+  }
+
+  Future<void> _navigateToCallPage(Map<String, dynamic> payload) async {
+    final currentUser = await AuthService.getCurrentUser();
+    if (payload['type'] == 'video_call') {
+      final callId = payload['callId'] as String? ?? '';
+      final callerId = payload['callerId'] as String? ?? '';
+      final callerName = payload['callerName'] as String? ?? 'Unknown Caller';
+      final userId = currentUser?.$id ?? callerId ;
+
+      if (callId.isNotEmpty && callerId.isNotEmpty && navigatorKey?.currentState != null) {
+        navigatorKey!.currentState!.push(
+          MaterialPageRoute(
+            builder: (context) => CallPage(
+              callID: callId,
+              userID: userId,
+              userName: currentUser?.name ?? 'Unknown User',
+              callerName: callerName,
+            ),
+          ),
+        );
+      } else {
+        debugPrint('Thiếu thông tin cuộc gọi hoặc navigatorKey không hợp lệ');
+      }
+    }
   }
 
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    debugPrint('Received foreground message: ${message.messageId}');
+    debugPrint('Nhận thông báo tiền cảnh: ${message.messageId}');
 
     await _showLocalNotification(
-      title: message.notification?.title ?? 'New Message',
+      title: message.notification?.title ?? 'Thông báo mới',
       body: message.notification?.body ?? '',
-      payload: message.data.toString(),
+      payload: jsonEncode(message.data),
     );
   }
 
@@ -64,27 +110,30 @@ class NotificationService {
     String? payload,
   }) async {
     const androidDetails = AndroidNotificationDetails(
-      'default_channel',
-      'Default Channel',
+      'video_call_channel',
+      'Kênh cuộc gọi video',
       importance: Importance.max,
       priority: Priority.high,
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
+      actions: [
+        AndroidNotificationAction(
+          'accept',
+          'Nhận cuộc gọi',
+          showsUserInterface: true,
+        ),
+        AndroidNotificationAction(
+          'reject',
+          'Từ chối',
+          cancelNotification: true,
+        ),
+      ],
     );
 
     await _localNotifications.show(
-      DateTime
-          .now()
-          .millisecond,
+      DateTime.now().millisecond,
       title,
       body,
       const NotificationDetails(
         android: androidDetails,
-        iOS: iosDetails,
       ),
       payload: payload,
     );
