@@ -112,7 +112,9 @@ class AppwriteRepository {
                     (message as Map<String, dynamic>)['\$id'] as String,
               )
               .toList();
-
+      if (groupMessIds.isEmpty) {
+        return [];
+      }
       return getGroupMessByIds(groupMessIds);
     } catch (error) {
       throw Exception("Failed to fetch group messages: $error");

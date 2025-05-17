@@ -27,6 +27,9 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
         final String me = await meId;
         List<GroupMessage> groupMessages = await appwriteRepository
             .getGroupMessagesByUserId(me);
+        if (groupMessages.isEmpty) {
+          emit(ChatItemLoaded(meId: me, chatItems: []));
+        }
         groupMessages.sort((a, b) {
           if (a.lastMessage == null && b.lastMessage == null) {
             return 0;

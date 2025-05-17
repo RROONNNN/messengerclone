@@ -20,6 +20,7 @@ final class MessageLoaded extends MessageState {
   final String meId;
   final Map<String, VideoPlayerController> videoPlayers;
   final Map<String, Image> images;
+  final MessageModel? lastSuccessMessage;
   const MessageLoaded({
     required this.messages,
     required this.groupMessage,
@@ -29,9 +30,19 @@ final class MessageLoaded extends MessageState {
     required this.meId,
     this.videoPlayers = const {},
     this.images = const {},
+    this.lastSuccessMessage,
   });
   @override
-  List<Object> get props => [messages, groupMessage];
+  List<Object> get props => [
+    messages,
+    groupMessage,
+    isLoadingMore,
+    hasMoreMessages,
+    others,
+    meId,
+    videoPlayers,
+    images,
+  ];
   MessageLoaded copyWith({
     List<MessageModel>? messages,
     GroupMessage? groupMessage,
@@ -41,6 +52,7 @@ final class MessageLoaded extends MessageState {
     String? meId,
     Map<String, VideoPlayerController>? videoPlayers,
     Map<String, Image>? images,
+    MessageModel? lastSuccessMessage,
   }) {
     return MessageLoaded(
       messages: messages ?? this.messages,
@@ -51,6 +63,7 @@ final class MessageLoaded extends MessageState {
       meId: meId ?? this.meId,
       videoPlayers: videoPlayers ?? this.videoPlayers,
       images: images ?? this.images,
+      lastSuccessMessage: lastSuccessMessage ?? this.lastSuccessMessage,
     );
   }
 }

@@ -25,7 +25,7 @@ Future<void> main() async {
     ..registerAdapter(UserAdapter())
     ..registerAdapter(MessageStatusAdapter());
 
-  // await HiveChatRepository.instance.clearAllMessages();
+  await HiveChatRepository.instance.clearAllMessages();
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),

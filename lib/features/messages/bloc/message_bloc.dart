@@ -86,11 +86,6 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
           (message) => message.id == messageId,
         );
         if (index != -1) {
-          // if (messages[index].reactions.length ==
-          //     event.message.reactions.length) {
-          //   return;
-          // }
-
           messages[index] = event.message;
           emit(currentState.copyWith(messages: messages));
           _debouncedUpdateSeenStatus(event.message);
@@ -202,32 +197,44 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
   @override
   Future<void> close() async {
     add(UnsubscribeFromChatStreamEvent());
-    await _chatStreamSubscription?.cancel();
+    List<Future<void>> futureList = [];
+    if (_chatStreamSubscription != null) {
+      futureList.add(_chatStreamSubscription!.cancel());
+    }
     _chatStreamSubscription = null;
-    await _messagesStreamSubscription?.cancel();
+    if (_messagesStreamSubscription != null) {
+      futureList.add(_messagesStreamSubscription!.cancel());
+    }
     _messagesStreamSubscription = null;
 
     if (state is MessageLoaded) {
       final currentState = state as MessageLoaded;
       //delete message status failed or sending
-      final List<MessageModel> messages = List<MessageModel>.from(
-        currentState.messages.where(
-          (message) =>
-              message.status != MessageStatus.failed &&
-              message.status != MessageStatus.sending,
-        ),
+      List<MessageModel> messages = List<MessageModel>.from(
+        currentState.messages,
       );
-      await HiveChatRepository.instance.saveMessages(
-        currentState.groupMessage.groupMessagesId,
-        messages,
-      );
+      if (currentState.lastSuccessMessage != null) {
+        int index = messages.indexOf(currentState.lastSuccessMessage!);
+
+        if (index != -1) {
+          messages.removeRange(0, index);
+          if (messages.isNotEmpty) {
+            futureList.add(
+              HiveChatRepository.instance.saveMessages(
+                currentState.groupMessage.groupMessagesId,
+                messages,
+              ),
+            );
+          }
+        }
+      }
 
       for (var controller in currentState.videoPlayers.values) {
         await controller.dispose();
       }
     }
     add(ClearMessageEvent());
-
+    await Future.wait(futureList);
     return super.close();
   }
 
@@ -320,6 +327,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
               messages: messages,
               videoPlayers: updatedVideoPlayers,
               images: updatedImages,
+              lastSuccessMessage: newMessage,
             ),
           );
         }
@@ -411,32 +419,45 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
           images: images,
         ),
       );
-      final result = await chatRepository.sendMessage(newMessage, groupMessage);
-      final String tempId = newMessage.id;
-      if (state is MessageLoaded) {
-        final latestState = state as MessageLoaded;
-        final latestMessages = List<MessageModel>.from(latestState.messages);
-        final int index = latestMessages.indexWhere(
-          (message) => message.id == tempId,
+      try {
+        final MessageModel sentMessage = await chatRepository.sendMessage(
+          newMessage,
+          groupMessage,
         );
-
-        if (index != -1) {
-          result.fold(
-            (error) {
-              debugPrint("Error sending message: $error");
-              latestMessages[index] = latestMessages[index].copyWith(
-                status: MessageStatus.failed,
-              );
-            },
-            (success) {
-              debugPrint("Message sent successfully");
-              latestMessages[index] = latestMessages[index].copyWith(
-                id: tempId,
-                status: MessageStatus.sent,
-              );
-            },
+        final String tempId = newMessage.id;
+        if (state is MessageLoaded) {
+          final latestState = state as MessageLoaded;
+          final latestMessages = List<MessageModel>.from(latestState.messages);
+          final int index = latestMessages.indexWhere(
+            (message) => message.id == tempId,
           );
-          emit(latestState.copyWith(messages: latestMessages));
+
+          if (index != -1) {
+            debugPrint("Message sent successfully");
+            latestMessages[index] = sentMessage;
+            latestMessages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            emit(
+              latestState.copyWith(
+                messages: latestMessages,
+                lastSuccessMessage: sentMessage,
+              ),
+            );
+          }
+        }
+      } catch (error) {
+        debugPrint("Error sending message: $error");
+        if (state is MessageLoaded) {
+          final latestState = state as MessageLoaded;
+          final latestMessages = List<MessageModel>.from(latestState.messages);
+          final int index = latestMessages.indexWhere(
+            (message) => message.id == newMessage.id,
+          );
+          if (index != -1) {
+            latestMessages[index] = latestMessages[index].copyWith(
+              status: MessageStatus.failed,
+            );
+            emit(latestState.copyWith(messages: latestMessages));
+          }
         }
       }
     }
@@ -650,6 +671,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
           hasMoreMessages: true,
           videoPlayers: videoPlayers,
           images: images,
+          lastSuccessMessage: allMessages.isNotEmpty ? allMessages.first : null,
         ),
       );
     } catch (error) {

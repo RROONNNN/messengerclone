@@ -217,7 +217,11 @@ class _MessagesPageState extends State<MessagesPage> {
                               child:
                                   (state.messages.first.idFrom == state.meId)
                                       ? switch (state.messages.first.status) {
-                                        null => const SizedBox(),
+                                        null => const ContentText(
+                                          'Sent',
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
                                         MessageStatus.sending =>
                                           const ContentText(
                                             'Sending',
