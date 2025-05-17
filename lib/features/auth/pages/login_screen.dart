@@ -23,8 +23,8 @@ class LoginScreenState extends State<LoginScreen> {
 
   @override
   void initState() {
-    _emailController.text = "tsarlvntn2004@gmail.com";
-    _passwordController.text = "1234567890R@n";
+    _emailController.text = "tsarlvntn1234@gmail.com";
+    _passwordController.text = "Nguyen@902993";
     super.initState();
   }
 
@@ -38,14 +38,20 @@ class LoginScreenState extends State<LoginScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            SizedBox(height: MediaQuery.of(context).size.height * 0.1),
+            SizedBox(height: MediaQuery
+                .of(context)
+                .size
+                .height * 0.1),
             Image.asset(
               "assets/images/logo.png",
               width: 80,
               height: 80,
               fit: BoxFit.contain,
             ),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.1),
+            SizedBox(height: MediaQuery
+                .of(context)
+                .size
+                .height * 0.1),
             TextField(
               controller: _emailController,
               decoration: InputDecoration(
@@ -131,6 +137,7 @@ class LoginScreenState extends State<LoginScreen> {
                       const LoadingDialog(message: "Logging in..."),
                     );
                     try {
+                      debugPrint('login');
                       final String? userID =
                       await AuthService.getUserIdFromEmailAndPassword(
                         _emailController.text,
@@ -158,11 +165,24 @@ class LoginScreenState extends State<LoginScreen> {
                           );
                           await DeviceService.saveLoginDeviceInfo(userID);
                           if (!context.mounted) return;
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(builder: (context) => MainPage()),
-                                (route) => false,
-                          );
+                          while (true) {
+                            final currentUser = await AuthService
+                                .getCurrentUser();
+                            if (currentUser != null) {
+                              debugPrint('delay 1s');
+                              if (context.mounted) {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => MainPage()),
+                                );
+                              }
+                              break;
+                            }
+                            else {
+                              debugPrint('delay 1s');
+                              await Future.delayed(const Duration(seconds: 1));
+                            }
+                          }
                         } else {
                           final otp = OTPEmailService.generateOTP();
                           debugPrint('OTP: $otp');
@@ -175,19 +195,29 @@ class LoginScreenState extends State<LoginScreen> {
                             context,
                             MaterialPageRoute(
                               builder:
-                                  (context) => ConfirmationCodeScreen(
-                                email: _emailController.text,
-                                nextScreen: () => MainPage(),
-                                action: () async {
-                                  await AuthService.signIn(
+                                  (context) =>
+                                  ConfirmationCodeScreen(
                                     email: _emailController.text,
-                                    password: _passwordController.text,
-                                  );
-                                  await DeviceService.saveLoginDeviceInfo(
-                                    userID,
-                                  );
-                                },
-                              ),
+                                    nextScreen: () => MainPage(),
+                                    action: () async {
+                                      await AuthService.signIn(
+                                        email: _emailController.text,
+                                        password: _passwordController.text,
+                                      );
+                                      await DeviceService.saveLoginDeviceInfo(
+                                        userID,
+                                      );
+                                      final currentUser = await AuthService
+                                          .getCurrentUser();
+                                      while(currentUser == null) {
+                                        await AuthService.signOut();
+                                        await AuthService.signIn(
+                                          email: _emailController.text,
+                                          password: _passwordController.text,
+                                        );
+                                      }
+                                    },
+                                  ),
                             ),
                                 (route) => false,
                           );
@@ -223,7 +253,8 @@ class LoginScreenState extends State<LoginScreen> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const ForgotPasswordScreen()),
                 );
               },
               child: const Center(

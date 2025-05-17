@@ -163,7 +163,7 @@ class _EmailInputScreenState extends State<EmailInputScreen> {
                         context: context,
                         title: "System error",
                         message:
-                            "Unable to check email. Please try again later.",
+                            "Unable to check email. Please try again later : $e",
                       );
                     }
                   }

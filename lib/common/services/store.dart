@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Store {
@@ -41,14 +39,12 @@ class Store {
     final preferences = await SharedPreferences.getInstance();
     return preferences.getString('email_registering') ?? '';
   }
-
-  static Future<String> getMessagesChatWithAI() async {
-    final prefs = await SharedPreferences.getInstance();
-    return  prefs.getString('chat_messages_with_meta_ai') ?? '';
+  static Future<void> setTargetId(String value) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString('targetId', value);
   }
-  static Future<void> saveMessagesWithAI(List<Map<String, String>> messages) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('chat_messages_with_meta_ai', jsonEncode(messages));
+  static Future<String> getTargetId() async {
+    final preferences = await SharedPreferences.getInstance();
+    return preferences.getString('targetId') ?? '';
   }
-
 }

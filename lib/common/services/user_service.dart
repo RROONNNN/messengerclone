@@ -14,6 +14,19 @@ class UserService {
   static Databases get databases => Databases(_client);
   static Storage get storage => Storage(_client);
 
+  static Future<List<String>> getPushTargets(String userId) async {
+    try {
+      final document = await databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.userCollectionId,
+        documentId: userId,
+      );
+      return List<String>.from(document.data['pushTargets'] ?? []);
+    } on AppwriteException catch (e) {
+      throw Exception('Failed to get push targets: ${e.message}');
+    }
+  }
+
   static Future<Map<String, dynamic>> fetchUserData() async {
     try {
       final user = await account.get();
@@ -97,6 +110,19 @@ class UserService {
       throw Exception('Failed to update authentication details: ${e.message}');
     } catch (e) {
       throw Exception('Error updating authentication details: $e');
+    }
+  }
+
+  static Future<String?> getNameUser(String userId) async {
+    try {
+      final userDoc = await databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.userCollectionId,
+        documentId: userId,
+      );
+      return userDoc.data['name'] as String?;
+    } on AppwriteException catch (e) {
+      throw Exception('Failed to get user name: ${e.message}');
     }
   }
 
