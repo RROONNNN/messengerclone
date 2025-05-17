@@ -57,7 +57,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="appwrite-callback-[67e7a7eb001c9cd8d6ad]" />
+                <data android:scheme="appwrite-callback-[682824d80021c48aefd6]" />
             </intent-filter>
         </activity>
         <!-- Delete the duplicate CallbackActivity below -->

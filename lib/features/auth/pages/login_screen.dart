@@ -137,6 +137,7 @@ class LoginScreenState extends State<LoginScreen> {
                       const LoadingDialog(message: "Logging in..."),
                     );
                     try {
+                      debugPrint('login');
                       final String? userID =
                       await AuthService.getUserIdFromEmailAndPassword(
                         _emailController.text,
@@ -168,11 +169,13 @@ class LoginScreenState extends State<LoginScreen> {
                             final currentUser = await AuthService
                                 .getCurrentUser();
                             if (currentUser != null) {
+                              debugPrint('delay 1s');
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) => MainPage()),
                               );
+                              break;
                             }
                             else {
                               debugPrint('delay 1s');
