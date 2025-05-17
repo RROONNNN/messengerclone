@@ -1,7 +1,6 @@
-
-
+import 'dart:convert';
 import 'package:appwrite/appwrite.dart';
-
+import 'package:flutter/cupertino.dart';
 import 'app_write_config.dart';
 import 'network_utils.dart';
 
@@ -10,85 +9,56 @@ class CallService {
       .setEndpoint(AppwriteConfig.endpoint)
       .setProject(AppwriteConfig.projectId);
 
-  static Databases get databases => Databases(_client);
+  static Functions get functions => Functions(_client);
 
-  static Future<String> createCall({
-    required String callID,
-    required String initiatorId,
-    required List<String> participants,
-  }) async {
-    return NetworkUtils.withNetworkCheck(() async {
-      try {
-        final document = await databases.createDocument(
-          databaseId: AppwriteConfig.databaseId,
-          collectionId: AppwriteConfig.callsCollectionId,
-          documentId: ID.unique(),
-          data: {
-            'callID': callID,
-            'initiatorId': initiatorId,
-            'participants': participants,
-            'status': 'pending',
-            'createdAt': DateTime.now().toIso8601String(),
-          },
-        );
-        return document.$id;
-      } on AppwriteException catch (e) {
-        throw Exception('Failed to create call: ${e.message}');
-      }
-    });
-  }
-
-  static Future<Map<String, dynamic>?> checkExistingCall({
-    required String userId,
+  static Future<void> sendMessage({
+    required List<String> userIds,
+    required String callId,
+    required String callerName,
     required String callerId,
   }) async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
-        final response = await databases.listDocuments(
-          databaseId: AppwriteConfig.databaseId,
-          collectionId: AppwriteConfig.callsCollectionId,
-          queries: [
-            Query.equal('participants', userId),
-            Query.equal('initiatorId', callerId),
-            Query.or([
-              Query.equal('status', 'pending'),
-              Query.equal('status', 'active'),
-            ]),
-            Query.limit(1),
-          ],
-        );
+        final payload = jsonEncode({
+          'userIds': userIds,
+          'callId': callId,
+          'callerName': callerName,
+          'callerId': callerId,
+        });
 
-        if (response.documents.isNotEmpty) {
-          final doc = response.documents.first;
-          return {
-            'callID': doc.data['callID'] as String?,
-            'initiatorId': doc.data['initiatorId'] as String?,
-            'status': doc.data['status'] as String?,
-            'callDocumentId': doc.$id,
-            'participants': List<String>.from(doc.data['participants'] ?? []),
-          };
+        debugPrint('Chuẩn bị gửi payload đến Cloud Function: $payload');
+
+        if (payload.isEmpty) {
+          throw Exception('Payload rỗng trước khi gửi');
         }
-        return null;
-      } on AppwriteException catch (e) {
-        throw Exception('Failed to check existing call: ${e.message}');
-      }
-    });
-  }
 
-  static Future<void> updateCallStatus({
-    required String callDocumentId,
-    required String status,
-  }) async {
-    return NetworkUtils.withNetworkCheck(() async {
-      try {
-        await databases.updateDocument(
-          databaseId: AppwriteConfig.databaseId,
-          collectionId: AppwriteConfig.callsCollectionId,
-          documentId: callDocumentId,
-          data: {'status': status},
+        final execution = await functions.createExecution(
+          functionId: AppwriteConfig.sendPushFunctionId,
+          body: payload,
         );
+
+        debugPrint('Phản hồi từ Cloud Function: ${execution.responseBody}');
+
+        if (execution.responseBody.isEmpty) {
+          throw Exception('Phản hồi từ Cloud Function rỗng');
+        }
+
+        final response = jsonDecode(execution.responseBody);
+        if (response is! Map<String, dynamic>) {
+          throw Exception('Phản hồi không phải JSON hợp lệ: ${execution.responseBody}');
+        }
+
+        if (!response['success']) {
+          throw Exception(response['error'] ?? 'Gửi thông báo đẩy thất bại');
+        }
+
+        debugPrint('Thông báo đẩy được gửi: ${response['messageId']}');
+      } on FormatException catch (e) {
+        throw Exception('Lỗi phân tích JSON: $e');
       } on AppwriteException catch (e) {
-        throw Exception('Failed to update call status: ${e.message}');
+        throw Exception('Lỗi Appwrite: ${e.message}');
+      } catch (e) {
+        throw Exception('Lỗi khi gửi thông báo đẩy: $e');
       }
     });
   }

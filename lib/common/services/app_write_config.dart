@@ -2,19 +2,24 @@
 
 class AppwriteConfig {
   static const String endpoint = 'https://cloud.appwrite.io/v1';
-  static const String projectId = '67e7a7eb001c9cd8d6ad';
-  static const String databaseId = '67e90080000a47b1eba4';
-  static const String userCollectionId = '67e904b9002db65c933b';
-  static const String deviceCollectionId = '67ed42540013471695d3';
-  static const String storageId = '67e8ee480012c2579b40';
-  static const String friendsCollectionId = '681e335200295fd8c1e7';
-  static const String storiesCollectionId = '6820ad53003e5e2b783e';
-  static const String groupMessagesCollectionId = '67e908ed003b62a3f44a';
-  static const String messageCollectionId = '67e9013c002a978980fa';
-  static const String bucketId = '67e8ee480012c2579b40';
-  static const String callsCollectionId = '68216a0900371e85d22e';
-  static const String functionMetaAIId = '680b45a1003d0c997a24';
-  static const String resetPasswordFunctionId = '6824cc78000907444008';
+  static const String projectId = '682824d80021c48aefd6';
+  static const String databaseId = '682825c000353b21423c';
+  static const String userCollectionId = '68282ad40020a34b0c1a';
+  static const String deviceCollectionId = '68282acd001f3108f137';
+  static const String storageId = '68283694001981114d7e';
+  static const String friendsCollectionId = '68282819001c2649de05';
+  static const String storiesCollectionId = '68282ac3000f3f6ad2dc';
+  static const String groupMessagesCollectionId = '68282ade001d27207874';
+  static const String messageCollectionId = '68282ae8000f2dcda0bb';
+  static const String bucketId = '68283694001981114d7e';
+  static const String callsCollectionId = '682827b10006360c9d5a';
+  static const String functionMetaAIId = '6828351400142ecc2a48';
+  static const String resetPasswordFunctionId = '682834500002a1894852';
+  static const String aiChatHistoryCollectionId = '68282ab200163f5ccef7';
+  static const String aiMessagesCollectionId = '682825ce00262bb63eb6';
+  static const String smtpServerCollectionId = '68282aba0038ba9d0eed';
+  static const String sendPushFunctionId = '68286a2500371f63b386';
 
   static const String zegoSignId = '8666a74a545ad2e21e688a29faee944e14648db378dbf3974a2f7bc538e1dff6';
+  static const String fcmProjectId = '682836bd001d4fbb115f';
 }
