@@ -16,7 +16,9 @@ class HiveService {
   }
 
   Future<Box<String>> _initializeBox() async {
-    return await Hive.openBox<String>('currentUserBox');
+    final box = await Hive.openBox<String>('currentUserBox');
+    box.delete('currentUserId');
+    return box;
   }
 
   Future<void> saveCurrentUserId(String userId) async {

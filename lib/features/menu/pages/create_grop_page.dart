@@ -45,14 +45,16 @@ class _CreateGroupViewState extends State<_CreateGroupView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: context.theme.bg,
       appBar: AppBar(
+        iconTheme: IconThemeData(color: context.theme.textColor),
         centerTitle: true,
         title: const TitleText(
           'Create Group',
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
-        backgroundColor: context.theme.bg,
+        backgroundColor: context.theme.appBar,
       ),
       body: BlocListener<CreateGroupBloc, CreateGroupState>(
         listenWhen:
