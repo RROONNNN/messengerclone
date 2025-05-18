@@ -6,6 +6,7 @@ import 'package:messenger_clone/common/services/auth_service.dart';
 import 'package:messenger_clone/common/services/user_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 import 'package:messenger_clone/features/auth/pages/login_screen.dart';
+import 'package:messenger_clone/features/menu/pages/create_grop_page.dart';
 import 'package:messenger_clone/features/settings/pages/settings_page.dart';
 import 'package:messenger_clone/common/widgets/dialog/custom_alert_dialog.dart';
 import 'package:messenger_clone/common/widgets/dialog/loading_dialog.dart';
@@ -63,7 +64,8 @@ class _MenuPageState extends State<MenuPage> {
     try {
       final user = await AuthService.getCurrentUser();
       if (user != null) {
-        final friendRequestsCount = await FriendService.getPendingFriendRequestsCount(user.$id);
+        final friendRequestsCount =
+            await FriendService.getPendingFriendRequestsCount(user.$id);
         setState(() {
           _friendRequestsCount = friendRequestsCount;
           _pendingMessagesCount = 2;
@@ -79,18 +81,25 @@ class _MenuPageState extends State<MenuPage> {
     final password = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: const Text("Enter Password"),
-        content: TextField(
-          controller: controller,
-          obscureText: true,
-          decoration: const InputDecoration(labelText: "Password"),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-          TextButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text("Confirm")),
-        ],
-      ),
+      builder:
+          (_) => AlertDialog(
+            title: const Text("Enter Password"),
+            content: TextField(
+              controller: controller,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: "Password"),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, controller.text),
+                child: const Text("Confirm"),
+              ),
+            ],
+          ),
     );
 
     if (password == null || password.isEmpty) {
@@ -107,13 +116,17 @@ class _MenuPageState extends State<MenuPage> {
 
   Future<bool> _verifyPassword(String password) async {
     try {
-      await AuthService.account.updatePassword(password: password, oldPassword: password);
+      await AuthService.account.updatePassword(
+        password: password,
+        oldPassword: password,
+      );
       return true;
     } catch (e) {
       if (e is AppwriteException) {
         if (e.code == 400) return true;
         if (e.code == 401) return false;
-        if (e.code == 429) throw Exception("Rate limit exceeded. Please try again later.");
+        if (e.code == 429)
+          throw Exception("Rate limit exceeded. Please try again later.");
       }
       throw Exception("Verification failed: $e");
     }
@@ -124,7 +137,11 @@ class _MenuPageState extends State<MenuPage> {
     if (password == null) return;
 
     if (!mounted) return;
-    showDialog(context: context, barrierDismissible: false, builder: (_) => const LoadingDialog(message: "Checking..."));
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const LoadingDialog(message: "Checking..."),
+    );
 
     try {
       final user = await AuthService.getCurrentUser();
@@ -142,14 +159,15 @@ class _MenuPageState extends State<MenuPage> {
             await DialogUtils.showConfirmationDialog(
               context: context,
               title: 'Notification',
-              message: 'Your request has been submitted. The account will be deleted shortly.',
+              message:
+                  'Your request has been submitted. The account will be deleted shortly.',
               confirmText: 'Close',
             );
             if (!mounted) return;
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false,
+              (route) => false,
             );
           },
         );
@@ -175,7 +193,8 @@ class _MenuPageState extends State<MenuPage> {
         await CustomAlertDialog.show(
           context: context,
           title: "Error",
-          message: "An error occurred: $e. Please try again or contact support.",
+          message:
+              "An error occurred: $e. Please try again or contact support.",
         );
       }
     }
@@ -188,8 +207,14 @@ class _MenuPageState extends State<MenuPage> {
       appBar: AppBar(
         backgroundColor: context.theme.bg,
         elevation: 0,
-        title: const TitleText('Menu', fontSize: 25, fontWeight: FontWeight.bold),
-        actions: [IconButton(icon: const Icon(Icons.qr_code), onPressed: () {})],
+        title: const TitleText(
+          'Menu',
+          fontSize: 25,
+          fontWeight: FontWeight.bold,
+        ),
+        actions: [
+          IconButton(icon: const Icon(Icons.qr_code), onPressed: () {}),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -200,23 +225,65 @@ class _MenuPageState extends State<MenuPage> {
               _buildUserInfo(context),
               const SizedBox(height: 16),
               _buildMenuItem(context, Icons.settings, 'Settings', () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsPage()),
+                );
               }),
-              _buildMenuItem(context, Icons.chat_bubble, 'Pending Messages', () {}, notificationCount: _pendingMessagesCount),
+              _buildMenuItem(
+                context,
+                Icons.chat_bubble,
+                'Pending Messages',
+                () {},
+                notificationCount: _pendingMessagesCount,
+              ),
               _buildMenuItem(context, Icons.archive, 'Archive', () {}),
               const SizedBox(height: 16),
-              TitleText('More Options', fontSize: 16, fontWeight: FontWeight.w400, color: context.theme.textColor.withOpacity(0.7)),
+              TitleText(
+                'More Options',
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: context.theme.textColor.withOpacity(0.7),
+              ),
               const SizedBox(height: 8),
-              _buildMenuItem(context, Icons.group, 'Friend Requests', () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendRequestPage()));
-              }, notificationCount: _friendRequestsCount),
+              _buildMenuItem(
+                context,
+                Icons.group,
+                'Friend Requests',
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const FriendRequestPage(),
+                    ),
+                  );
+                },
+                notificationCount: _friendRequestsCount,
+              ),
               _buildMenuItem(context, Icons.group_add, 'Find Friends', () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const FindFriendsPage()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const FindFriendsPage()),
+                );
               }),
               _buildMenuItem(context, Icons.star, 'List Friends', () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ListFriendsPage()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ListFriendsPage()),
+                );
               }),
-              TitleText('Danger Zone', fontSize: 16, fontWeight: FontWeight.w400, color: context.theme.textColor.withOpacity(0.7)),
+              _buildMenuItem(context, Icons.group, 'Create Group', () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreateGroupPage()),
+                );
+              }),
+              TitleText(
+                'Danger Zone',
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: context.theme.textColor.withOpacity(0.7),
+              ),
               const SizedBox(height: 16),
               _buildMenuGroupActions(context),
             ],
@@ -229,52 +296,85 @@ class _MenuPageState extends State<MenuPage> {
   Widget _buildUserInfo(BuildContext context) {
     if (isLoading) return const Center(child: CircularProgressIndicator());
     if (errorMessage != null) {
-      return TitleText(errorMessage!, fontSize: 16, fontWeight: FontWeight.w400, color: context.theme.red);
+      return TitleText(
+        errorMessage!,
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: context.theme.red,
+      );
     }
     return Container(
-      decoration: BoxDecoration(color: context.theme.grey, borderRadius: BorderRadius.circular(15)),
+      decoration: BoxDecoration(
+        color: context.theme.grey,
+        borderRadius: BorderRadius.circular(15),
+      ),
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           CircleAvatar(
             radius: 30,
-            backgroundImage: photoUrl != null
-                ? (photoUrl!.startsWith('http') ? NetworkImage(photoUrl!) : const AssetImage('assets/images/avatar.png'))
-                : const AssetImage('assets/images/avatar.png'),
+            backgroundImage:
+                photoUrl != null
+                    ? (photoUrl!.startsWith('http')
+                        ? NetworkImage(photoUrl!)
+                        : const AssetImage('assets/images/avatar.png'))
+                    : const AssetImage('assets/images/avatar.png'),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TitleText(userName ?? 'No Name', fontSize: 24, fontWeight: FontWeight.bold, color: context.theme.textColor),
-                TitleText('@${userId ?? 'No ID'}', fontSize: 16, fontWeight: FontWeight.w400, color: context.theme.textColor.withOpacity(0.7)),
-                TitleText(aboutMe?.isNotEmpty == true ? aboutMe! : 'Ruby chan (>ω<)', fontSize: 16, fontWeight: FontWeight.w400,
-                    color: context.theme.textColor.withOpacity(0.7)),
+                TitleText(
+                  userName ?? 'No Name',
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: context.theme.textColor,
+                ),
+                TitleText(
+                  '@${userId ?? 'No ID'}',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: context.theme.textColor.withOpacity(0.7),
+                ),
+                TitleText(
+                  aboutMe?.isNotEmpty == true ? aboutMe! : 'Ruby chan (>ω<)',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: context.theme.textColor.withOpacity(0.7),
+                ),
               ],
             ),
           ),
           IconButton(
             icon: const Icon(Icons.edit),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => EditProfilePage(
-                  initialName: userName,
-                  initialEmail: email,
-                  initialAboutMe: aboutMe,
-                  initialPhotoUrl: photoUrl,
-                  userId: userId ?? '',
+            onPressed:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => EditProfilePage(
+                          initialName: userName,
+                          initialEmail: email,
+                          initialAboutMe: aboutMe,
+                          initialPhotoUrl: photoUrl,
+                          userId: userId ?? '',
+                        ),
+                  ),
                 ),
-              ),
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, IconData icon, String title, VoidCallback onTap, {int? notificationCount}) {
+  Widget _buildMenuItem(
+    BuildContext context,
+    IconData icon,
+    String title,
+    VoidCallback onTap, {
+    int? notificationCount,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(15),
@@ -282,9 +382,20 @@ class _MenuPageState extends State<MenuPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, color: context.theme.textColor.withOpacity(0.7), size: 24),
+            Icon(
+              icon,
+              color: context.theme.textColor.withOpacity(0.7),
+              size: 24,
+            ),
             const SizedBox(width: 16),
-            Expanded(child: TitleText(title, fontSize: 16, fontWeight: FontWeight.w400, color: context.theme.textColor)),
+            Expanded(
+              child: TitleText(
+                title,
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: context.theme.textColor,
+              ),
+            ),
             if (notificationCount != null && notificationCount > 0)
               Padding(
                 padding: const EdgeInsets.only(right: 8),
@@ -302,7 +413,11 @@ class _MenuPageState extends State<MenuPage> {
                   ),
                 ),
               ),
-            Icon(Icons.arrow_forward_ios, color: context.theme.textColor.withOpacity(0.7), size: 16),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: context.theme.textColor.withOpacity(0.7),
+              size: 16,
+            ),
           ],
         ),
       ),
@@ -311,7 +426,10 @@ class _MenuPageState extends State<MenuPage> {
 
   Widget _buildMenuGroupActions(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: context.theme.grey, borderRadius: BorderRadius.circular(15)),
+      decoration: BoxDecoration(
+        color: context.theme.grey,
+        borderRadius: BorderRadius.circular(15),
+      ),
       child: Column(
         children: [
           _buildMenuItem(context, Icons.logout, 'Log Out', () async {
@@ -327,29 +445,39 @@ class _MenuPageState extends State<MenuPage> {
                 action: AuthService.signOut,
                 loadingMessage: 'Logging out...',
                 errorMessage: 'Failed to log out.',
-                onSuccess: () => Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                onSuccess:
+                    () => Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
                       (route) => false,
-                ),
+                    ),
               );
             }
           }),
           Padding(
             padding: const EdgeInsets.only(left: 72),
-            child: Divider(color: context.theme.textColor.withOpacity(0.3), thickness: 0.5),
+            child: Divider(
+              color: context.theme.textColor.withOpacity(0.3),
+              thickness: 0.5,
+            ),
           ),
-          _buildMenuItem(context, Icons.delete_forever, 'Delete Account', () async {
-            if (await DialogUtils.showConfirmationDialog(
-              context: context,
-              title: 'Confirm',
-              message: 'Are you sure you want to delete your account? This action cannot be undone.',
-              confirmText: 'Next',
-              cancelText: 'Cancel',
-            )) {
-              await _deleteAccount();
-            }
-          }),
+          _buildMenuItem(
+            context,
+            Icons.delete_forever,
+            'Delete Account',
+            () async {
+              if (await DialogUtils.showConfirmationDialog(
+                context: context,
+                title: 'Confirm',
+                message:
+                    'Are you sure you want to delete your account? This action cannot be undone.',
+                confirmText: 'Next',
+                cancelText: 'Cancel',
+              )) {
+                await _deleteAccount();
+              }
+            },
+          ),
         ],
       ),
     );

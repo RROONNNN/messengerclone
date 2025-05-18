@@ -19,21 +19,6 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final List<String> friends = [
-    'Tôi',
-    'Hiển',
-    'Tâm',
-    'Tuấn',
-    'Nhật Băng',
-    'Hiển',
-    'Tâm',
-    'Tuấn',
-    'Nhật Băng',
-    'Hiển',
-    'Tâm',
-    'Tuấn',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -115,7 +100,7 @@ class _ChatPageState extends State<ChatPage> {
               itemCount: chatItems.length + 1,
               itemBuilder: (context, index) {
                 if (index == 0) {
-                  return _buildHeader();
+                  return _buildHeader(state);
                 }
 
                 final itemIndex = index - 1;
@@ -144,7 +129,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ChatItemState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -210,17 +195,15 @@ class _ChatPageState extends State<ChatPage> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children:
-                  friends
+                  (state as ChatItemLoaded).friends
                       .map(
-                        (name) => Padding(
+                        (user) => Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
                           child: GestureDetector(
                             onTap: () {
-                              // Navigator.of(context).push(
-                              //   MaterialPageRoute(
-                              //     builder: (context) => MessagesPage(),
-                              //   ),
-                              // );
+                              Navigator.of(
+                                context,
+                              ).pushNamed(Routes.chat, arguments: user);
                             },
                             onLongPress: () {
                               debugPrint("LongPress");
@@ -229,14 +212,13 @@ class _ChatPageState extends State<ChatPage> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 CustomRoundAvatar(
-                                  radius: 35,
-                                  isActive: true,
-                                  avatarUrl:
-                                      'https://picsum.photos/50?random=${name.hashCode}',
+                                  radius: 32,
+                                  isActive: user.isActive,
+                                  avatarUrl: user.photoUrl,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  name,
+                                  user.name,
                                   style: TextStyle(
                                     color: context.theme.textColor,
                                   ),

@@ -191,4 +191,42 @@ class AppwriteRepository {
       throw Exception("Failed to fetch group message: $error");
     }
   }
+
+  Future<List<ChatModel.User>> getFriendsList(String userId) async {
+    try {
+      final sentFriends = await AuthService.databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.friendsCollectionId,
+        queries: [
+          Query.equal('userId', userId),
+          Query.equal('status', 'accepted'),
+        ],
+      );
+      final receivedFriends = await AuthService.databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.friendsCollectionId,
+        queries: [
+          Query.equal('friendId', userId),
+          Query.equal('status', 'accepted'),
+        ],
+      );
+      final Set<String> friendIds = {};
+      for (var doc in sentFriends.documents) {
+        friendIds.add(doc.data['friendId']);
+      }
+      for (var doc in receivedFriends.documents) {
+        friendIds.add(doc.data['userId']);
+      }
+      final List<ChatModel.User> friends = [];
+      for (var friendId in friendIds) {
+        final friendData = await getUserById(friendId);
+        if (friendData != null) {
+          friends.add(friendData);
+        }
+      }
+      return friends;
+    } catch (error) {
+      throw Exception("Failed to fetch friends list: $error");
+    }
+  }
 }

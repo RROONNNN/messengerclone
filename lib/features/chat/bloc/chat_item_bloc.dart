@@ -4,10 +4,12 @@ import 'package:appwrite/appwrite.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:messenger_clone/common/services/friend_service.dart';
 import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
 import 'package:messenger_clone/features/chat/model/chat_item.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
+import 'package:messenger_clone/features/chat/model/user.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
 import 'package:messenger_clone/common/services/app_write_config.dart';
 import 'package:messenger_clone/common/services/auth_service.dart';
@@ -27,8 +29,13 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
         final String me = await meId;
         List<GroupMessage> groupMessages = await appwriteRepository
             .getGroupMessagesByUserId(me);
+        Future<List<User>> friendsFuture = appwriteRepository.getFriendsList(
+          me,
+        );
         if (groupMessages.isEmpty) {
-          emit(ChatItemLoaded(meId: me, chatItems: []));
+          List<User> friends = await friendsFuture;
+          emit(ChatItemLoaded(meId: me, chatItems: [], friends: friends));
+          return;
         }
         groupMessages.sort((a, b) {
           if (a.lastMessage == null && b.lastMessage == null) {
@@ -47,7 +54,8 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
         for (var groupMessage in groupMessages) {
           chatItems.add(ChatItem(groupMessage: groupMessage, meId: me));
         }
-        emit(ChatItemLoaded(meId: me, chatItems: chatItems));
+        List<User> friends = await friendsFuture;
+        emit(ChatItemLoaded(meId: me, chatItems: chatItems, friends: friends));
         add(SubscribeToChatStreamEvent());
       } catch (error) {
         emit(ChatItemError(message: error.toString()));

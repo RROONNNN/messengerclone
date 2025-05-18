@@ -1,8 +1,5 @@
-
-
 import 'package:appwrite/appwrite.dart';
 import 'package:messenger_clone/common/services/user_service.dart';
-
 import 'app_write_config.dart';
 import 'network_utils.dart';
 
@@ -13,7 +10,10 @@ class FriendService {
 
   static Databases get databases => Databases(_client);
 
-  static Future<Map<String, String>> getFriendshipStatus(String currentUserId, String otherUserId) async {
+  static Future<Map<String, String>> getFriendshipStatus(
+    String currentUserId,
+    String otherUserId,
+  ) async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
         final sentResponse = await databases.listDocuments(
@@ -54,18 +54,16 @@ class FriendService {
           };
         }
 
-        return {
-          'status': 'none',
-          'requestId': '',
-          'direction': '',
-        };
+        return {'status': 'none', 'requestId': '', 'direction': ''};
       } on AppwriteException catch (e) {
         throw Exception('Failed to check friendship status: ${e.message}');
       }
     });
   }
 
-  static Future<List<Map<String, dynamic>>> getFriendsList(String userId) async {
+  static Future<List<Map<String, dynamic>>> getFriendsList(
+    String userId,
+  ) async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
         final sentFriends = await databases.listDocuments(
@@ -93,18 +91,20 @@ class FriendService {
           friendIds[doc.data['userId'] as String] = doc.$id;
         }
 
-        final friendsList = await Future.wait(friendIds.entries.map((entry) async {
-          final friendId = entry.key;
-          final requestId = entry.value;
-          final friendData = await UserService.fetchUserDataById(friendId);
-          return {
-            'userId': friendId,
-            'name': friendData['userName'] as String?,
-            'photoUrl': friendData['photoUrl'] as String?,
-            'aboutMe': friendData['aboutMe'] as String? ?? 'No description',
-            'requestId': requestId,
-          };
-        }).toList());
+        final friendsList = await Future.wait(
+          friendIds.entries.map((entry) async {
+            final friendId = entry.key;
+            final requestId = entry.value;
+            final friendData = await UserService.fetchUserDataById(friendId);
+            return {
+              'userId': friendId,
+              'name': friendData['userName'] as String?,
+              'photoUrl': friendData['photoUrl'] as String?,
+              'aboutMe': friendData['aboutMe'] as String? ?? 'No description',
+              'requestId': requestId,
+            };
+          }).toList(),
+        );
 
         return friendsList;
       } on AppwriteException catch (e) {
@@ -129,25 +129,28 @@ class FriendService {
     });
   }
 
-  static Future<List<Map<String, dynamic>>> searchUsersByName(String name) async {
+  static Future<List<Map<String, dynamic>>> searchUsersByName(
+    String name,
+  ) async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
         final response = await databases.listDocuments(
           databaseId: AppwriteConfig.databaseId,
           collectionId: AppwriteConfig.userCollectionId,
-          queries: [
-            Query.search('name', name),
-            Query.limit(20),
-          ],
+          queries: [Query.search('name', name), Query.limit(20)],
         );
-        return response.documents.map((doc) => {
-          'userId': doc.$id,
-          'name': doc.data['name'] as String?,
-          'photoUrl': doc.data['photoUrl'] as String?,
-          'aboutMe': doc.data['aboutMe'] as String?,
-          'email': doc.data['email'] as String?,
-          'isActive': doc.data['isActive'] as bool? ?? false,
-        }).toList();
+        return response.documents
+            .map(
+              (doc) => {
+                'userId': doc.$id,
+                'name': doc.data['name'] as String?,
+                'photoUrl': doc.data['photoUrl'] as String?,
+                'aboutMe': doc.data['aboutMe'] as String?,
+                'email': doc.data['email'] as String?,
+                'isActive': doc.data['isActive'] as bool? ?? false,
+              },
+            )
+            .toList();
       } on AppwriteException catch (e) {
         throw Exception('Failed to search users: ${e.message}');
       } catch (e) {
@@ -156,7 +159,10 @@ class FriendService {
     });
   }
 
-  static Future<void> sendFriendRequest(String currentUserId, String friendUserId) async {
+  static Future<void> sendFriendRequest(
+    String currentUserId,
+    String friendUserId,
+  ) async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
         await databases.getDocument(
@@ -189,9 +195,12 @@ class FriendService {
         );
 
         if (existingRequest.documents.isNotEmpty) {
-          final status = existingRequest.documents.first.data['status'] as String;
+          final status =
+              existingRequest.documents.first.data['status'] as String;
           if (status == 'pending') {
-            throw Exception('A friend request is already pending with this user.');
+            throw Exception(
+              'A friend request is already pending with this user.',
+            );
           } else if (status == 'accepted') {
             throw Exception('You are already friends with this user.');
           }
@@ -209,7 +218,10 @@ class FriendService {
           },
         );
       } on AppwriteException catch (e) {
-        if (e.message?.contains('Document with the requested ID already exists') ?? false) {
+        if (e.message?.contains(
+              'Document with the requested ID already exists',
+            ) ??
+            false) {
           try {
             await databases.createDocument(
               databaseId: AppwriteConfig.databaseId,
@@ -222,10 +234,14 @@ class FriendService {
               },
             );
           } catch (retryError) {
-            throw Exception('Failed to send friend request after retry: ${retryError.toString()}');
+            throw Exception(
+              'Failed to send friend request after retry: ${retryError.toString()}',
+            );
           }
         } else if (e.message?.contains('unique constraint') ?? false) {
-          throw Exception('A friend request or friendship already exists with this user.');
+          throw Exception(
+            'A friend request or friendship already exists with this user.',
+          );
         } else {
           throw Exception('Failed to send friend request: ${e.message}');
         }
@@ -253,7 +269,9 @@ class FriendService {
     });
   }
 
-  static Future<List<Map<String, dynamic>>> getPendingFriendRequests(String userId) async {
+  static Future<List<Map<String, dynamic>>> getPendingFriendRequests(
+    String userId,
+  ) async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
         final response = await databases.listDocuments(
@@ -264,19 +282,26 @@ class FriendService {
             Query.equal('status', 'pending'),
           ],
         );
-        return response.documents.map((doc) => {
-          'requestId': doc.$id,
-          'userId': doc.data['userId'] as String,
-          'friendId': doc.data['friendId'] as String,
-          'status': doc.data['status'] as String,
-        }).toList();
+        return response.documents
+            .map(
+              (doc) => {
+                'requestId': doc.$id,
+                'userId': doc.data['userId'] as String,
+                'friendId': doc.data['friendId'] as String,
+                'status': doc.data['status'] as String,
+              },
+            )
+            .toList();
       } on AppwriteException catch (e) {
         throw Exception('Failed to fetch friend requests: ${e.message}');
       }
     });
   }
 
-  static Future<void> acceptFriendRequest(String requestId, String userId) async {
+  static Future<void> acceptFriendRequest(
+    String requestId,
+    String userId,
+  ) async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
         await databases.updateDocument(
