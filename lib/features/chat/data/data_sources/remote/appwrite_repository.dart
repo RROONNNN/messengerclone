@@ -195,7 +195,7 @@ class AppwriteRepository {
         ],
       );
 
-      final Set<String> friendIds = {userId};
+      final Set<String> friendIds = {};
       for (var doc in sentFriends.documents) {
         friendIds.add(doc.data['friendId'] as String);
       }

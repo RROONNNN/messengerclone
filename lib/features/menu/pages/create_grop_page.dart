@@ -201,7 +201,19 @@ class _CreateGroupViewState extends State<_CreateGroupView> {
                         },
                       );
                     } else if (state is CreateGroupError) {
-                      return Center(child: Text(state.message));
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              state.message,
+                              style: TextStyle(color: context.theme.white),
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      });
+                      return const SizedBox.shrink();
                     }
                     return const Center(
                       child: Text(
