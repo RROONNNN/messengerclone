@@ -539,6 +539,23 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     }
   }
 
+  List<MessageModel> _updateUserInCache(
+    List<MessageModel> cachedMessages,
+    List<appUser.User> users,
+  ) {
+    final Map<String, appUser.User> userMap = {
+      for (var user in users) user.id: user,
+    };
+
+    return cachedMessages.map((message) {
+      final updatedUser = userMap[message.sender.id];
+      if (updatedUser != null) {
+        return message.copyWith(sender: updatedUser);
+      }
+      return message;
+    }).toList();
+  }
+
   void _onMessageLoadEvent(
     MessageLoadEvent event,
     Emitter<MessageState> emit,
@@ -591,6 +608,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
           ),
         );
       }
+      cachedMessages = _updateUserInCache(cachedMessages, others);
       final DateTime? latestTimestamp =
           cachedMessages.isNotEmpty ? cachedMessages.first.createdAt : null;
       final List<MessageModel> newMessages = await chatRepository
