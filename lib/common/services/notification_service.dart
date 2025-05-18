@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:messenger_clone/common/routes/routes.dart';
+import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
+import 'package:messenger_clone/features/chat/model/group_message.dart';
 import '../../features/messages/elements/call_page.dart';
 import 'auth_service.dart';
 
@@ -134,7 +137,6 @@ class NotificationService {
     }
   }
 
-  //TODO:
   void _handleNotificationTapBackground(RemoteMessage message) {
     debugPrint('Background notification tapped: ${message.messageId}');
     if (message.data['type'] == 'video_call') {
@@ -146,10 +148,13 @@ class NotificationService {
 
   Future<void> _navigateToMessagePage(Map<String, dynamic> payload) async {
     if (navigatorKey?.currentState != null) {
-      // Navigate to the message page with the groupMessageId
+      AppwriteRepository appwriteRepository = AppwriteRepository();
+      GroupMessage groupMessage = await appwriteRepository.getGroupMessageById(
+        payload['groupMessageId'],
+      );
       navigatorKey!.currentState!.pushNamed(
-        '/messages',
-        arguments: payload['groupMessageId'],
+        Routes.chat,
+        arguments: groupMessage,
       );
     }
   }
@@ -189,14 +194,14 @@ class NotificationService {
     if (message.data['type'] == 'video_call') {
       await _showCallNotification(
         _localNotifications,
-        message.notification?.title ?? 'Incoming Call',
+        message.notification?.title ?? 'Cuộc gọi đến',
         message.notification?.body ?? '',
         message.data,
       );
     } else {
       await _showMessageNotification(
         _localNotifications,
-        message.notification?.title ?? 'New Message',
+        message.notification?.title ?? 'Tin nhắn mới',
         message.notification?.body ?? '',
         message.data,
       );

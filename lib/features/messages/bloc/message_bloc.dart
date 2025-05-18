@@ -15,6 +15,7 @@ import 'package:messenger_clone/common/constants/appwrite_database_constants.dar
 import 'package:messenger_clone/common/services/app_write_config.dart';
 import 'package:messenger_clone/common/services/common_function.dart';
 import 'package:messenger_clone/common/services/hive_service.dart';
+import 'package:messenger_clone/common/services/send_mesage_service.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
 import 'package:messenger_clone/features/chat/model/user.dart' as appUser;
@@ -443,6 +444,15 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
                 messages: latestMessages,
                 lastSuccessMessage: sentMessage,
               ),
+            );
+            List<String> userIds =
+                groupMessage.users.map((user) => user.id).toList();
+            SendMessageService.sendMessageNotification(
+              userIds: userIds,
+              groupMessageId: groupMessage.groupMessagesId,
+              messageContent: sentMessage.content,
+              senderId: me,
+              senderName: sentMessage.sender.name,
             );
           }
         }
