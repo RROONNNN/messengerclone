@@ -1,12 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
-import 'package:messenger_clone/common/services/auth_service.dart';
 import 'package:messenger_clone/common/services/story_service.dart';
 import 'package:messenger_clone/common/services/user_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 import 'package:messenger_clone/features/tin/pages/detail_tinPage.dart';
 import 'package:messenger_clone/features/tin/pages/gallery_uploadTin.dart';
+import '../../../common/services/hive_service.dart';
 import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../widgets/story_item.dart';
 
@@ -30,15 +30,13 @@ class _TinPageState extends State<TinPage> {
 
   Future<void> _fetchCurrentUserData() async {
     try {
-      final userId = await AuthService.isLoggedIn();
-      if (userId != null) {
-        final userData = await UserService.fetchUserDataById(userId);
-        setState(() {
-          _currentUserAvatarUrl = userData['photoUrl'] as String? ??
-              'https://images.hcmcpv.org.vn/res/news/2024/02/24-02-2024-ve-su-dung-co-dang-va-hinh-anh-co-dang-cong-san-viet-nam-FE119635-details.jpg?vs=24022024094023';
-        });
-      }
-    } catch (e) {
+      final userId = await HiveService.instance.getCurrentUserId();
+      final userData = await UserService.fetchUserDataById(userId);
+      setState(() {
+        _currentUserAvatarUrl = userData['photoUrl'] as String? ??
+            'https://images.hcmcpv.org.vn/res/news/2024/02/24-02-2024-ve-su-dung-co-dang-va-hinh-anh-co-dang-cong-san-viet-nam-FE119635-details.jpg?vs=24022024094023';
+      });
+        } catch (e) {
       if (mounted) {
         CustomAlertDialog.show(
           context: context,
@@ -51,17 +49,7 @@ class _TinPageState extends State<TinPage> {
 
   Future<void> _fetchStoriesFromAppwrite() async {
     try {
-      final userId = await AuthService.isLoggedIn();
-      if (userId == null) {
-        if (mounted) {
-          CustomAlertDialog.show(
-            context: context,
-            title: 'Lỗi',
-            message: 'Vui lòng đăng nhập để xem tin!',
-          );
-        }
-        return;
-      }
+      final userId = await HiveService.instance.getCurrentUserId();
 
       final fetchedStories = await StoryService.fetchFriendsStories(userId);
 

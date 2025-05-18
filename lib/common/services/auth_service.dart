@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart' as models;
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/common/services/store.dart';
 
 import 'app_write_config.dart';
@@ -209,11 +210,11 @@ class AuthService {
       try {
         String targetId = await Store.getTargetId();
         if (targetId.isNotEmpty) {
-          final user = await account.get();
+          String userId  = await HiveService.instance.getCurrentUserId();
           final document = await databases.getDocument(
             databaseId: AppwriteConfig.databaseId,
             collectionId: AppwriteConfig.userCollectionId,
-            documentId: user.$id,
+            documentId: userId,
           );
           await account.deletePushTarget(targetId: targetId);
           final List<String> pushTargets = List<String>.from(
@@ -223,15 +224,16 @@ class AuthService {
           await databases.updateDocument(
             databaseId: AppwriteConfig.databaseId,
             collectionId: AppwriteConfig.userCollectionId,
-            documentId: user.$id,
+            documentId: userId,
             data: {'pushTargets': pushTargets},
           );
         }
+        HiveService.instance.clearCurrentUserId();
         await account.deleteSession(sessionId: 'current');
       } on AppwriteException {
         return;
       } catch (e) {
-        throw Exception('Error during sign out: $e');
+        return;
       }
     });
   }
@@ -268,6 +270,7 @@ class AuthService {
       try {
         final user = await getCurrentUser();
         final userId = user?.$id;
+        HiveService.instance.clearCurrentUserId();
 
         await _deleteUserDocuments(userId!);
         await _deleteDeviceRecords(userId);

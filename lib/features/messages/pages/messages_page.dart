@@ -175,6 +175,8 @@ class _MessagesPageState extends State<MessagesPage> {
                     }
                   },
                   videoCallFunc: () async {
+                    final String userName =
+                    await UserService.getNameUser(state.meId) as String;
                     if (state.meId.isEmpty || state.others.isEmpty) {
                       debugPrint('Lỗi: meId hoặc others rỗng');
                       return;
@@ -202,7 +204,7 @@ class _MessagesPageState extends State<MessagesPage> {
                       await CallService.sendMessage(
                         userIds: participants,
                         callId: callID,
-                        callerName: state.meId,
+                        callerName: userName,
                         callerId: state.meId,
                       );
                       debugPrint('Điều hướng đến CallPage');
@@ -213,7 +215,7 @@ class _MessagesPageState extends State<MessagesPage> {
                               (context) => CallPage(
                                 callID: callID,
                                 userID: state.meId,
-                                userName: state.meId,
+                                userName: userName,
                               ),
                         ),
                       );

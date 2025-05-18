@@ -6,6 +6,8 @@ import 'package:messenger_clone/common/services/auth_service.dart';
 import 'package:messenger_clone/common/services/friend_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 
+import '../../../common/services/hive_service.dart';
+
 class FindFriendsPage extends StatefulWidget {
   const FindFriendsPage({super.key});
 
@@ -59,10 +61,9 @@ class _FindFriendsPageState extends State<FindFriendsPage> with SingleTickerProv
 
     try {
       final results = await FriendService.searchUsersByName(query);
-      final currentUser = await AuthService.getCurrentUser();
-      if (currentUser == null) throw Exception('User not logged in');
+      final currentUser = await HiveService.instance.getCurrentUserId();
 
-      _currentUserId = currentUser.$id;
+      _currentUserId = currentUser;
       final updatedResults = await Future.wait(results.map((user) async {
         final status = await FriendService.getFriendshipStatus(_currentUserId, user['userId']);
         return {

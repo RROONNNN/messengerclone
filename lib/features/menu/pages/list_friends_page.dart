@@ -4,6 +4,7 @@ import 'package:messenger_clone/common/services/auth_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 
 import '../../../common/services/friend_service.dart';
+import '../../../common/services/hive_service.dart';
 
 class ListFriendsPage extends StatefulWidget {
   const ListFriendsPage({super.key});
@@ -46,9 +47,8 @@ class _ListFriendsPageState extends State<ListFriendsPage> with SingleTickerProv
     });
 
     try {
-      final currentUser = await AuthService.getCurrentUser();
-      if (currentUser == null) throw Exception('User not logged in');
-      _currentUserId = currentUser.$id;
+      final currentUser = await HiveService.instance.getCurrentUserId();
+      _currentUserId = currentUser;
 
       final friends = await FriendService.getFriendsList(_currentUserId);
       setState(() {

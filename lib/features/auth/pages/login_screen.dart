@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:messenger_clone/common/services/auth_service.dart';
 import 'package:messenger_clone/common/services/device_service.dart';
+import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/features/auth/pages/register_name.dart';
 import 'package:messenger_clone/features/main_page/main_page.dart';
 import '../../../common/services/opt_email_service.dart';
@@ -23,7 +24,7 @@ class LoginScreenState extends State<LoginScreen> {
 
   @override
   void initState() {
-    _emailController.text = "tsarlvntn1234@gmail.com";
+    _emailController.text = "hvnguyen902993@gmail.com";
     _passwordController.text = "Nguyen@902993";
     super.initState();
   }
@@ -166,14 +167,15 @@ class LoginScreenState extends State<LoginScreen> {
                           await DeviceService.saveLoginDeviceInfo(userID);
                           if (!context.mounted) return;
                           while (true) {
-                            final currentUser = await AuthService
-                                .getCurrentUser();
+                            final currentUser =  await AuthService.isLoggedIn();
                             if (currentUser != null) {
-                              debugPrint('delay 1s');
+                              debugPrint('currentUser: $currentUser');
+                              HiveService.instance.saveCurrentUserId(userID);
                               if (context.mounted) {
-                                Navigator.pushReplacement(
+                                Navigator.pushAndRemoveUntil(
                                   context,
                                   MaterialPageRoute(builder: (context) => MainPage()),
+                                    (route) => false,
                                 );
                               }
                               break;
@@ -200,6 +202,13 @@ class LoginScreenState extends State<LoginScreen> {
                                     email: _emailController.text,
                                     nextScreen: () => MainPage(),
                                     action: () async {
+                                      String? isLogin ;
+                                      while(isLogin == null) {
+                                        isLogin = await AuthService.isLoggedIn();
+                                      }
+                                      debugPrint('isLogin: $isLogin');
+                                      HiveService.instance.saveCurrentUserId(userID);
+                                      // đảm bảo đã đăng nhập
                                       await AuthService.signIn(
                                         email: _emailController.text,
                                         password: _passwordController.text,
@@ -207,15 +216,6 @@ class LoginScreenState extends State<LoginScreen> {
                                       await DeviceService.saveLoginDeviceInfo(
                                         userID,
                                       );
-                                      final currentUser = await AuthService
-                                          .getCurrentUser();
-                                      while(currentUser == null) {
-                                        await AuthService.signOut();
-                                        await AuthService.signIn(
-                                          email: _emailController.text,
-                                          password: _passwordController.text,
-                                        );
-                                      }
                                     },
                                   ),
                             ),

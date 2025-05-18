@@ -36,13 +36,15 @@ class _SplashPageState extends State<SplashPage> {
     await Future.delayed(const Duration(seconds: 1));
     try {
       final currentUser = await AuthService.getCurrentUser();
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
           builder:
               (BuildContext context) =>
                   currentUser != null ? MainPage() : LoginScreen(),
         ),
+            (route) => false
+        ,
       );
     } catch (e) {
       await CustomAlertDialog.show(
