@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1479652704",
+    "project_id": "appwrite-messaging-70c26",
+    "storage_bucket": "appwrite-messaging-70c26.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1479652704:android:8420ebf932216b63b31a05",
+        "android_client_info": {
+          "package_name": "com.example.messenger_clone"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUF8BenWRR0WqqYd3Aq9AG0odfQdlfbYE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

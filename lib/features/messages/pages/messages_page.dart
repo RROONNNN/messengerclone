@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
+import 'package:messenger_clone/common/services/user_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 import 'package:messenger_clone/common/widgets/elements/custom_message_item.dart';
 import 'package:messenger_clone/common/widgets/elements/custom_round_avatar.dart';
@@ -13,6 +14,7 @@ import 'package:messenger_clone/features/messages/bloc/message_bloc.dart';
 import 'package:messenger_clone/features/messages/data/repositories/chat_repository_impl.dart';
 import 'package:messenger_clone/features/messages/enum/message_status.dart';
 import 'package:messenger_clone/features/messages/elements/call_page.dart';
+import '../../../common/services/call_service.dart';
 import '../elements/custom_messages_appbar.dart';
 import '../elements/custom_messages_bottombar.dart';
 
@@ -120,97 +122,106 @@ class _MessagesPageState extends State<MessagesPage> {
                 FocusScope.of(context).unfocus();
               },
               child: Scaffold(
-                appBar:
-                    state.groupMessage.isGroup
-                        ? CustomMessagesAppBar.group(
-                          isMe: true,
-                          groupName: state.groupMessage.groupName ?? "Group",
-                          avatarGroupUrl: state.groupMessage.avatarGroupUrl,
-                          callFunc: () async {
-                            final callID =
-                                'call_${DateTime.now().millisecondsSinceEpoch}';
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => CallPage(
-                                      callID: callID,
-                                      userID: state.meId,
-                                      userName: state.meId,
-                                      caller: state.others.first,
-                                      participants: [
-                                        state.meId,
-                                        state.others.first.id,
-                                      ],
-                                    ),
+                appBar: CustomMessagesAppBar(
+                  isMe: true,
+                  user: state.others.first,
+                  callFunc: () async {
+                    final String userName =
+                        await UserService.getNameUser(state.meId) as String;
+                    if (state.meId.isEmpty || state.others.isEmpty) {
+                      debugPrint('Lỗi: meId hoặc others rỗng');
+                      return;
+                    }
+                    List<String> participants = [state.meId];
+                    for (User user in state.others) {
+                      if (user.id.isNotEmpty) {
+                        participants.add(user.id);
+                      }
+                    }
+                    if (participants.length < 2) {
+                      debugPrint('Lỗi: Không đủ participants để gọi');
+                      return;
+                    }
+                    participants.sort();
+                    String callID = "";
+                    for (final participant in participants) {
+                      callID += participant;
+                      callID += "call_video_21211221133211412114214";
+                    }
+                    debugPrint(
+                      'Gửi thông báo gọi với callID: $callID, participants: $participants',
+                    );
+                    try {
+                      await CallService.sendMessage(
+                        userIds: participants,
+                        callId: callID,
+                        callerName: userName,
+                        callerId: state.meId,
+                      );
+                      debugPrint('Điều hướng đến CallPage');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => CallPage(
+                                callID: callID,
+                                userID: state.meId,
+                                userName: userName,
                               ),
-                            );
-                          },
-                          videoCallFunc: () async {
-                            final callID =
-                                'video_call_${DateTime.now().millisecondsSinceEpoch}';
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => CallPage(
-                                      callID: callID,
-                                      userID: state.meId,
-                                      userName: state.meId,
-                                      caller: state.others.first,
-                                      participants: [
-                                        state.meId,
-                                        state.others.first.id,
-                                      ],
-                                    ),
-                              ),
-                            );
-                          },
-                        )
-                        : CustomMessagesAppBar(
-                          isMe: true,
-                          user: state.others.first,
-                          callFunc: () async {
-                            final callID =
-                                'call_${DateTime.now().millisecondsSinceEpoch}';
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => CallPage(
-                                      callID: callID,
-                                      userID: state.meId,
-                                      userName: state.meId,
-                                      caller: state.others.first,
-                                      participants: [
-                                        state.meId,
-                                        state.others.first.id,
-                                      ],
-                                    ),
-                              ),
-                            );
-                          },
-                          videoCallFunc: () async {
-                            final callID =
-                                'video_call_${DateTime.now().millisecondsSinceEpoch}';
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => CallPage(
-                                      callID: callID,
-                                      userID: state.meId,
-                                      userName: state.meId,
-                                      caller: state.others.first,
-                                      participants: [
-                                        state.meId,
-                                        state.others.first.id,
-                                      ],
-                                    ),
-                              ),
-                            );
-                          },
                         ),
+                      );
+                    } catch (e) {
+                      debugPrint('Lỗi khi gửi thông báo gọi: $e');
+                    }
+                  },
+                  videoCallFunc: () async {
+                    if (state.meId.isEmpty || state.others.isEmpty) {
+                      debugPrint('Lỗi: meId hoặc others rỗng');
+                      return;
+                    }
+                    List<String> participants = [state.meId];
+                    for (User user in state.others) {
+                      if (user.id.isNotEmpty) {
+                        participants.add(user.id);
+                      }
+                    }
+                    if (participants.length < 2) {
+                      debugPrint('Lỗi: Không đủ participants để gọi video');
+                      return;
+                    }
+                    participants.sort();
+                    String callID = "";
+                    for (final participant in participants) {
+                      callID += participant;
+                      callID += "call_video_21211221133211412114214";
+                    }
+                    debugPrint(
+                      'Gửi thông báo gọi video với callID: $callID, participants: $participants',
+                    );
+                    try {
+                      await CallService.sendMessage(
+                        userIds: participants,
+                        callId: callID,
+                        callerName: state.meId,
+                        callerId: state.meId,
+                      );
+                      debugPrint('Điều hướng đến CallPage');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => CallPage(
+                                callID: callID,
+                                userID: state.meId,
+                                userName: state.meId,
+                              ),
+                        ),
+                      );
+                    } catch (e) {
+                      debugPrint('Lỗi khi gửi thông báo gọi video: $e');
+                    }
+                  },
+                ),
                 bottomNavigationBar: Padding(
                   padding: EdgeInsets.only(
                     bottom: MediaQuery.of(context).viewInsets.bottom,
