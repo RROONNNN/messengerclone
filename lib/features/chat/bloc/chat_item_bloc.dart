@@ -68,13 +68,6 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
           final GroupMessage groupMessage = await appwriteRepository
               .getGroupMessageById(event.groupChatId);
           List<ChatItem> chatItems = List.from(currentState.chatItems);
-          // for (int i = 0; i < chatItems.length; i++) {
-          //   if (chatItems[i].groupMessage.groupMessagesId ==
-          //       groupMessage.groupMessagesId) {
-          //     chatItems[i] = chatItems[i].copyWith(groupMessage: groupMessage);
-          //     break;
-          //   }
-          // }
           final index = chatItems.indexWhere(
             (element) =>
                 element.groupMessage.groupMessagesId ==

@@ -10,10 +10,14 @@ class CustomMessagesAppBar extends StatelessWidget
   final User user;
   final bool isMe;
   final Color? backgroundColor;
+  final bool isGroup;
+  final String? groupName;
+  final String? avatarGroupUrl;
   final void Function()? callFunc;
   final void Function()? videoCallFunc;
   final void Function()? onTapAvatar;
-  const CustomMessagesAppBar({
+
+  const CustomMessagesAppBar._({
     super.key,
     required this.isMe,
     this.backgroundColor,
@@ -21,7 +25,52 @@ class CustomMessagesAppBar extends StatelessWidget
     this.callFunc,
     this.videoCallFunc,
     this.onTapAvatar,
+    this.isGroup = false,
+    this.groupName,
+    this.avatarGroupUrl,
   });
+
+  factory CustomMessagesAppBar({
+    required bool isMe,
+    Color? backgroundColor,
+    required User user,
+    void Function()? callFunc,
+    void Function()? videoCallFunc,
+    void Function()? onTapAvatar,
+  }) {
+    return CustomMessagesAppBar._(
+      isMe: isMe,
+      backgroundColor: backgroundColor,
+      user: user,
+      callFunc: callFunc,
+      videoCallFunc: videoCallFunc,
+      onTapAvatar: onTapAvatar,
+    );
+  }
+
+  factory CustomMessagesAppBar.group({
+    required bool isMe,
+    Color? backgroundColor,
+    required User user,
+    void Function()? callFunc,
+    void Function()? videoCallFunc,
+    void Function()? onTapAvatar,
+    required String groupName,
+    String? avatarGroupUrl,
+  }) {
+    return CustomMessagesAppBar._(
+      isMe: isMe,
+      backgroundColor: backgroundColor,
+      user: user,
+      callFunc: callFunc,
+      videoCallFunc: videoCallFunc,
+      onTapAvatar: onTapAvatar,
+      isGroup: true,
+      groupName: groupName,
+      avatarGroupUrl: avatarGroupUrl,
+    );
+  }
+
   String _getOfflineDurationText() {
     final duration = DateTime.now().difference(user.lastSeen);
 
@@ -51,9 +100,9 @@ class CustomMessagesAppBar extends StatelessWidget
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             CustomRoundAvatar(
-              isActive: user.isActive,
+              isActive: isGroup ? true : user.isActive,
               radius: 18,
-              avatarUrl: user.photoUrl,
+              avatarUrl: isGroup ? avatarGroupUrl : user.photoUrl,
             ),
             SizedBox(width: 8),
             Expanded(
@@ -62,15 +111,13 @@ class CustomMessagesAppBar extends StatelessWidget
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ContentText(
-                    user.name,
+                    isGroup ? groupName : user.name,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     overflow: TextOverflow.ellipsis,
                   ),
                   ContentText(
-                    user.isActive
-                        ? "Đang hoạt động"
-                        : _getOfflineDurationText(),
+                    isGroup ? "Đang hoạt động" : _getOfflineDurationText(),
                     overflow: TextOverflow.ellipsis,
                     color: context.theme.textGrey,
                   ),
@@ -108,5 +155,5 @@ class CustomMessagesAppBar extends StatelessWidget
   }
 
   @override
-  Size get preferredSize => Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
