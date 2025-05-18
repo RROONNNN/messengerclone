@@ -7,7 +7,7 @@ import '../../chat/model/user.dart';
 
 class CustomMessagesAppBar extends StatelessWidget
     implements PreferredSizeWidget {
-  final User user;
+  final User? user;
   final bool isMe;
   final Color? backgroundColor;
   final bool isGroup;
@@ -21,7 +21,7 @@ class CustomMessagesAppBar extends StatelessWidget
     super.key,
     required this.isMe,
     this.backgroundColor,
-    required this.user,
+    this.user,
     this.callFunc,
     this.videoCallFunc,
     this.onTapAvatar,
@@ -51,7 +51,6 @@ class CustomMessagesAppBar extends StatelessWidget
   factory CustomMessagesAppBar.group({
     required bool isMe,
     Color? backgroundColor,
-    required User user,
     void Function()? callFunc,
     void Function()? videoCallFunc,
     void Function()? onTapAvatar,
@@ -61,7 +60,6 @@ class CustomMessagesAppBar extends StatelessWidget
     return CustomMessagesAppBar._(
       isMe: isMe,
       backgroundColor: backgroundColor,
-      user: user,
       callFunc: callFunc,
       videoCallFunc: videoCallFunc,
       onTapAvatar: onTapAvatar,
@@ -72,7 +70,9 @@ class CustomMessagesAppBar extends StatelessWidget
   }
 
   String _getOfflineDurationText() {
-    final duration = DateTime.now().difference(user.lastSeen);
+    final duration = DateTime.now().difference(
+      user?.lastSeen ?? DateTime.now(),
+    );
 
     if (duration.inDays > 0) {
       return "Hoạt động ${duration.inDays} ngày trước";
@@ -100,9 +100,9 @@ class CustomMessagesAppBar extends StatelessWidget
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             CustomRoundAvatar(
-              isActive: isGroup ? true : user.isActive,
+              isActive: isGroup ? true : user?.isActive ?? true,
               radius: 18,
-              avatarUrl: isGroup ? avatarGroupUrl : user.photoUrl,
+              avatarUrl: isGroup ? avatarGroupUrl : user?.photoUrl,
             ),
             SizedBox(width: 8),
             Expanded(
@@ -111,7 +111,7 @@ class CustomMessagesAppBar extends StatelessWidget
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ContentText(
-                    isGroup ? groupName : user.name,
+                    isGroup ? groupName : user?.name,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     overflow: TextOverflow.ellipsis,

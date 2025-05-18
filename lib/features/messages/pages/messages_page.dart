@@ -120,44 +120,97 @@ class _MessagesPageState extends State<MessagesPage> {
                 FocusScope.of(context).unfocus();
               },
               child: Scaffold(
-                appBar: CustomMessagesAppBar(
-                  isMe: true,
-                  user: state.others.first,
-                  callFunc: () async {
-                    final callID =
-                        'call_${DateTime.now().millisecondsSinceEpoch}';
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => CallPage(
-                              callID: callID,
-                              userID: state.meId,
-                              userName: state.meId,
-                              caller: state.others.first,
-                              participants: [state.meId, state.others.first.id],
-                            ),
-                      ),
-                    );
-                  },
-                  videoCallFunc: () async {
-                    final callID =
-                        'video_call_${DateTime.now().millisecondsSinceEpoch}';
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => CallPage(
-                              callID: callID,
-                              userID: state.meId,
-                              userName: state.meId,
-                              caller: state.others.first,
-                              participants: [state.meId, state.others.first.id],
-                            ),
-                      ),
-                    );
-                  },
-                ),
+                appBar:
+                    state.groupMessage.isGroup
+                        ? CustomMessagesAppBar.group(
+                          isMe: true,
+                          groupName: state.groupMessage.groupName ?? "Group",
+                          avatarGroupUrl: state.groupMessage.avatarGroupUrl,
+                          callFunc: () async {
+                            final callID =
+                                'call_${DateTime.now().millisecondsSinceEpoch}';
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => CallPage(
+                                      callID: callID,
+                                      userID: state.meId,
+                                      userName: state.meId,
+                                      caller: state.others.first,
+                                      participants: [
+                                        state.meId,
+                                        state.others.first.id,
+                                      ],
+                                    ),
+                              ),
+                            );
+                          },
+                          videoCallFunc: () async {
+                            final callID =
+                                'video_call_${DateTime.now().millisecondsSinceEpoch}';
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => CallPage(
+                                      callID: callID,
+                                      userID: state.meId,
+                                      userName: state.meId,
+                                      caller: state.others.first,
+                                      participants: [
+                                        state.meId,
+                                        state.others.first.id,
+                                      ],
+                                    ),
+                              ),
+                            );
+                          },
+                        )
+                        : CustomMessagesAppBar(
+                          isMe: true,
+                          user: state.others.first,
+                          callFunc: () async {
+                            final callID =
+                                'call_${DateTime.now().millisecondsSinceEpoch}';
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => CallPage(
+                                      callID: callID,
+                                      userID: state.meId,
+                                      userName: state.meId,
+                                      caller: state.others.first,
+                                      participants: [
+                                        state.meId,
+                                        state.others.first.id,
+                                      ],
+                                    ),
+                              ),
+                            );
+                          },
+                          videoCallFunc: () async {
+                            final callID =
+                                'video_call_${DateTime.now().millisecondsSinceEpoch}';
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => CallPage(
+                                      callID: callID,
+                                      userID: state.meId,
+                                      userName: state.meId,
+                                      caller: state.others.first,
+                                      participants: [
+                                        state.meId,
+                                        state.others.first.id,
+                                      ],
+                                    ),
+                              ),
+                            );
+                          },
+                        ),
                 bottomNavigationBar: Padding(
                   padding: EdgeInsets.only(
                     bottom: MediaQuery.of(context).viewInsets.bottom,

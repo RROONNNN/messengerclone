@@ -18,23 +18,7 @@ class AppwriteRepository {
           collectionId: AppwriteConfig.groupMessagesCollectionId,
           documentId: groupMessageId,
         );
-        final List<ChatModel.User> users =
-            (doc.data['users'] as List<dynamic>).map((user) {
-              if (user is Map<String, dynamic>) {
-                return ChatModel.User.fromMap({...user, 'id': user["\$id"]});
-              }
-              throw Exception("Invalid user format in group chat");
-            }).toList();
-
-        final group = GroupMessage(
-          groupId: doc.data['groupId'],
-          groupMessagesId: doc.$id,
-          lastMessage:
-              doc.data['lastMessage'] != null
-                  ? MessageModel.fromMap(doc.data['lastMessage'])
-                  : null,
-          users: users,
-        );
+        final group = GroupMessage.fromJson(doc.data);
         groupMessages.add(group);
       }
     } catch (error) {
@@ -210,23 +194,29 @@ class AppwriteRepository {
           Query.equal('status', 'accepted'),
         ],
       );
-      final Set<String> friendIds = {};
+
+      final Set<String> friendIds = {userId};
       for (var doc in sentFriends.documents) {
-        friendIds.add(doc.data['friendId']);
+        friendIds.add(doc.data['friendId'] as String);
       }
       for (var doc in receivedFriends.documents) {
-        friendIds.add(doc.data['userId']);
+        friendIds.add(doc.data['userId'] as String);
       }
-      final List<ChatModel.User> friends = [];
-      for (var friendId in friendIds) {
-        final friendData = await getUserById(friendId);
-        if (friendData != null) {
-          friends.add(friendData);
-        }
-      }
-      return friends;
-    } catch (error) {
-      throw Exception("Failed to fetch friends list: $error");
+
+      final friendsFutures =
+          friendIds.map((friendId) => getUserById(friendId)).toList();
+      final friendsResults = await Future.wait(friendsFutures);
+      final friendsList =
+          friendsResults
+              .where((user) => user != null)
+              .cast<ChatModel.User>()
+              .toList();
+
+      return friendsList;
+    } on AppwriteException catch (e) {
+      throw Exception('Failed to fetch friends list: ${e.message}');
+    } catch (e) {
+      throw Exception('Error fetching friends list: $e');
     }
   }
 }
