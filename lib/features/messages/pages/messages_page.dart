@@ -58,14 +58,14 @@ class _MessagesPageState extends State<MessagesPage> {
   void _scrollListener() {
     if (!_scrollController.hasClients) return;
     final currentState = context.read<MessageBloc>();
-    if (currentState is! MessageLoaded) {
+    if (currentState.state is! MessageLoaded) {
       return;
     }
     final bool hasMoreMessages =
-        (currentState as MessageLoaded).hasMoreMessages;
+        (currentState.state as MessageLoaded).hasMoreMessages;
 
     if (_scrollController.offset >=
-        _scrollController.position.maxScrollExtent &&
+            _scrollController.position.maxScrollExtent &&
         !_scrollController.position.outOfRange &&
         (hasMoreMessages)) {
       context.read<MessageBloc>().add(MessageLoadMoreEvent());
@@ -100,7 +100,7 @@ class _MessagesPageState extends State<MessagesPage> {
     return BlocListener<MessageBloc, MessageState>(
       listenWhen:
           (previous, current) =>
-      current is MessageLoaded && previous != current,
+              current is MessageLoaded && previous != current,
       listener: (context, state) {
         if (state is MessageLoaded) {
           final bloc = context.read<MessageBloc>();
@@ -126,7 +126,8 @@ class _MessagesPageState extends State<MessagesPage> {
                   isMe: true,
                   user: state.others.first,
                   callFunc: () async {
-                    final String userName = await UserService.getNameUser(state.meId) as String;
+                    final String userName =
+                        await UserService.getNameUser(state.meId) as String;
                     if (state.meId.isEmpty || state.others.isEmpty) {
                       debugPrint('Lỗi: meId hoặc others rỗng');
                       return;
@@ -147,7 +148,9 @@ class _MessagesPageState extends State<MessagesPage> {
                       callID += participant;
                       callID += "call_video_21211221133211412114214";
                     }
-                    debugPrint('Gửi thông báo gọi với callID: $callID, participants: $participants');
+                    debugPrint(
+                      'Gửi thông báo gọi với callID: $callID, participants: $participants',
+                    );
                     try {
                       await CallService.sendMessage(
                         userIds: participants,
@@ -159,11 +162,12 @@ class _MessagesPageState extends State<MessagesPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => CallPage(
-                            callID: callID,
-                            userID: state.meId,
-                            userName: userName,
-                          ),
+                          builder:
+                              (context) => CallPage(
+                                callID: callID,
+                                userID: state.meId,
+                                userName: userName,
+                              ),
                         ),
                       );
                     } catch (e) {
@@ -191,7 +195,9 @@ class _MessagesPageState extends State<MessagesPage> {
                       callID += participant;
                       callID += "call_video_21211221133211412114214";
                     }
-                    debugPrint('Gửi thông báo gọi video với callID: $callID, participants: $participants');
+                    debugPrint(
+                      'Gửi thông báo gọi video với callID: $callID, participants: $participants',
+                    );
                     try {
                       await CallService.sendMessage(
                         userIds: participants,
@@ -203,11 +209,12 @@ class _MessagesPageState extends State<MessagesPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => CallPage(
-                            callID: callID,
-                            userID: state.meId,
-                            userName: state.meId,
-                          ),
+                          builder:
+                              (context) => CallPage(
+                                callID: callID,
+                                userID: state.meId,
+                                userName: state.meId,
+                              ),
                         ),
                       );
                     } catch (e) {
@@ -217,10 +224,7 @@ class _MessagesPageState extends State<MessagesPage> {
                 ),
                 bottomNavigationBar: Padding(
                   padding: EdgeInsets.only(
-                    bottom: MediaQuery
-                        .of(context)
-                        .viewInsets
-                        .bottom,
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
                   ),
                   child: CustomMessagesBottomBar(
                     onSendMessage: () {
@@ -235,9 +239,9 @@ class _MessagesPageState extends State<MessagesPage> {
                     color: context.theme.bg,
                     padding: EdgeInsets.symmetric(horizontal: 5),
                     child:
-                    state.messages.isNotEmpty
-                        ? _buildListMessage()
-                        : Container(height: double.infinity),
+                        state.messages.isNotEmpty
+                            ? _buildListMessage()
+                            : Container(height: double.infinity),
                   ),
                 ),
               ),
@@ -275,29 +279,32 @@ class _MessagesPageState extends State<MessagesPage> {
                             Padding(
                               padding: const EdgeInsets.only(right: 8.0),
                               child:
-                              (state.messages.first.idFrom == state.meId)
-                                  ? switch (state.messages.first.status) {
-                                null => const SizedBox(),
-                                MessageStatus.sending =>
-                                const ContentText(
-                                  'Sending',
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                                MessageStatus.failed =>
-                                const ContentText(
-                                  'Failed',
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                                MessageStatus.sent =>
-                                const ContentText(
-                                  'Sent',
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              }
-                                  : const SizedBox(),
+                                  (state.messages.first.idFrom == state.meId)
+                                      ? switch (state.messages.first.status) {
+                                        null => const ContentText(
+                                          'Sent',
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                        MessageStatus.sending =>
+                                          const ContentText(
+                                            'Sending',
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        MessageStatus.failed =>
+                                          const ContentText(
+                                            'Failed',
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        MessageStatus.sent => const ContentText(
+                                          'Sent',
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      }
+                                      : const SizedBox(),
                             )
                           else
                             Row(
@@ -307,8 +314,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                     .take(3)
                                     .where((user) => user.id != state.meId)
                                     .map(
-                                      (user) =>
-                                      Padding(
+                                      (user) => Padding(
                                         padding: const EdgeInsets.only(
                                           left: 4.0,
                                         ),
@@ -322,7 +328,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                           ),
                                         ),
                                       ),
-                                )
+                                    )
                                     .toList(),
                                 if (state.messages.first.usersSeen.length > 3)
                                   Padding(
@@ -337,8 +343,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: ContentText(
-                                        '+${state.messages.first.usersSeen
-                                            .length - 3}',
+                                        '+${state.messages.first.usersSeen.length - 3}',
                                         fontSize: 12,
                                         color: Colors.grey[700],
                                       ),
@@ -353,28 +358,28 @@ class _MessagesPageState extends State<MessagesPage> {
                       final bool isLoadingMore = state.isLoadingMore;
                       return (isLoadingMore)
                           ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
                           : SizedBox.shrink();
                     }
                     final message = state.messages[index - 1];
                     return Row(
                       mainAxisAlignment:
-                      message.idFrom == state.meId
-                          ? MainAxisAlignment.end
-                          : MainAxisAlignment.start,
+                          message.idFrom == state.meId
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
                       children: [
                         message.idFrom == state.meId
                             ? const SizedBox()
                             : CustomRoundAvatar(
-                          isActive: true,
-                          radius: 18,
-                          radiusOfActiveIndicator: 5,
-                          avatarUrl: message.sender.photoUrl,
-                        ),
+                              isActive: true,
+                              radius: 18,
+                              radiusOfActiveIndicator: 5,
+                              avatarUrl: message.sender.photoUrl,
+                            ),
                         BlocProvider.value(
                           value: BlocProvider.of<MessageBloc>(context),
                           child: CustomMessageItem(

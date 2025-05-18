@@ -125,8 +125,12 @@ class ChatItemWidget extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 16),
                 child: CustomRoundAvatar(
                   radius: avatarRadius,
-                  isActive: others.first.isActive,
-                  avatarUrl: others.first.photoUrl,
+                  isActive:
+                      item.groupMessage.isGroup ? true : others.first.isActive,
+                  avatarUrl:
+                      item.groupMessage.isGroup
+                          ? item.groupMessage.avatarGroupUrl
+                          : others.first.photoUrl,
                 ),
               ),
               Expanded(
@@ -139,7 +143,7 @@ class ChatItemWidget extends StatelessWidget {
                         Flexible(
                           child: Text(
                             item.groupMessage.isGroup
-                                ? item.groupMessage.groupName!
+                                ? item.groupMessage.groupName ?? "Group"
                                 : others.first.name,
                             style: TextStyle(
                               fontWeight:

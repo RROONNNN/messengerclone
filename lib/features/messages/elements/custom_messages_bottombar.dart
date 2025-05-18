@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:messenger_clone/common/widgets/elements/video_player_preview_widget.dart';
+import 'package:messenger_clone/features/messages/bloc/message_bloc.dart';
 
 import 'dart:io';
 
@@ -210,8 +212,12 @@ class _CustomMessagesBottomBarState extends State<CustomMessagesBottomBar> {
             ),
             IconButton(
               onPressed: () {
-                widget.onSendMessage?.call();
-                _focusNode.requestFocus();
+                if (widget.textController.text.isNotEmpty) {
+                  widget.onSendMessage?.call();
+                  _focusNode.requestFocus();
+                } else {
+                  context.read<MessageBloc>().add(MessageSendEvent("👍"));
+                }
               },
               icon: Icon(
                 widget.textController.text.isNotEmpty

@@ -6,6 +6,7 @@ import 'package:messenger_clone/common/services/notification_service.dart';
 import 'package:messenger_clone/features/chat/bloc/chat_item_bloc.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
 import 'package:messenger_clone/features/chat/model/user.dart';
+import 'package:messenger_clone/features/messages/data/data_sources/local/hive_chat_repository.dart';
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
 import 'package:messenger_clone/features/messages/enum/message_status.dart';
 import 'package:path_provider/path_provider.dart';
@@ -20,7 +21,6 @@ import 'features/meta_ai/data/meta_ai_message_hive.dart';
 import 'features/splash/pages/splash.dart';
 import 'firebase_options.dart';
 import 'package:permission_handler/permission_handler.dart';
-
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -39,6 +39,7 @@ Future<void> main() async {
     ..registerAdapter(UserAdapter())
     ..registerAdapter(MessageStatusAdapter());
 
+  await HiveChatRepository.instance.clearAllMessages();
   await MetaAiServiceHive.init();
   runApp(
     ChangeNotifierProvider(
@@ -68,14 +69,13 @@ class _MessengerCloneState extends State<MessengerClone> {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-            create: (context) =>
-            MetaAiBloc()
-              ..add(InitializeMetaAi())),
+          create: (context) => MetaAiBloc()..add(InitializeMetaAi()),
+        ),
         BlocProvider(
           create:
               (context) =>
-          ChatItemBloc(appwriteRepository: AppwriteRepository())
-            ..add(GetChatItemEvent()),
+                  ChatItemBloc(appwriteRepository: AppwriteRepository())
+                    ..add(GetChatItemEvent()),
         ),
       ],
       child: MaterialApp(

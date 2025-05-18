@@ -11,7 +11,7 @@ abstract class AbstractChatRepository {
     int offset,
     DateTime? newerThan,
   );
-  Future<Either<String, void>> sendMessage(
+  Future<MessageModel> sendMessage(
     MessageModel message,
     GroupMessage groupMessage,
   );
@@ -32,4 +32,5 @@ abstract class AbstractChatRepository {
   );
   Future<File> uploadFile(String filePath, String senderId);
   Future<String> downloadFile(String url, String filePath);
+  Future<MessageModel> getMessageById(String messageId);
 }

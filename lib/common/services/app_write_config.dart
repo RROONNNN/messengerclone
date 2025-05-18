@@ -1,5 +1,3 @@
-
-
 class AppwriteConfig {
   static const String endpoint = 'https://cloud.appwrite.io/v1';
   static const String projectId = '682824d80021c48aefd6';
@@ -20,6 +18,7 @@ class AppwriteConfig {
   static const String smtpServerCollectionId = '68282aba0038ba9d0eed';
   static const String sendPushFunctionId = '68286a2500371f63b386';
 
-  static const String zegoSignId = '8666a74a545ad2e21e688a29faee944e14648db378dbf3974a2f7bc538e1dff6';
+  static const String zegoSignId =
+      '8666a74a545ad2e21e688a29faee944e14648db378dbf3974a2f7bc538e1dff6';
   static const String fcmProjectId = '682836bd001d4fbb115f';
 }
