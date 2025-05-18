@@ -12,7 +12,12 @@ final class ChatItemLoading extends ChatItemState {}
 final class ChatItemLoaded extends ChatItemState {
   final List<ChatItem> chatItems;
   final String meId;
-  const ChatItemLoaded({required this.chatItems, required this.meId});
+  final List<User> friends;
+  const ChatItemLoaded({
+    required this.chatItems,
+    required this.meId,
+    required this.friends,
+  });
 
   ChatItemLoaded copyWith({
     List<GroupMessage>? groupMessages,
@@ -20,6 +25,7 @@ final class ChatItemLoaded extends ChatItemState {
     String? meId,
   }) {
     return ChatItemLoaded(
+      friends: friends,
       chatItems: chatItems ?? this.chatItems,
       meId: meId ?? this.meId,
     );

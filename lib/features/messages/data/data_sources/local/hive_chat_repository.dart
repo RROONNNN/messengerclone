@@ -29,6 +29,15 @@ class HiveChatRepository {
     return result;
   }
 
+  Future<void> addMessage(String groupId, List<MessageModel> messages) async {
+    final box = await _box;
+    final existingMessages =
+        box.get(groupId, defaultValue: [])?.cast<MessageModel>() ?? [];
+    existingMessages.addAll(messages);
+    box.put(groupId, existingMessages);
+    return box.put(groupId, existingMessages);
+  }
+
   Future<void> clearMessages(String groupId) async {
     final box = await _box;
     await box.delete(groupId);

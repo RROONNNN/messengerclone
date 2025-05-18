@@ -57,7 +57,7 @@ class GroupMessage {
 
   factory GroupMessage.fromJson(Map<String, dynamic> json) {
     return GroupMessage(
-      groupMessagesId: json['groupMessagesId'] as String,
+      groupMessagesId: json['\$id'] as String,
       lastMessage:
           json['lastMessage'] != null
               ? MessageModel.fromMap(

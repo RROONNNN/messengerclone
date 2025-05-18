@@ -184,7 +184,9 @@ class AuthService {
             collectionId: AppwriteConfig.userCollectionId,
             documentId: user.$id,
           );
-          final List<String> pushTargets = List<String>.from(document.data['pushTargets'] ?? []);
+          final List<String> pushTargets = List<String>.from(
+            document.data['pushTargets'] ?? [],
+          );
           if (!pushTargets.contains(targetId)) {
             pushTargets.add(targetId);
             await databases.updateDocument(
@@ -205,25 +207,26 @@ class AuthService {
   static Future<void> signOut() async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
-          String targetId = await Store.getTargetId();
-          if(targetId.isNotEmpty) {
-            final user = await account.get();
-            final document = await databases.getDocument(
-              databaseId: AppwriteConfig.databaseId,
-              collectionId: AppwriteConfig.userCollectionId,
-              documentId: user.$id,
-            );
-            await account.deletePushTarget(targetId: targetId);
-            final List<String> pushTargets =
-            List<String>.from(document.data['pushTargets'] ?? []);
-            pushTargets.remove(targetId);
-            await databases.updateDocument(
-              databaseId: AppwriteConfig.databaseId,
-              collectionId: AppwriteConfig.userCollectionId,
-              documentId: user.$id,
-              data: {'pushTargets': pushTargets},
-            );
-          }
+        String targetId = await Store.getTargetId();
+        if (targetId.isNotEmpty) {
+          final user = await account.get();
+          final document = await databases.getDocument(
+            databaseId: AppwriteConfig.databaseId,
+            collectionId: AppwriteConfig.userCollectionId,
+            documentId: user.$id,
+          );
+          await account.deletePushTarget(targetId: targetId);
+          final List<String> pushTargets = List<String>.from(
+            document.data['pushTargets'] ?? [],
+          );
+          pushTargets.remove(targetId);
+          await databases.updateDocument(
+            databaseId: AppwriteConfig.databaseId,
+            collectionId: AppwriteConfig.userCollectionId,
+            documentId: user.$id,
+            data: {'pushTargets': pushTargets},
+          );
+        }
         await account.deleteSession(sessionId: 'current');
       } on AppwriteException {
         return;
