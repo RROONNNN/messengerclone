@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:appwrite/appwrite.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
+import 'package:messenger_clone/features/chat/model/user.dart' as appUser;
 import 'app_write_config.dart';
 import 'network_utils.dart';
 
@@ -20,9 +22,17 @@ class SendMessageService {
   }) async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
+        final List<String> filteredUserIds = [];
+        AppwriteRepository appwriteRepository = AppwriteRepository();
+        for (String userId in userIds) {
+          final user = await appwriteRepository.getUserById(userId);
+          if (user != null && user.isActive == false) {
+            filteredUserIds.add(userId);
+          }
+        }
         final payload = jsonEncode({
           'type': 'message',
-          'userIds': userIds,
+          'userIds': filteredUserIds,
           'groupMessageId': groupMessageId,
           'messageContent': messageContent,
           'senderId': senderId,
