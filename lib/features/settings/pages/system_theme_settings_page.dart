@@ -37,7 +37,7 @@ class _SystemThemeSettingsPageState extends State<SystemThemeSettingsPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const TitleText(
-          "Chế độ tối",
+          "Dark mode",
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),

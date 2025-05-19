@@ -31,8 +31,9 @@ Future<void> main() async {
   if (await Permission.notification.isDenied) {
     await Permission.notification.request();
   }
-  NotificationService().initializeNotifications();
-  NotificationService().setNavigatorKey(navigatorKey);
+  final notificationService = NotificationService();
+  notificationService.setNavigatorKey(navigatorKey);
+  await notificationService.initializeNotifications();
   Hive
     ..init(dir.path)
     ..registerAdapter(MessageModelAdapter())

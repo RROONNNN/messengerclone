@@ -14,7 +14,7 @@ class MetaAiServiceHive {
 
   static Future<Box> _openBox(String boxName) async {
     if (_encryptionKey == null) {
-      throw Exception('Hive chưa được khởi tạo. Gọi MetaAiServiceHive.init() trước.');
+      throw Exception('Hive is not initialized yet. Call MetaAiServiceHive.init() first.');
     }
     return await Hive.openBox(
       boxName,
