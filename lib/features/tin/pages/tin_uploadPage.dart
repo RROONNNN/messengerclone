@@ -4,8 +4,8 @@ import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 import 'package:messenger_clone/common/services/user_service.dart';
 import 'dart:io';
 import 'package:messenger_clone/features/tin/widgets/story_item.dart';
-
 import '../../../common/services/auth_service.dart';
+import '../../../common/services/hive_service.dart';
 import '../../../common/services/story_service.dart';
 
 class StoryUploadPage extends StatefulWidget {
@@ -35,11 +35,11 @@ class _StoryUploadPageState extends State<StoryUploadPage> {
   Future<void> _uploadStory() async {
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn ảnh trước khi đăng!')),
+        const SnackBar(content: Text('Please select an image before uploading!')),
       );
       return;
     }
-    final userId = await AuthService.isLoggedIn() ?? 'current_user';
+    final userId = await HiveService.instance.getCurrentUserId();
     try {
       await StoryService.postStory(
         userId: userId,
@@ -48,7 +48,7 @@ class _StoryUploadPageState extends State<StoryUploadPage> {
       );
       final newStory = StoryItem(
         userId: userId,
-        title: 'Bạn',
+        title: 'You',
         imageUrl: '',
         avatarUrl: (await UserService.fetchUserDataById(userId))['photoUrl'] as String? ?? '',
         isVideo: false,
@@ -57,12 +57,14 @@ class _StoryUploadPageState extends State<StoryUploadPage> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã đăng tin thành công!')),
+          const SnackBar(content: Text('Story uploaded successfully!')),
         );
         Navigator.pop(context, newStory);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi khi tải lên: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error uploading story: $e')),
+      );
     }
   }
 
@@ -75,7 +77,10 @@ class _StoryUploadPageState extends State<StoryUploadPage> {
           Center(
             child: _selectedImage != null
                 ? Image.file(_selectedImage!, fit: BoxFit.cover, width: double.infinity, height: double.infinity)
-                : const Text('Chọn ảnh để bắt đầu', style: TextStyle(color: Colors.white, fontSize: 20)),
+                : const Text(
+              'Select an image to start',
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
           ),
           Positioned(
             top: 40,

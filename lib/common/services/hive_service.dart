@@ -34,8 +34,7 @@ class HiveService {
   Future<String> getCurrentUserId() async {
     try {
       final box = await _box;
-      return box.get('currentUserId') ??
-          (await AuthService.getCurrentUser())!.$id;
+      return box.get('currentUserId') ?? '';
     } catch (e) {
       debugPrint('Error getting current user ID: $e');
     }

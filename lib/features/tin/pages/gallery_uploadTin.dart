@@ -32,7 +32,8 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
   final GlobalKey _repaintBoundaryKey = GlobalKey();
 
   bool _isDrawingMode = false;
-  final List<Offset> _drawPoints = [];
+  final List<DrawLayer> _drawLayers = [];
+  DrawLayer? _currentLayer;
   Color _drawColor = Colors.red;
   double _brushSize = 5.0;
 
@@ -68,8 +69,8 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
           });
           CustomAlertDialog.show(
             context: context,
-            title: 'Lỗi',
-            message: 'Camera không khả dụng. Vui lòng sử dụng thư viện thay thế.',
+            title: 'Error',
+            message: 'Camera is not available. Please use the gallery instead.',
           );
         }
         return;
@@ -90,8 +91,8 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
         });
         CustomAlertDialog.show(
           context: context,
-          title: 'Lỗi',
-          message: 'Camera không khả dụng. Vui lòng sử dụng thư viện thay thế.',
+          title: 'Error',
+          message: 'Camera is not available. Please use the gallery instead.',
         );
       }
     }
@@ -120,8 +121,8 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
         });
         CustomAlertDialog.show(
           context: context,
-          title: 'Lỗi',
-          message: 'Không thể chuyển đổi camera.',
+          title: 'Error',
+          message: 'Failed to switch camera.',
         );
       }
     }
@@ -132,8 +133,8 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
       if (mounted) {
         CustomAlertDialog.show(
           context: context,
-          title: 'Lỗi',
-          message: 'Camera chưa sẵn sàng!',
+          title: 'Error',
+          message: 'Camera is not ready!',
         );
       }
       return;
@@ -142,7 +143,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const LoadingDialog(message: 'Đang xử lý...'),
+      builder: (context) => const LoadingDialog(message: 'Processing...'),
     );
     try {
       if (_isVideoMode) {
@@ -162,8 +163,8 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
             Navigator.of(context).pop();
             CustomAlertDialog.show(
               context: context,
-              title: 'Thành công',
-              message: 'Đã quay video thành công! Đang tải lên...',
+              title: 'Success',
+              message: 'Video recorded successfully! Uploading...',
             );
             await _uploadMedia(_capturedMedia!, isVideo: true);
           }
@@ -178,8 +179,8 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
           Navigator.of(context).pop();
           CustomAlertDialog.show(
             context: context,
-            title: 'Thành công',
-            message: 'Đã chụp ảnh thành công!',
+            title: 'Success',
+            message: 'Photo captured successfully!',
           );
         }
       }
@@ -188,8 +189,8 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
       if (mounted) {
         CustomAlertDialog.show(
           context: context,
-          title: 'Lỗi',
-          message: 'Lỗi khi chụp/quay: $e',
+          title: 'Error',
+          message: 'Error capturing/recording: $e',
         );
       }
     } finally {
@@ -205,7 +206,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const LoadingDialog(message: 'Đang chọn media...'),
+      builder: (context) => const LoadingDialog(message: 'Selecting media...'),
     );
     try {
       XFile? pickedFile = _isVideoMode
@@ -220,8 +221,8 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
         if (_isVideoMode) {
           CustomAlertDialog.show(
             context: context,
-            title: 'Thành công',
-            message: 'Đã chọn video! Đang tải lên...',
+            title: 'Success',
+            message: 'Video selected! Uploading...',
           );
           await _uploadMedia(_capturedMedia!, isVideo: true);
         }
@@ -231,8 +232,8 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
       if (mounted) {
         CustomAlertDialog.show(
           context: context,
-          title: 'Lỗi',
-          message: 'Lỗi khi chọn từ thư viện: $e',
+          title: 'Error',
+          message: 'Error selecting from gallery: $e',
         );
       }
     } finally {
@@ -248,7 +249,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const LoadingDialog(message: 'Đang hợp nhất ảnh...'),
+      builder: (context) => const LoadingDialog(message: 'Merging image...'),
     );
     try {
       final RenderRepaintBoundary boundary = _repaintBoundaryKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
@@ -267,14 +268,14 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
       Navigator.of(context).pop();
       CustomAlertDialog.show(
         context: context,
-        title: 'Lỗi',
-        message: 'Lỗi khi hợp nhất ảnh!',
+        title: 'Error',
+        message: 'Error merging image!',
       );
     }
   }
 
   Future<StoryItem?> _uploadMedia(File file, {required bool isVideo}) async {
-    if (!isVideo && (_drawPoints.isNotEmpty || _addedStickers.isNotEmpty)) {
+    if (!isVideo && (_drawLayers.isNotEmpty || _addedStickers.isNotEmpty)) {
       await _mergeImageWithDrawingsAndStickers();
       file = _capturedMedia!;
     }
@@ -282,7 +283,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const LoadingDialog(message: 'Đang tải lên...'),
+      builder: (context) => const LoadingDialog(message: 'Uploading...'),
     );
     final userId = await AuthService.isLoggedIn();
     if (userId == null) {
@@ -290,8 +291,8 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
       if (mounted) {
         CustomAlertDialog.show(
           context: context,
-          title: 'Lỗi',
-          message: 'Vui lòng đăng nhập để đăng tin!',
+          title: 'Error',
+          message: 'Please log in to post a story!',
         );
       }
       return null;
@@ -305,7 +306,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
       final userData = await UserService.fetchUserDataById(userId);
       final newStory = StoryItem(
         userId: userId,
-        title: userData['userName'] as String? ?? 'Bạn',
+        title: userData['userName'] as String? ?? 'You',
         imageUrl: mediaUrl,
         avatarUrl: userData['photoUrl'] as String? ?? '',
         isVideo: isVideo,
@@ -316,8 +317,8 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
       if (mounted) {
         CustomAlertDialog.show(
           context: context,
-          title: 'Thành công',
-          message: 'Đã đăng tin thành công!',
+          title: 'Success',
+          message: 'Story posted successfully!',
           onPressed: () {
             Navigator.of(context).pop(newStory);
             Navigator.pushAndRemoveUntil(
@@ -334,8 +335,8 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
       if (mounted) {
         CustomAlertDialog.show(
           context: context,
-          title: 'Lỗi',
-          message: 'Lỗi khi tải lên: $e',
+          title: 'Error',
+          message: 'Error uploading: $e',
         );
       }
       return null;
@@ -345,14 +346,22 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
   void _startDrawing(Offset position) {
     setState(() {
       _isDrawingMode = true;
-      _drawPoints.add(position);
+      _currentLayer = DrawLayer(
+        points: [position],
+        color: _drawColor,
+        brushSize: _brushSize,
+      );
+      _drawLayers.add(_currentLayer!);
     });
   }
 
   void _updateDrawing(Offset position) {
-    if (_isDrawingMode) {
+    if (_isDrawingMode && _currentLayer != null) {
       setState(() {
-        _drawPoints.add(position);
+        _currentLayer = _currentLayer!.copyWith(
+          points: [..._currentLayer!.points, position],
+        );
+        _drawLayers[_drawLayers.length - 1] = _currentLayer!;
       });
     }
   }
@@ -360,7 +369,73 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
   void _endDrawing() {
     setState(() {
       _isDrawingMode = false;
+      _currentLayer = null;
     });
+  }
+
+  void _clearAllLayers() {
+    setState(() {
+      _drawLayers.clear();
+      _currentLayer = null;
+      _isDrawingMode = false;
+    });
+  }
+
+  void _removeLayer(int index) {
+    setState(() {
+      _drawLayers.removeAt(index);
+      if (_currentLayer == _drawLayers[index]) {
+        _currentLayer = null;
+      }
+    });
+  }
+
+  void _showLayerManager() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black,
+      builder: (context) {
+        return SizedBox(
+          height: 200,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  'Manage Layers',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _drawLayers.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: _drawLayers[index].color,
+                        radius: 10,
+                      ),
+                      title: Text(
+                        'Layer ${index + 1} (Size: ${_drawLayers[index].brushSize})',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      trailing: IconButton(
+                        icon: Icon(Icons.delete, color: Colors.white),
+                        onPressed: () {
+                          _removeLayer(index);
+                          Navigator.of(context).pop();
+                          _showLayerManager();
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _addSticker(Sticker sticker) {
@@ -463,7 +538,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
                                 children: [
                                   Icon(Icons.fiber_manual_record, color: Colors.red, size: 16),
                                   SizedBox(width: 6),
-                                  Text('Đang quay', style: TextStyle(color: Colors.white, fontSize: 14)),
+                                  Text('Recording', style: TextStyle(color: Colors.white, fontSize: 14)),
                                 ],
                               ),
                             ),
@@ -487,7 +562,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
                                     color: _isVideoMode ? Colors.black.withOpacity(0.8) : Colors.white,
                                     borderRadius: BorderRadius.circular(20),
                                   ),
-                                  child: Text('Ảnh', style: TextStyle(color: _isVideoMode ? Colors.white : Colors.black)),
+                                  child: Text('Photo', style: TextStyle(color: _isVideoMode ? Colors.white : Colors.black)),
                                 ),
                               ),
                               const SizedBox(width: 16),
@@ -529,7 +604,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
                             color: Colors.black.withOpacity(0.8),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Text('Camera không khả dụng', style: TextStyle(color: Colors.white)),
+                          child: const Text('Camera not available', style: TextStyle(color: Colors.white)),
                         ),
                         const SizedBox(height: 20),
                         ElevatedButton(
@@ -540,7 +615,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                           ),
-                          child: Text(_isVideoMode ? 'Chọn video' : 'Chọn ảnh'),
+                          child: Text(_isVideoMode ? 'Select video' : 'Select photo'),
                         ),
                       ],
                     ),
@@ -567,7 +642,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
                       ),
                     ),
                     CustomPaint(
-                      painter: DrawingPainter(_drawPoints, _drawColor, _brushSize),
+                      painter: DrawingPainter(_drawLayers),
                       child: const SizedBox.expand(),
                     ),
                     ..._addedStickers.map((sticker) => _buildSticker(sticker)).toList(),
@@ -630,7 +705,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
                       onPressed: () {
                         setState(() {
                           _capturedMedia = null;
-                          _drawPoints.clear();
+                          _drawLayers.clear();
                           _addedStickers.clear();
                           _isDrawingMode = false;
                           _isCameraInitialized = true;
@@ -660,6 +735,24 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
                               _isDrawingMode = true;
                             });
                           },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black.withOpacity(0.5),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: Offset(2, 2),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.layers, color: Colors.white),
+                          onPressed: _showLayerManager,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -731,12 +824,7 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.clear, color: Colors.white),
-                    onPressed: () {
-                      setState(() {
-                        _drawPoints.clear();
-                        _isDrawingMode = false;
-                      });
-                    },
+                    onPressed: _clearAllLayers,
                   ),
                 ],
               ),
@@ -760,22 +848,46 @@ class _GallerySelectionPageState extends State<GallerySelectionPage> {
   }
 }
 
-class DrawingPainter extends CustomPainter {
+class DrawLayer {
   final List<Offset> points;
   final Color color;
   final double brushSize;
 
-  DrawingPainter(this.points, this.color, this.brushSize);
+  DrawLayer({
+    required this.points,
+    required this.color,
+    required this.brushSize,
+  });
+
+  DrawLayer copyWith({
+    List<Offset>? points,
+    Color? color,
+    double? brushSize,
+  }) {
+    return DrawLayer(
+      points: points ?? this.points,
+      color: color ?? this.color,
+      brushSize: brushSize ?? this.brushSize,
+    );
+  }
+}
+
+class DrawingPainter extends CustomPainter {
+  final List<DrawLayer> layers;
+
+  DrawingPainter(this.layers);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = brushSize
-      ..strokeCap = StrokeCap.round;
+    for (var layer in layers) {
+      final paint = Paint()
+        ..color = layer.color
+        ..strokeWidth = layer.brushSize
+        ..strokeCap = StrokeCap.round;
 
-    for (int i = 0; i < points.length - 1; i++) {
-      canvas.drawLine(points[i], points[i + 1], paint);
+      for (int i = 0; i < layer.points.length - 1; i++) {
+        canvas.drawLine(layer.points[i], layer.points[i + 1], paint);
+      }
     }
   }
 

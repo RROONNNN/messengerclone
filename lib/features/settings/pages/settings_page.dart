@@ -6,6 +6,7 @@ import 'package:messenger_clone/features/settings/pages/system_theme_settings_pa
 import 'package:messenger_clone/features/settings/pages/change_password_page.dart';
 import '../../../common/extensions/custom_theme_extension.dart';
 import '../../../common/services/device_service.dart';
+import '../../../common/services/hive_service.dart';
 import '../../../common/services/user_service.dart';
 import '../../../common/widgets/custom_text_style.dart';
 import '../../menu/pages/edit_profile_page.dart';
@@ -43,7 +44,8 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      final result = await UserService.fetchUserData();
+      final currentUserId = await HiveService.instance.getCurrentUserId();
+      final result = await UserService.fetchUserDataById(currentUserId);
       if (result.containsKey('error')) {
         throw Exception(result['error']);
       }

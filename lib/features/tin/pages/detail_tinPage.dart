@@ -4,6 +4,7 @@ import 'package:messenger_clone/common/extensions/custom_theme_extension.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:messenger_clone/features/tin/widgets/story_item.dart';
+import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 
 class StoryDetailPage extends StatefulWidget {
   final List<StoryItem> stories;
@@ -24,6 +25,10 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
   late int _currentIndex;
   VideoPlayerController? _videoPlayerController;
   ChewieController? _chewieController;
+  VideoPlayerController? _nextVideoPlayerController;
+  ChewieController? _nextChewieController; // Thêm ChewieController cho tin sau
+  VideoPlayerController? _prevVideoPlayerController;
+  ChewieController? _prevChewieController; // Thêm ChewieController cho tin trước
   bool _isPlaying = true;
   bool _isLoading = false;
   double _dragOffset = 0.0;
@@ -61,6 +66,10 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
     }
     _videoPlayerController?.dispose();
     _chewieController?.dispose();
+    _nextVideoPlayerController?.dispose();
+    _nextChewieController?.dispose();
+    _prevVideoPlayerController?.dispose();
+    _prevChewieController?.dispose();
     super.dispose();
   }
 
@@ -107,9 +116,54 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
     final story = widget.stories[_currentIndex];
     if (story.isVideo) {
       try {
-        _videoPlayerController = VideoPlayerController.network(story.imageUrl);
+        if (_nextVideoPlayerController != null && _currentIndex == _nextIndex) {
+          _videoPlayerController = _nextVideoPlayerController;
+          _chewieController = _nextChewieController;
+          _nextVideoPlayerController = null;
+          _nextChewieController = null;
+        } else if (_prevVideoPlayerController != null && _currentIndex == _prevIndex) {
+          _videoPlayerController = _prevVideoPlayerController;
+          _chewieController = _prevChewieController;
+          _prevVideoPlayerController = null;
+          _prevChewieController = null;
+        } else {
+          _videoPlayerController = VideoPlayerController.network(story.imageUrl);
+        }
         await _videoPlayerController!.initialize();
         if (_isDisposed) return;
+
+        final videoDuration = _videoPlayerController!.value.duration;
+        if (videoDuration == Duration.zero) {
+          if (mounted) {
+            CustomAlertDialog.show(
+              context: context,
+              title: 'Error',
+              message: 'Invalid video duration. Using default duration of 15 seconds.',
+              onPressed: () {
+                _progressControllers[_currentIndex] = AnimationController(
+                  vsync: this,
+                  duration: const Duration(seconds: 15),
+                );
+                _chewieController = ChewieController(
+                  videoPlayerController: _videoPlayerController!,
+                  autoPlay: true,
+                  looping: true,
+                  showControls: false,
+                  aspectRatio: _videoPlayerController!.value.aspectRatio.clamp(0.5, 2.0),
+                );
+                setState(() => _isLoading = false);
+                _startProgressForCurrentSequence();
+              },
+            );
+          }
+          return;
+        }
+
+        _progressControllers[_currentIndex] = AnimationController(
+          vsync: this,
+          duration: videoDuration,
+        );
+
         _chewieController = ChewieController(
           videoPlayerController: _videoPlayerController!,
           autoPlay: true,
@@ -118,9 +172,95 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
           aspectRatio: _videoPlayerController!.value.aspectRatio.clamp(0.5, 2.0),
         );
       } catch (e) {
-        debugPrint('Error initializing video: $e');
+        if (mounted) {
+          CustomAlertDialog.show(
+            context: context,
+            title: 'Error',
+            message: 'Failed to load video: $e',
+          );
+        }
+        _progressControllers[_currentIndex] = AnimationController(
+          vsync: this,
+          duration: const Duration(seconds: 15),
+        );
+      }
+    } else {
+      _progressControllers[_currentIndex] = AnimationController(
+        vsync: this,
+        duration: const Duration(seconds: 15),
+      );
+    }
+
+    _nextVideoPlayerController?.dispose();
+    _nextChewieController?.dispose();
+    _nextVideoPlayerController = null;
+    _nextChewieController = null;
+    if (_nextIndex != _currentIndex && widget.stories[_nextIndex].isVideo) {
+      try {
+        _nextVideoPlayerController = VideoPlayerController.network(widget.stories[_nextIndex].imageUrl);
+        await _nextVideoPlayerController!.initialize();
+        if (_isDisposed) {
+          _nextVideoPlayerController?.dispose();
+          _nextChewieController?.dispose();
+          return;
+        }
+        _nextChewieController = ChewieController(
+          videoPlayerController: _nextVideoPlayerController!,
+          autoPlay: false,
+          looping: false,
+          showControls: false,
+          aspectRatio: _nextVideoPlayerController!.value.aspectRatio.clamp(0.5, 2.0),
+        );
+      } catch (e) {
+        if (mounted) {
+          CustomAlertDialog.show(
+            context: context,
+            title: 'Error',
+            message: 'Failed to preload next video: $e',
+          );
+        }
+        _nextVideoPlayerController?.dispose();
+        _nextChewieController?.dispose();
+        _nextVideoPlayerController = null;
+        _nextChewieController = null;
       }
     }
+
+    _prevVideoPlayerController?.dispose();
+    _prevChewieController?.dispose();
+    _prevVideoPlayerController = null;
+    _prevChewieController = null;
+    if (_prevIndex != _currentIndex && widget.stories[_prevIndex].isVideo) {
+      try {
+        _prevVideoPlayerController = VideoPlayerController.network(widget.stories[_prevIndex].imageUrl);
+        await _prevVideoPlayerController!.initialize();
+        if (_isDisposed) {
+          _prevVideoPlayerController?.dispose();
+          _prevChewieController?.dispose();
+          return;
+        }
+        _prevChewieController = ChewieController(
+          videoPlayerController: _prevVideoPlayerController!,
+          autoPlay: false,
+          looping: false,
+          showControls: false,
+          aspectRatio: _prevVideoPlayerController!.value.aspectRatio.clamp(0.5, 2.0),
+        );
+      } catch (e) {
+        if (mounted) {
+          CustomAlertDialog.show(
+            context: context,
+            title: 'Error',
+            message: 'Failed to preload previous video: $e',
+          );
+        }
+        _prevVideoPlayerController?.dispose();
+        _prevChewieController?.dispose();
+        _prevVideoPlayerController = null;
+        _prevChewieController = null;
+      }
+    }
+
     setState(() => _isLoading = false);
     _startProgressForCurrentSequence();
   }
@@ -128,7 +268,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
   void _togglePlayPause() {
     if (_isDisposed) return;
     final story = widget.stories[_currentIndex];
-    if ((story.isVideo) && _videoPlayerController?.value.isInitialized == true) {
+    if (story.isVideo && _videoPlayerController?.value.isInitialized == true) {
       setState(() {
         if (_isPlaying) {
           _videoPlayerController!.pause();
@@ -183,17 +323,17 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
     if (details.localPosition.dx < width * 0.3 && _currentIndex > 0) _previousStory();
     else if (details.localPosition.dx > width * 0.7 && _currentIndex < widget.stories.length - 1)
       _nextStory();
-    else if ((widget.stories[_currentIndex].isVideo) && _videoPlayerController != null)
+    else if (widget.stories[_currentIndex].isVideo && _videoPlayerController != null)
       _togglePlayPause();
   }
 
   String _formatPostedTime(DateTime postedAt) {
     final difference = DateTime.now().difference(postedAt);
     return difference.inHours > 0
-        ? 'Đăng ${difference.inHours} giờ trước'
+        ? 'Posted ${difference.inHours} hours ago'
         : difference.inMinutes > 0
-        ? 'Đăng ${difference.inMinutes} phút trước'
-        : 'Đăng ${difference.inSeconds} giây trước';
+        ? 'Posted ${difference.inMinutes} minutes ago'
+        : 'Posted ${difference.inSeconds} seconds ago';
   }
 
   @override
@@ -224,12 +364,10 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
                   child: SizedBox(
                     width: width,
                     height: height,
-                    child: story.isVideo
-                        ? _chewieController != null
-                        ? Chewie(controller: _chewieController!)
-                        : const SizedBox.shrink()
+                    child: widget.stories[_prevIndex].isVideo && _prevChewieController != null
+                        ? Chewie(controller: _prevChewieController!)
                         : CachedNetworkImage(
-                      imageUrl: story.imageUrl,
+                      imageUrl: widget.stories[_prevIndex].imageUrl,
                       fit: BoxFit.cover,
                       placeholder: (_, __) => const Center(child: CircularProgressIndicator()),
                       errorWidget: (_, __, ___) => const Icon(Icons.error, color: Colors.red),
@@ -263,12 +401,10 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
                   child: SizedBox(
                     width: width,
                     height: height,
-                    child: widget.stories[_currentIndex + 1].isVideo
-                        ? _chewieController != null
-                        ? Chewie(controller: _chewieController!)
-                        : const SizedBox.shrink()
+                    child: widget.stories[_nextIndex].isVideo && _nextChewieController != null
+                        ? Chewie(controller: _nextChewieController!)
                         : CachedNetworkImage(
-                      imageUrl: widget.stories[_currentIndex + 1].imageUrl,
+                      imageUrl: widget.stories[_nextIndex].imageUrl,
                       fit: BoxFit.cover,
                       placeholder: (_, __) => const Center(child: CircularProgressIndicator()),
                       errorWidget: (_, __, ___) => const Icon(Icons.error, color: Colors.red),
@@ -330,10 +466,9 @@ class _StoryDetailPageState extends State<StoryDetailPage> with TickerProviderSt
                           Text(
                             story.title,
                             style: TextStyle(
-                              color: context.theme.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                color: context.theme.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold),
                           ),
                           Text(
                             _formatPostedTime(story.postedAt),

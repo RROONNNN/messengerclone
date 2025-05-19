@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:appwrite/appwrite.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:messenger_clone/common/services/auth_service.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'app_write_config.dart';
@@ -24,26 +26,6 @@ class UserService {
       return List<String>.from(document.data['pushTargets'] ?? []);
     } on AppwriteException catch (e) {
       throw Exception('Failed to get push targets: ${e.message}');
-    }
-  }
-
-  static Future<Map<String, dynamic>> fetchUserData() async {
-    try {
-      final user = await account.get();
-      final userDoc = await databases.getDocument(
-        databaseId: AppwriteConfig.databaseId,
-        collectionId: AppwriteConfig.userCollectionId,
-        documentId: user.$id,
-      );
-      return {
-        'userName': user.name,
-        'userId': user.$id,
-        'email': userDoc.data['email'] as String?,
-        'aboutMe': userDoc.data['aboutMe'] as String?,
-        'photoUrl': userDoc.data['photoUrl'] as String?,
-      };
-    } catch (e) {
-      return {'error': 'Error: $e'};
     }
   }
 
