@@ -7,6 +7,22 @@ import 'package:messenger_clone/features/chat/model/user.dart' as ChatModel;
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
 
 class AppwriteRepository {
+  Future<void> updateChattingWithGroupMessId(
+    String userId,
+    String? groupMessId,
+  ) async {
+    try {
+      await AuthService.databases.updateDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.userCollectionId,
+        documentId: userId,
+        data: {'chattingWithGroupMessId': groupMessId},
+      );
+    } catch (error) {
+      throw Exception("Failed to update chattingWithGroupMessId: $error");
+    }
+  }
+
   Future<List<GroupMessage>> getGroupMessByIds(
     List<String> groupMessageIds,
   ) async {
@@ -195,7 +211,7 @@ class AppwriteRepository {
         ],
       );
 
-      final Set<String> friendIds = {};
+      final Set<String> friendIds = {userId};
       for (var doc in sentFriends.documents) {
         friendIds.add(doc.data['friendId'] as String);
       }

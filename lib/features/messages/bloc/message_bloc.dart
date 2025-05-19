@@ -207,9 +207,10 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
       futureList.add(_messagesStreamSubscription!.cancel());
     }
     _messagesStreamSubscription = null;
-
     if (state is MessageLoaded) {
       final currentState = state as MessageLoaded;
+      appwriteRepository.updateChattingWithGroupMessId(currentState.meId, null);
+
       //delete message status failed or sending
       List<MessageModel> messages = List<MessageModel>.from(
         currentState.messages,
@@ -618,6 +619,10 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
           ),
         );
       }
+      appwriteRepository.updateChattingWithGroupMessId(
+        me,
+        finalGroupMessage.groupMessagesId,
+      );
       cachedMessages = _updateUserInCache(cachedMessages, others);
       final DateTime? latestTimestamp =
           cachedMessages.isNotEmpty ? cachedMessages.first.createdAt : null;

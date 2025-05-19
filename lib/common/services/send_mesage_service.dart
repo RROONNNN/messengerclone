@@ -26,7 +26,7 @@ class SendMessageService {
         AppwriteRepository appwriteRepository = AppwriteRepository();
         for (String userId in userIds) {
           final user = await appwriteRepository.getUserById(userId);
-          if (user != null && user.isActive == false) {
+          if (user != null && user.chattingWithGroupMessId != groupMessageId) {
             filteredUserIds.add(userId);
           }
         }

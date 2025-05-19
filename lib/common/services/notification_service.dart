@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:messenger_clone/common/routes/routes.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
 import 'package:messenger_clone/features/chat/model/group_message.dart';
+import 'package:messenger_clone/features/messages/pages/messages_page.dart';
 import '../../features/messages/elements/call_page.dart';
 import 'auth_service.dart';
 
@@ -21,7 +22,70 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   const InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
   );
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveBackgroundNotificationResponse: (
+      NotificationResponse response,
+    ) async {
+      debugPrint(
+        'Thông báo được nhấn: ${response.payload}, Hành động: ${response.actionId}',
+      );
+      final payloadString = response.payload;
+      if (payloadString != null) {
+        try {
+          final payload = Map<String, dynamic>.from(jsonDecode(payloadString));
+          if (payload['type'] == 'video_call') {
+            if (response.actionId == 'accept') {
+              final currentUser = await AuthService.getCurrentUser();
+              if (payload['type'] == 'video_call') {
+                final callId = payload['callId'] as String? ?? '';
+                final callerId = payload['callerId'] as String? ?? '';
+                final callerName =
+                    payload['callerName'] as String? ?? 'Unknown Caller';
+                final userId = currentUser?.$id ?? callerId;
+
+                if (callId.isNotEmpty &&
+                    callerId.isNotEmpty &&
+                    NotificationService().navigatorKey?.currentState != null) {
+                  NotificationService().navigatorKey!.currentState!.push(
+                    MaterialPageRoute(
+                      builder:
+                          (context) => CallPage(
+                            callID: callId,
+                            userID: userId,
+                            userName: currentUser?.name ?? 'Unknown User',
+                            callerName: callerName,
+                          ),
+                    ),
+                  );
+                } else {
+                  debugPrint(
+                    'Thiếu thông tin cuộc gọi hoặc navigatorKey không hợp lệ',
+                  );
+                }
+              }
+            } else if (response.actionId == 'reject') {
+              debugPrint('Call notification rejected');
+            }
+          } else {
+            if (NotificationService().navigatorKey?.currentState != null) {
+              AppwriteRepository appwriteRepository = AppwriteRepository();
+              GroupMessage groupMessage = await appwriteRepository
+                  .getGroupMessageById(payload['groupMessageId']);
+              NotificationService().navigatorKey!.currentState!.push(
+                MaterialPageRoute(
+                  builder:
+                      (context) => MessagesPage(groupMessage: groupMessage),
+                ),
+              );
+            }
+          }
+        } catch (e) {
+          debugPrint('Lỗi phân tích payload thông báo: $e');
+        }
+      }
+    },
+  );
 
   String? type = message.data['type'];
   String title =
@@ -128,7 +192,6 @@ class NotificationService {
             debugPrint('Call notification rejected');
           }
         } else {
-          // Handle message notification tap
           _navigateToMessagePage(payload);
         }
       } catch (e) {
@@ -187,7 +250,6 @@ class NotificationService {
     }
   }
 
-  //TODO:
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     debugPrint('Nhận thông báo tiền cảnh: ${message.messageId}');
 
