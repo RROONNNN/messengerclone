@@ -166,24 +166,14 @@ class LoginScreenState extends State<LoginScreen> {
                           );
                           await DeviceService.saveLoginDeviceInfo(userID);
                           if (!context.mounted) return;
-                          while (true) {
-                            final currentUser =  await AuthService.isLoggedIn();
-                            if (currentUser != null) {
-                              debugPrint('currentUser: $currentUser');
-                              HiveService.instance.saveCurrentUserId(userID);
-                              if (context.mounted) {
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => MainPage()),
-                                    (route) => false,
-                                );
-                              }
-                              break;
-                            }
-                            else {
-                              debugPrint('delay 1s');
-                              await Future.delayed(const Duration(seconds: 1));
-                            }
+                          HiveService.instance.saveCurrentUserId(userID);
+                          if (context.mounted) {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => MainPage()),
+                                  (route) => false,
+                            );
                           }
                         } else {
                           final otp = OTPEmailService.generateOTP();
@@ -202,13 +192,7 @@ class LoginScreenState extends State<LoginScreen> {
                                     email: _emailController.text,
                                     nextScreen: () => MainPage(),
                                     action: () async {
-                                      String? isLogin ;
-                                      while(isLogin == null) {
-                                        isLogin = await AuthService.isLoggedIn();
-                                      }
-                                      debugPrint('isLogin: $isLogin');
                                       HiveService.instance.saveCurrentUserId(userID);
-                                      // đảm bảo đã đăng nhập
                                       await AuthService.signIn(
                                         email: _emailController.text,
                                         password: _passwordController.text,
