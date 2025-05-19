@@ -128,6 +128,7 @@ class _MessagesPageState extends State<MessagesPage> {
                         ? CustomMessagesAppBar.group(
                           isMe: false,
                           groupName: state.groupMessage.groupName ?? '',
+                          avatarGroupUrl: state.groupMessage.avatarGroupUrl,
                           callFunc: () {
                             debugPrint('callFunc');
                           },
