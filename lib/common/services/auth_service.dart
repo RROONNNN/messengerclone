@@ -166,6 +166,7 @@ class AuthService {
   }) async {
     return NetworkUtils.withNetworkCheck(() async {
       try {
+        await account.deleteSession(sessionId: 'current');
         models.Session session = await account.createEmailPasswordSession(
           email: email,
           password: password,
