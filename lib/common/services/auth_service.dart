@@ -42,7 +42,7 @@ class AuthService {
     return NetworkUtils.withNetworkCheck(() async {
       try {
         await signIn(email: email, password: password);
-        final user = await account.get();
+        final user = await account.get().timeout(const Duration(seconds: 20));
         await signOut();
         return user.$id;
       } on AppwriteException {
@@ -101,7 +101,9 @@ class AuthService {
           await account.updateName(name: name);
         }
         if (email != null) {
-          final currentUser = await account.get();
+          final currentUser = await account.get().timeout(
+            const Duration(seconds: 20),
+          );
           await account.updateEmail(email: email, password: password!);
           await databases.updateDocument(
             databaseId: AppwriteConfig.databaseId,
@@ -179,7 +181,7 @@ class AuthService {
             providerId: AppwriteConfig.fcmProjectId,
           );
           await Store.setTargetId(targetId);
-          final user = await account.get();
+          final user = await account.get().timeout(const Duration(seconds: 20));
           HiveService.instance.saveCurrentUserId(user.$id);
           final document = await databases.getDocument(
             databaseId: AppwriteConfig.databaseId,
@@ -211,7 +213,7 @@ class AuthService {
       try {
         String targetId = await Store.getTargetId();
         if (targetId.isNotEmpty) {
-          String userId  = await HiveService.instance.getCurrentUserId();
+          String userId = await HiveService.instance.getCurrentUserId();
           final document = await databases.getDocument(
             databaseId: AppwriteConfig.databaseId,
             collectionId: AppwriteConfig.userCollectionId,
@@ -241,7 +243,7 @@ class AuthService {
 
   static Future<models.User?> getCurrentUser() async {
     try {
-      return await account.get();
+      return await account.get().timeout(const Duration(seconds: 20));
     } on AppwriteException catch (e) {
       if (e.code == 401) {
         return null;
@@ -254,7 +256,7 @@ class AuthService {
 
   static Future<String?> isLoggedIn() async {
     try {
-      final user = await account.get();
+      final user = await account.get().timeout(const Duration(seconds: 20));
       return user.$id;
     } on AppwriteException catch (e) {
       if (e.code == 401) {
