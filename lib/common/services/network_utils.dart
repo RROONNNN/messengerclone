@@ -1,24 +1,16 @@
-// lib/services/network_utils.dart
-
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 
 class NetworkUtils {
   static Future<bool> _checkAppwriteConnection() async {
     try {
-      final result = await InternetAddress.lookup('google.com');
-      if (result.isEmpty || result[0].rawAddress.isEmpty) {
-        return false;
-      }
-
       final response = await http
-          .get(Uri.parse('https://cloud.appwrite.io/v1/avatars/initials'))
-          .timeout(const Duration(seconds: 5));
+          .head(Uri.parse('http://www.google.com'))
+          .timeout(const Duration(seconds: 3));
+      debugPrint('Status Network : ${response.statusCode}');
 
-      if (response.statusCode == 200) {
-        return true;
-      }
-      return false;
+      return response.statusCode >= 200 && response.statusCode < 300;
     } on SocketException catch (_) {
       return false;
     } on http.ClientException catch (_) {

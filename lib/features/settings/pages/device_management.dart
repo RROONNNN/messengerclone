@@ -4,6 +4,7 @@ import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 
 import '../../../common/services/auth_service.dart';
 import '../../../common/services/device_service.dart';
+import '../../../common/services/hive_service.dart';
 
 class DeviceManagementPage extends StatefulWidget {
   const DeviceManagementPage({super.key});
@@ -46,9 +47,8 @@ class _DeviceManagementPageState extends State<DeviceManagementPage> with Single
     });
 
     try {
-      final currentUser = await AuthService.getCurrentUser();
-      if (currentUser == null) throw Exception('User not logged in');
-      _currentUserId = currentUser.$id;
+      final currentUserId = await HiveService.instance.getCurrentUserId();
+      _currentUserId = currentUserId;
 
       final devices = await DeviceService.getUserDevices(_currentUserId);
       setState(() {

@@ -13,8 +13,8 @@ import 'package:messenger_clone/common/widgets/dialog/loading_dialog.dart';
 import 'package:messenger_clone/features/menu/dialog/dialog_utils.dart';
 import 'package:messenger_clone/features/menu/pages/edit_profile_page.dart';
 import 'package:messenger_clone/features/menu/pages/find_friend_page.dart';
-
 import '../../../common/services/friend_service.dart';
+import '../../../common/services/hive_service.dart';
 import 'friends_request_pagee.dart';
 import 'list_friends_page.dart';
 
@@ -39,12 +39,14 @@ class _MenuPageState extends State<MenuPage> {
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
     _fetchNotificationCounts();
+    _fetchUserData();
   }
 
   Future<void> _fetchUserData() async {
-    final result = await UserService.fetchUserData();
+    final currentUserId = await HiveService.instance.getCurrentUserId();
+    final result = await UserService.fetchUserDataById(currentUserId);
+    if (!mounted) return;
     setState(() {
       if (result.containsKey('error')) {
         errorMessage = result['error'] as String?;
@@ -62,18 +64,29 @@ class _MenuPageState extends State<MenuPage> {
 
   Future<void> _fetchNotificationCounts() async {
     try {
-      final user = await AuthService.getCurrentUser();
-      if (user != null) {
-        final friendRequestsCount =
-            await FriendService.getPendingFriendRequestsCount(user.$id);
-        setState(() {
-          _friendRequestsCount = friendRequestsCount;
-          _pendingMessagesCount = 2;
-        });
-      }
+      final userId = await HiveService.instance.getCurrentUserId();
+      final friendRequestsCount =
+      await FriendService.getPendingFriendRequestsCount(userId);
+      if (!mounted) return;
+      setState(() {
+        _friendRequestsCount = friendRequestsCount;
+        _pendingMessagesCount = 2; // TODO: Replace with actual API call
+      });
     } catch (e) {
       print('Error fetching notification counts: $e');
     }
+  }
+
+  Future<void> _onRefresh() async {
+    if (!mounted) return;
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+    await Future.wait([
+      _fetchUserData(),
+      _fetchNotificationCounts(),
+    ]);
   }
 
   Future<String?> _promptForPassword() async {
@@ -81,25 +94,24 @@ class _MenuPageState extends State<MenuPage> {
     final password = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder:
-          (_) => AlertDialog(
-            title: const Text("Enter Password"),
-            content: TextField(
-              controller: controller,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: "Password"),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Cancel"),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, controller.text),
-                child: const Text("Confirm"),
-              ),
-            ],
+      builder: (_) => AlertDialog(
+        title: const Text("Enter Password"),
+        content: TextField(
+          controller: controller,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: "Password"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
           ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text("Confirm"),
+          ),
+        ],
+      ),
     );
 
     if (password == null || password.isEmpty) {
@@ -125,8 +137,9 @@ class _MenuPageState extends State<MenuPage> {
       if (e is AppwriteException) {
         if (e.code == 400) return true;
         if (e.code == 401) return false;
-        if (e.code == 429)
+        if (e.code == 429) {
           throw Exception("Rate limit exceeded. Please try again later.");
+        }
       }
       throw Exception("Verification failed: $e");
     }
@@ -160,14 +173,14 @@ class _MenuPageState extends State<MenuPage> {
               context: context,
               title: 'Notification',
               message:
-                  'Your request has been submitted. The account will be deleted shortly.',
+              'Your request has been submitted. The account will be deleted shortly.',
               confirmText: 'Close',
             );
             if (!mounted) return;
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
+                  (route) => false,
             );
           },
         );
@@ -194,7 +207,7 @@ class _MenuPageState extends State<MenuPage> {
           context: context,
           title: "Error",
           message:
-              "An error occurred: $e. Please try again or contact support.",
+          "An error occurred: $e. Please try again or contact support.",
         );
       }
     }
@@ -217,84 +230,97 @@ class _MenuPageState extends State<MenuPage> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildUserInfo(context),
-              const SizedBox(height: 16),
-              _buildMenuItem(context, Icons.settings, 'Settings', () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsPage()),
-                );
-              }),
-              _buildMenuItem(
-                context,
-                Icons.chat_bubble,
-                'Pending Messages',
-                () {},
-                notificationCount: _pendingMessagesCount,
-              ),
-              _buildMenuItem(context, Icons.archive, 'Archive', () {}),
-              const SizedBox(height: 16),
-              TitleText(
-                'More Options',
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: context.theme.textColor.withOpacity(0.7),
-              ),
-              const SizedBox(height: 8),
-              _buildMenuItem(
-                context,
-                Icons.group,
-                'Friend Requests',
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const FriendRequestPage(),
+        child: Stack(
+          children: [
+            RefreshIndicator(
+              onRefresh: _onRefresh,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildUserInfo(context),
+                    const SizedBox(height: 16),
+                    _buildMenuItem(context, Icons.settings, 'Settings', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SettingsPage()),
+                      );
+                    }),
+                    _buildMenuItem(
+                      context,
+                      Icons.chat_bubble,
+                      'Pending Messages',
+                          () {},
+                      notificationCount: _pendingMessagesCount,
                     ),
-                  );
-                },
-                notificationCount: _friendRequestsCount,
+                    _buildMenuItem(context, Icons.archive, 'Archive', () {}),
+                    const SizedBox(height: 16),
+                    TitleText(
+                      'More Options',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      color: context.theme.textColor.withOpacity(0.7),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildMenuItem(
+                      context,
+                      Icons.group,
+                      'Friend Requests',
+                          () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const FriendRequestPage(),
+                          ),
+                        );
+                      },
+                      notificationCount: _friendRequestsCount,
+                    ),
+                    _buildMenuItem(context, Icons.group_add, 'Find Friends', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const FindFriendsPage()),
+                      );
+                    }),
+                    _buildMenuItem(context, Icons.star, 'List Friends', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ListFriendsPage()),
+                      );
+                    }),
+                    _buildMenuItem(context, Icons.group, 'Create Group', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CreateGroupPage()),
+                      );
+                    }),
+                    TitleText(
+                      'Danger Zone',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      color: context.theme.textColor.withOpacity(0.7),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildMenuGroupActions(context),
+                  ],
+                ),
               ),
-              _buildMenuItem(context, Icons.group_add, 'Find Friends', () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const FindFriendsPage()),
-                );
-              }),
-              _buildMenuItem(context, Icons.star, 'List Friends', () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ListFriendsPage()),
-                );
-              }),
-              _buildMenuItem(context, Icons.group, 'Create Group', () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CreateGroupPage()),
-                );
-              }),
-              TitleText(
-                'Danger Zone',
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: context.theme.textColor.withOpacity(0.7),
+            ),
+            if (isLoading)
+              Center(
+                child: CircularProgressIndicator(
+                  color: context.theme.grey,
+                ),
               ),
-              const SizedBox(height: 16),
-              _buildMenuGroupActions(context),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildUserInfo(BuildContext context) {
-    if (isLoading) return const Center(child: CircularProgressIndicator());
+    if (isLoading) return const SizedBox.shrink();
     if (errorMessage != null) {
       return TitleText(
         errorMessage!,
@@ -313,12 +339,11 @@ class _MenuPageState extends State<MenuPage> {
         children: [
           CircleAvatar(
             radius: 30,
-            backgroundImage:
-                photoUrl != null
-                    ? (photoUrl!.startsWith('http')
-                        ? NetworkImage(photoUrl!)
-                        : const AssetImage('assets/images/avatar.png'))
-                    : const AssetImage('assets/images/avatar.png'),
+            backgroundImage: photoUrl != null
+                ? (photoUrl!.startsWith('http')
+                ? NetworkImage(photoUrl!)
+                : const AssetImage('assets/images/avatar.png'))
+                : const AssetImage('assets/images/avatar.png'),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -348,20 +373,18 @@ class _MenuPageState extends State<MenuPage> {
           ),
           IconButton(
             icon: const Icon(Icons.edit),
-            onPressed:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) => EditProfilePage(
-                          initialName: userName,
-                          initialEmail: email,
-                          initialAboutMe: aboutMe,
-                          initialPhotoUrl: photoUrl,
-                          userId: userId ?? '',
-                        ),
-                  ),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EditProfilePage(
+                  initialName: userName,
+                  initialEmail: email,
+                  initialAboutMe: aboutMe,
+                  initialPhotoUrl: photoUrl,
+                  userId: userId ?? '',
                 ),
+              ),
+            ),
           ),
         ],
       ),
@@ -369,12 +392,12 @@ class _MenuPageState extends State<MenuPage> {
   }
 
   Widget _buildMenuItem(
-    BuildContext context,
-    IconData icon,
-    String title,
-    VoidCallback onTap, {
-    int? notificationCount,
-  }) {
+      BuildContext context,
+      IconData icon,
+      String title,
+      VoidCallback onTap, {
+        int? notificationCount,
+      }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(15),
@@ -445,12 +468,14 @@ class _MenuPageState extends State<MenuPage> {
                 action: AuthService.signOut,
                 loadingMessage: 'Logging out...',
                 errorMessage: 'Failed to log out.',
-                onSuccess:
-                    () => Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      (route) => false,
-                    ),
+                onSuccess: () {
+                  if (!mounted) return;
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        (route) => false,
+                  );
+                },
               );
             }
           }),
@@ -465,12 +490,12 @@ class _MenuPageState extends State<MenuPage> {
             context,
             Icons.delete_forever,
             'Delete Account',
-            () async {
+                () async {
               if (await DialogUtils.showConfirmationDialog(
                 context: context,
                 title: 'Confirm',
                 message:
-                    'Are you sure you want to delete your account? This action cannot be undone.',
+                'Are you sure you want to delete your account? This action cannot be undone.',
                 confirmText: 'Next',
                 cancelText: 'Cancel',
               )) {

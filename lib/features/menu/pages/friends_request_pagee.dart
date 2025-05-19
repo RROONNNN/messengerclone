@@ -5,6 +5,8 @@ import 'package:messenger_clone/common/services/friend_service.dart';
 import 'package:messenger_clone/common/services/user_service.dart';
 import 'package:messenger_clone/common/widgets/custom_text_style.dart';
 
+import '../../../common/services/hive_service.dart';
+
 class FriendRequestPage extends StatefulWidget {
   const FriendRequestPage({super.key});
 
@@ -31,11 +33,9 @@ class _FriendRequestPageState extends State<FriendRequestPage> {
     });
 
     try {
-      final user = await AuthService.getCurrentUser();
-      if (user == null) throw Exception('User not logged in');
-
-      _currentUserId = user.$id;
-      final requests = await FriendService.getPendingFriendRequests(user.$id);
+      final currentUser = await HiveService.instance.getCurrentUserId();
+      _currentUserId = currentUser;
+      final requests = await FriendService.getPendingFriendRequests(_currentUserId);
       final detailedRequests = await Future.wait(requests.map((request) async {
         final userData = await UserService.fetchUserDataById(request['userId']);
         return {

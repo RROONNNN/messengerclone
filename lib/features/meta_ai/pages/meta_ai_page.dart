@@ -18,7 +18,7 @@ class MetaAiPage extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           title: TitleText(
-            'Tạo cuộc trò chuyện mới',
+            'Create new conversation',
             color: context.theme.titleHeaderColor,
             fontSize: 20,
           ),
@@ -46,7 +46,7 @@ class MetaAiPage extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: TitleText(
-                'Hủy',
+                'Cancel',
                 color: context.theme.red,
                 fontSize: 16,
               ),
@@ -57,7 +57,7 @@ class MetaAiPage extends StatelessWidget {
                 context.read<MetaAiBloc>().add(CreateConversation(selectedAiMode));
               },
               child: TitleText(
-                'Tạo',
+                'Create',
                 color: context.theme.blue,
                 fontSize: 16,
               ),
@@ -71,9 +71,9 @@ class MetaAiPage extends StatelessWidget {
   void _deleteConversationWithConfirmation(BuildContext context, String conversationId) {
     CustomAlertDialog.show(
       context: context,
-      title: 'Xác nhận xóa',
-      message: 'Bạn có chắc muốn xóa cuộc trò chuyện này?',
-      buttonText: 'Xóa',
+      title: 'Confirm delete',
+      message: 'Are you sure you want to delete this conversation?',
+      buttonText: 'Delete',
       onPressed: () {
         Navigator.of(context).pop();
         context.read<MetaAiBloc>().add(DeleteConversation(conversationId));
@@ -287,8 +287,10 @@ class MetaAiPage extends StatelessWidget {
                         Expanded(
                           child: TextField(
                             controller: context.read<MetaAiBloc>().messageController,
+                            cursorColor: context.theme.blue,
+                            style: TextStyle(color: context.theme.textColor),
                             decoration: InputDecoration(
-                              hintText: 'Nhập tin nhắn...',
+                              hintText: 'Enter message...',
                               hintStyle: TextStyle(color: context.theme.textGrey),
                               labelStyle: TextStyle(color: context.theme.textColor),
                               filled: true,
