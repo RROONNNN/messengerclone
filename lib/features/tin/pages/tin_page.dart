@@ -20,6 +20,7 @@ class TinPage extends StatefulWidget {
 class _TinPageState extends State<TinPage> {
   final List<StoryItem> stories = [];
   String? _currentUserAvatarUrl;
+  bool _isRefreshing = false; // Tracks refresh state
 
   @override
   void initState() {
@@ -36,7 +37,7 @@ class _TinPageState extends State<TinPage> {
         _currentUserAvatarUrl = userData['photoUrl'] as String? ??
             'https://images.hcmcpv.org.vn/res/news/2024/02/24-02-2024-ve-su-dung-co-dang-va-hinh-anh-co-dang-cong-san-viet-nam-FE119635-details.jpg?vs=24022024094023';
       });
-        } catch (e) {
+    } catch (e) {
       if (mounted) {
         CustomAlertDialog.show(
           context: context,
@@ -50,7 +51,6 @@ class _TinPageState extends State<TinPage> {
   Future<void> _fetchStoriesFromAppwrite() async {
     try {
       final userId = await HiveService.instance.getCurrentUserId();
-
       final fetchedStories = await StoryService.fetchFriendsStories(userId);
 
       final storyItems = await Future.wait(fetchedStories.map((data) async {
@@ -72,6 +72,7 @@ class _TinPageState extends State<TinPage> {
 
       if (mounted) {
         setState(() {
+          stories.clear(); // Clear old stories
           stories.addAll(storyItems);
           stories.sort((a, b) => b.postedAt.compareTo(a.postedAt));
         });
@@ -81,8 +82,24 @@ class _TinPageState extends State<TinPage> {
         CustomAlertDialog.show(
           context: context,
           title: 'Lỗi',
-          message: 'Lỗi khi lấy danh sách tin: $e',
+          message: 'Lỗi khi lấy DANH SÁCH TIN: $e',
         );
+      }
+    }
+  }
+
+  // Handle pull-to-refresh
+  Future<void> _onRefresh() async {
+    setState(() {
+      _isRefreshing = true; // Show loading indicator
+    });
+    try {
+      await _fetchStoriesFromAppwrite(); // Refresh stories
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false; // Hide loading indicator
+        });
       }
     }
   }
@@ -118,52 +135,66 @@ class _TinPageState extends State<TinPage> {
         elevation: 0,
         title: const TitleText("Tin"),
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(8.0),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 8.0,
-          mainAxisSpacing: 8.0,
-          childAspectRatio: 0.7,
-        ),
-        itemCount: displayStories.length,
-        itemBuilder: (context, index) {
-          final story = displayStories[index];
-          final isFirst = index == 0;
-          return GestureDetector(
-            onTap: () async {
-              if (isFirst) {
-                final newStory = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const GallerySelectionPage()),
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: _onRefresh,
+            color: context.theme.grey, // Matches the loading indicator color
+            child: GridView.builder(
+              padding: const EdgeInsets.all(8.0),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 8.0,
+                mainAxisSpacing: 8.0,
+                childAspectRatio: 0.7,
+              ),
+              itemCount: displayStories.length,
+              itemBuilder: (context, index) {
+                final story = displayStories[index];
+                final isFirst = index == 0;
+                return GestureDetector(
+                  onTap: () async {
+                    if (isFirst) {
+                      final newStory = await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const GallerySelectionPage()),
+                      );
+                      if (newStory != null && newStory is StoryItem && mounted) {
+                        setState(() {
+                          stories.add(newStory);
+                          stories.sort((a, b) => b.postedAt.compareTo(a.postedAt));
+                        });
+                        CustomAlertDialog.show(
+                          context: context,
+                          title: 'Thành công',
+                          message: 'Đã thêm tin mới!',
+                        );
+                      }
+                    } else {
+                      final userStories = stories.where((s) => s.userId == story.userId).toList();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => StoryDetailPage(
+                            stories: userStories,
+                            initialIndex: 0,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: StoryCard(story: story, isFirst: isFirst),
                 );
-                if (newStory != null && newStory is StoryItem && mounted) {
-                  setState(() {
-                    stories.add(newStory);
-                    stories.sort((a, b) => b.postedAt.compareTo(a.postedAt));
-                  });
-                  CustomAlertDialog.show(
-                    context: context,
-                    title: 'Thành công',
-                    message: 'Đã thêm tin mới!',
-                  );
-                }
-              } else {
-                final userStories = stories.where((s) => s.userId == story.userId).toList();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => StoryDetailPage(
-                      stories: userStories,
-                      initialIndex: 0,
-                    ),
-                  ),
-                );
-              }
-            },
-            child: StoryCard(story: story, isFirst: isFirst),
-          );
-        },
+              },
+            ),
+          ),
+          if (_isRefreshing)
+            Center(
+              child: CircularProgressIndicator(
+                color: context.theme.grey,
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:messenger_clone/features/main_page/main_page.dart';
 import '../../../common/services/auth_service.dart';
 import '../../../common/widgets/dialog/custom_alert_dialog.dart';
 import '../../auth/pages/login_screen.dart';
+import '../../../common/services/hive_service.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -26,7 +27,10 @@ class _SplashPageState extends State<SplashPage> {
       body: Center(
         child: Image.asset(
           "assets/images/aeck_logo.png",
-          width: MediaQuery.of(context).size.width * 0.6,
+          width: MediaQuery
+              .of(context)
+              .size
+              .width * 0.6,
         ),
       ),
     );
@@ -35,13 +39,13 @@ class _SplashPageState extends State<SplashPage> {
   Future<void> redirect() async {
     await Future.delayed(const Duration(seconds: 1));
     try {
-      final currentUser = await AuthService.getCurrentUser();
+      final currentUser = await HiveService.instance.getCurrentUserId();
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
           builder:
               (BuildContext context) =>
-                  currentUser != null ? MainPage() : LoginScreen(),
+          currentUser.isNotEmpty ? MainPage() : LoginScreen(),
         ),
             (route) => false
         ,

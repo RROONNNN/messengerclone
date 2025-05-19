@@ -52,7 +52,7 @@ class LoginScreenState extends State<LoginScreen> {
             SizedBox(height: MediaQuery
                 .of(context)
                 .size
-                .height * 0.1),
+                .height * 0.07),
             TextField(
               controller: _emailController,
               decoration: InputDecoration(

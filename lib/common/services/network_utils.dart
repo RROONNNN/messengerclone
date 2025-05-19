@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 
 class NetworkUtils {
@@ -7,6 +8,7 @@ class NetworkUtils {
       final response = await http
           .head(Uri.parse('http://www.google.com'))
           .timeout(const Duration(seconds: 3));
+      debugPrint('Status Network : ${response.statusCode}');
 
       return response.statusCode >= 200 && response.statusCode < 300;
     } on SocketException catch (_) {

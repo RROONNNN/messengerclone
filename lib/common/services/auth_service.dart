@@ -180,6 +180,7 @@ class AuthService {
           );
           await Store.setTargetId(targetId);
           final user = await account.get();
+          HiveService.instance.saveCurrentUserId(user.$id);
           final document = await databases.getDocument(
             databaseId: AppwriteConfig.databaseId,
             collectionId: AppwriteConfig.userCollectionId,
