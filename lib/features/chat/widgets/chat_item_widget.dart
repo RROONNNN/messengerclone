@@ -94,7 +94,7 @@ class ChatItemWidget extends StatelessWidget {
       future: _getCurrentUserId(),
       builder: (context, currentUserIdSnapshot) {
         if (currentUserIdSnapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox.shrink();
         }
 
         if (currentUserIdSnapshot.hasError) {

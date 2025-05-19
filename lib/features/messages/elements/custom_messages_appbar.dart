@@ -101,8 +101,9 @@ class CustomMessagesAppBar extends StatelessWidget
           children: [
             CustomRoundAvatar(
               isActive: isGroup ? true : user?.isActive ?? true,
-              radius: 18,
+              radius: 20,
               avatarUrl: isGroup ? avatarGroupUrl : user?.photoUrl,
+              radiusOfActiveIndicator: 6,
             ),
             SizedBox(width: 8),
             Expanded(
@@ -128,7 +129,7 @@ class CustomMessagesAppBar extends StatelessWidget
         ),
       ),
       actions:
-          isMe
+          !isMe
               ? [
                 IconButton(
                   onPressed: callFunc ?? () {},
