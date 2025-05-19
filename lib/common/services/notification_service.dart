@@ -9,7 +9,6 @@ import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_
 import 'package:messenger_clone/features/chat/model/group_message.dart';
 import '../../features/messages/elements/call_page.dart';
 import 'auth_service.dart';
-import 'package:fixnum/fixnum.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -144,13 +143,10 @@ class NotificationService {
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
-    const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
-    );
 
     await _localNotifications.initialize(
       const InitializationSettings(android: androidSettings),
-      const InitializationSettings(android: androidSettings),
+
       onDidReceiveNotificationResponse: _handleNotificationResponse,
     );
 
