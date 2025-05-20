@@ -90,7 +90,7 @@ class _ChatPageState extends State<ChatPage> {
         child: BlocBuilder<ChatItemBloc, ChatItemState>(
           builder: (context, state) {
             if (state is ChatItemLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const SizedBox.shrink();
             } else if (state is ChatItemError) {
               return Center(child: Text("Error loading chat items"));
             }

@@ -5,7 +5,9 @@ import 'package:appwrite/models.dart' as models;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/common/services/store.dart';
+import 'package:messenger_clone/features/messages/data/data_sources/local/hive_chat_repository.dart';
 
+import '../../features/meta_ai/data/meta_ai_message_hive.dart';
 import 'app_write_config.dart';
 import 'network_utils.dart';
 
@@ -42,7 +44,7 @@ class AuthService {
     return NetworkUtils.withNetworkCheck(() async {
       try {
         await signIn(email: email, password: password);
-        final user = await account.get();
+        final user = await account.get().timeout(const Duration(seconds: 20));
         await signOut();
         return user.$id;
       } on AppwriteException {
@@ -101,7 +103,9 @@ class AuthService {
           await account.updateName(name: name);
         }
         if (email != null) {
-          final currentUser = await account.get();
+          final currentUser = await account.get().timeout(
+            const Duration(seconds: 20),
+          );
           await account.updateEmail(email: email, password: password!);
           await databases.updateDocument(
             databaseId: AppwriteConfig.databaseId,
@@ -179,7 +183,7 @@ class AuthService {
             providerId: AppwriteConfig.fcmProjectId,
           );
           await Store.setTargetId(targetId);
-          final user = await account.get();
+          final user = await account.get().timeout(const Duration(seconds: 20));
           HiveService.instance.saveCurrentUserId(user.$id);
           final document = await databases.getDocument(
             databaseId: AppwriteConfig.databaseId,
@@ -211,7 +215,7 @@ class AuthService {
       try {
         String targetId = await Store.getTargetId();
         if (targetId.isNotEmpty) {
-          String userId  = await HiveService.instance.getCurrentUserId();
+          String userId = await HiveService.instance.getCurrentUserId();
           final document = await databases.getDocument(
             databaseId: AppwriteConfig.databaseId,
             collectionId: AppwriteConfig.userCollectionId,
@@ -221,6 +225,7 @@ class AuthService {
           final List<String> pushTargets = List<String>.from(
             document.data['pushTargets'] ?? [],
           );
+          await Store.setTargetId('');
           pushTargets.remove(targetId);
           await databases.updateDocument(
             databaseId: AppwriteConfig.databaseId,
@@ -229,7 +234,9 @@ class AuthService {
             data: {'pushTargets': pushTargets},
           );
         }
+        MetaAiServiceHive.clearAllBoxes();
         HiveService.instance.clearCurrentUserId();
+        await HiveChatRepository.instance.clearAllMessages();
         await account.deleteSession(sessionId: 'current');
       } on AppwriteException {
         return;
@@ -241,7 +248,7 @@ class AuthService {
 
   static Future<models.User?> getCurrentUser() async {
     try {
-      return await account.get();
+      return await account.get().timeout(const Duration(seconds: 20));
     } on AppwriteException catch (e) {
       if (e.code == 401) {
         return null;
@@ -254,7 +261,7 @@ class AuthService {
 
   static Future<String?> isLoggedIn() async {
     try {
-      final user = await account.get();
+      final user = await account.get().timeout(const Duration(seconds: 20));
       return user.$id;
     } on AppwriteException catch (e) {
       if (e.code == 401) {
@@ -272,7 +279,7 @@ class AuthService {
         final user = await getCurrentUser();
         final userId = user?.$id;
         HiveService.instance.clearCurrentUserId();
-
+        await HiveChatRepository.instance.clearAllMessages();
         await _deleteUserDocuments(userId!);
         await _deleteDeviceRecords(userId);
 

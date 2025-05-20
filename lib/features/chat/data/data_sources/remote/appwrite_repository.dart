@@ -7,6 +7,36 @@ import 'package:messenger_clone/features/chat/model/user.dart' as ChatModel;
 import 'package:messenger_clone/features/messages/domain/models/message_model.dart';
 
 class AppwriteRepository {
+  Future<GroupMessage> updateGroupMessage(GroupMessage groupMessage) async {
+    try {
+      final groupMessageDoc = await AuthService.databases.updateDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.groupMessagesCollectionId,
+        documentId: groupMessage.groupMessagesId,
+        data: groupMessage.toJson(),
+      );
+      return GroupMessage.fromJson(groupMessageDoc.data);
+    } catch (error) {
+      throw Exception("Failed to update group message: $error");
+    }
+  }
+
+  Future<void> updateChattingWithGroupMessId(
+    String userId,
+    String? groupMessId,
+  ) async {
+    try {
+      await AuthService.databases.updateDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.userCollectionId,
+        documentId: userId,
+        data: {'chattingWithGroupMessId': groupMessId},
+      );
+    } catch (error) {
+      throw Exception("Failed to update chattingWithGroupMessId: $error");
+    }
+  }
+
   Future<List<GroupMessage>> getGroupMessByIds(
     List<String> groupMessageIds,
   ) async {
@@ -217,6 +247,23 @@ class AppwriteRepository {
       throw Exception('Failed to fetch friends list: ${e.message}');
     } catch (e) {
       throw Exception('Error fetching friends list: $e');
+    }
+  }
+
+  Future<GroupMessage> updateMemberOfGroup(
+    String groupMessId,
+    Set<String> memberIds,
+  ) async {
+    try {
+      final doc = await AuthService.databases.updateDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.groupMessagesCollectionId,
+        documentId: groupMessId,
+        data: {'users': memberIds.toList()},
+      );
+      return GroupMessage.fromJson(doc.data);
+    } catch (error) {
+      throw Exception("Failed to update member of group: $error");
     }
   }
 }

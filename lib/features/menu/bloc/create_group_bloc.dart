@@ -142,6 +142,7 @@ class CreateGroupBloc extends Bloc<CreateGroupEvent, CreateGroupState> {
           userIds: allUserInvolveMeId.toList(),
           groupId: groupId,
           isGroup: true,
+          createrId: _currentUser!.$id,
         );
 
         emit(
