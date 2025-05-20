@@ -24,8 +24,6 @@ class LoginScreenState extends State<LoginScreen> {
 
   @override
   void initState() {
-    _emailController.text = "tsarlvntn1234@gmail.com";
-    _passwordController.text = "Nguyen@902993";
     super.initState();
   }
 
@@ -39,20 +37,14 @@ class LoginScreenState extends State<LoginScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            SizedBox(height: MediaQuery
-                .of(context)
-                .size
-                .height * 0.1),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.1),
             Image.asset(
               "assets/images/logo.png",
               width: 80,
               height: 80,
               fit: BoxFit.contain,
             ),
-            SizedBox(height: MediaQuery
-                .of(context)
-                .size
-                .height * 0.07),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.07),
             TextField(
               controller: _emailController,
               decoration: InputDecoration(
@@ -121,8 +113,8 @@ class LoginScreenState extends State<LoginScreen> {
                       message: "Please enter complete information.",
                     );
                   } else if (!RegExp(
-                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                  ).hasMatch(_emailController.text) ||
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(_emailController.text) ||
                       _passwordController.text.length <= 8) {
                     await CustomAlertDialog.show(
                       context: context,
@@ -135,15 +127,15 @@ class LoginScreenState extends State<LoginScreen> {
                       barrierDismissible: false,
                       builder:
                           (context) =>
-                      const LoadingDialog(message: "Logging in..."),
+                              const LoadingDialog(message: "Logging in..."),
                     );
                     try {
                       debugPrint('login');
                       final String? userID =
-                      await AuthService.getUserIdFromEmailAndPassword(
-                        _emailController.text,
-                        _passwordController.text,
-                      );
+                          await AuthService.getUserIdFromEmailAndPassword(
+                            _emailController.text,
+                            _passwordController.text,
+                          );
                       debugPrint('userID: $userID');
                       if (userID == null) {
                         if (!context.mounted) return;
@@ -155,9 +147,9 @@ class LoginScreenState extends State<LoginScreen> {
                         );
                       } else {
                         bool check =
-                        await DeviceService.hasUserLoggedInFromThisDevice(
-                          userID,
-                        );
+                            await DeviceService.hasUserLoggedInFromThisDevice(
+                              userID,
+                            );
                         debugPrint('check: $check');
                         if (check) {
                           await AuthService.signIn(
@@ -171,8 +163,9 @@ class LoginScreenState extends State<LoginScreen> {
                             Navigator.pushAndRemoveUntil(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => MainPage()),
-                                  (route) => false,
+                                builder: (context) => MainPage(),
+                              ),
+                              (route) => false,
                             );
                           }
                         } else {
@@ -187,12 +180,13 @@ class LoginScreenState extends State<LoginScreen> {
                             context,
                             MaterialPageRoute(
                               builder:
-                                  (context) =>
-                                  ConfirmationCodeScreen(
+                                  (context) => ConfirmationCodeScreen(
                                     email: _emailController.text,
                                     nextScreen: () => MainPage(),
                                     action: () async {
-                                      HiveService.instance.saveCurrentUserId(userID);
+                                      HiveService.instance.saveCurrentUserId(
+                                        userID,
+                                      );
                                       await AuthService.signIn(
                                         email: _emailController.text,
                                         password: _passwordController.text,
@@ -203,7 +197,7 @@ class LoginScreenState extends State<LoginScreen> {
                                     },
                                   ),
                             ),
-                                (route) => false,
+                            (route) => false,
                           );
                         }
                       }
@@ -238,7 +232,8 @@ class LoginScreenState extends State<LoginScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const ForgotPasswordScreen()),
+                    builder: (context) => const ForgotPasswordScreen(),
+                  ),
                 );
               },
               child: const Center(
