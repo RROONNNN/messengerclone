@@ -146,11 +146,7 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
                     ) &&
                     event.contains(currentState.meId),
               )) {
-                final payload = message.payload;
-
-                if (!payload.containsKey('isActive')) {
-                  add(GetChatItemEvent());
-                }
+                add(GetChatItemEvent());
               } else if (message.events.any(
                 (event) => event.contains(
                   'collections.${AppwriteConfig.groupMessagesCollectionId}',
