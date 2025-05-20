@@ -236,7 +236,7 @@ class AuthService {
         }
         MetaAiServiceHive.clearAllBoxes();
         HiveService.instance.clearCurrentUserId();
-        HiveChatRepository.instance.clearAllMessages();
+        await HiveChatRepository.instance.clearAllMessages();
         await account.deleteSession(sessionId: 'current');
       } on AppwriteException {
         return;
