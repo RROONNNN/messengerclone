@@ -733,7 +733,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
             latestTimestamp,
           )
           .timeout(
-            const Duration(seconds: 10),
+            const Duration(seconds: 30),
             onTimeout:
                 () =>
                     throw Exception(

@@ -28,7 +28,7 @@ class UserStatusService with WidgetsBindingObserver {
   }
 
   void _startPeriodicUpdates() {
-    _updateTimer = Timer.periodic(const Duration(seconds: 180), (timer) {
+    _updateTimer = Timer.periodic(const Duration(seconds: 600), (timer) {
       _updateUserStatus(true);
     });
   }
