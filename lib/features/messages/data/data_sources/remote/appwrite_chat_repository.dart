@@ -258,6 +258,7 @@ class AppwriteChatRepository {
     String? avatarGroupUrl,
     bool isGroup = false,
     required String groupId,
+    String? createrId,
   }) async {
     try {
       final Document groupMessageDocument = await AuthService.databases
@@ -270,6 +271,7 @@ class AppwriteChatRepository {
               'avatarGroupUrl': avatarGroupUrl,
               'isGroup': isGroup,
               'groupId': groupId,
+              'createrId': createrId,
             },
           );
       List<Future<void>> userUpdates = [];
@@ -317,24 +319,6 @@ class AppwriteChatRepository {
     }
   }
 
-  // Future<File> uploadFile(String filePath, String senderId) async {
-  //   try {
-  //     final InputFile inputFile = InputFile.fromPath(path: filePath);
-  //     List<String> permissions = [
-  //       Permission.write(Role.user(senderId)),
-  //       Permission.read(Role.user(senderId)),
-  //     ];
-  //     return await AppWriteService.storage.createFile(
-  //       bucketId: AppWriteService.bucketId,
-  //       fileId: ID.unique(),
-  //       file: inputFile,
-  //       permissions: permissions,
-  //     );
-  //   } catch (error) {
-  //     debugPrint("Failed to upload file: $error");
-  //     throw Exception("Failed to upload file: $error");
-  //   }
-  // }
   Future<File> uploadFile(String filePath, String senderId) async {
     try {
       debugPrint("Attempting to upload file from path: $filePath");

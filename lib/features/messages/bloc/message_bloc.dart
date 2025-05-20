@@ -42,10 +42,13 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     meId = HiveService.instance.getCurrentUserId();
     chatRepository = ChatRepositoryImpl();
     appwriteRepository = AppwriteRepository();
-    on<MessageLoadEvent>(_onMessageLoadEvent);
-    on<MessageLoadMoreEvent>(_onMessageLoadMoreEvent);
+    on<MessageLoadEvent>(_onLoad);
+    on<MessageLoadMoreEvent>(_onLoadMore);
+    on<MessageSendEvent>(_onSend);
+    on<MessageUpdateGroupNameEvent>(_onUpdateName);
+    on<MessageUpdateGroupAvatarEvent>(_onUpdateAvatar);
+    on<MessageAddGroupMemberEvent>(_onAddMember);
     on<ClearMessageEvent>(_onClearMessageEvent);
-    on<MessageSendEvent>(_onMessageSendEvent);
     on<ReceiveMessageEvent>(_onReceiveMessageEvent);
     on<AddReactionEvent>(_onAddReactionEvent);
     on<SubscribeToChatStreamEvent>(_onSubscribeToChatStreamEvent);
@@ -54,6 +57,108 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     on<UnsubscribeFromMessagesEvent>(_onUnsubscribeFromMessagesEvent);
     on<UpdateMessageEvent>(_onUpdateMessageEvent);
     on<AddMeSeenMessageEvent>(_onAddMeSeenMessageEvent);
+    on<MessageRemoveGroupMemberEvent>(_onRemoveMember);
+  }
+
+  List<appUser.User> _updateOthers(GroupMessage groupMessage, String meId) {
+    return (groupMessage.users.length > 1)
+        ? groupMessage.users.where((user) => user.id != meId).toList()
+        : groupMessage.users.toList();
+  }
+
+  void _onRemoveMember(
+    MessageRemoveGroupMemberEvent event,
+    Emitter<MessageState> emit,
+  ) async {
+    if (state is! MessageLoaded) return;
+    final currentState = state as MessageLoaded;
+    final removedUser = event.memberToRemove;
+    final me = currentState.meId;
+    if (currentState.groupMessage.createrId?.trim() != me.trim()) {
+      emit(MessageError('Only group admin can remove members'));
+      return;
+    }
+    if (removedUser.id == me) {
+      emit(MessageError('Admin cannot remove themselves from the group'));
+      return;
+    }
+
+    try {
+      final List<appUser.User> updatedUser =
+          currentState.groupMessage.users
+              .where((user) => user.id != removedUser.id)
+              .toList();
+
+      final GroupMessage updatedGroup = currentState.groupMessage.copyWith(
+        users: updatedUser,
+      );
+
+      // Update the group in the backend
+      final updatedGroupFromBackend = await appwriteRepository
+          .updateGroupMessage(updatedGroup);
+
+      emit(
+        currentState.copyWith(
+          groupMessage: updatedGroupFromBackend,
+          others: _updateOthers(updatedGroupFromBackend, me),
+          successMessage: '${removedUser.name} removed from group',
+        ),
+      );
+
+      final admin = currentState.groupMessage.users.firstWhere(
+        (user) => user.id == me,
+      );
+      final message =
+          "${admin.name} removed ${removedUser.name} from the group";
+
+      add(MessageSendEvent(message));
+      emit(currentState.copyWith(successMessage: null));
+    } catch (e) {
+      emit(MessageError('Failed to remove member: $e'));
+    }
+  }
+
+  void _onUpdateName(
+    MessageUpdateGroupNameEvent event,
+    Emitter<MessageState> emit,
+  ) async {
+    try {
+      if (state is MessageLoaded) {
+        final currentState = state as MessageLoaded;
+        final me = currentState.meId;
+        if (currentState.groupMessage.createrId?.trim() != me.trim()) {
+          emit(MessageError('Only group admin can update group name'));
+          return;
+        }
+        GroupMessage updatedGroup = currentState.groupMessage.copyWith(
+          groupName: event.newName,
+        );
+        updatedGroup = await appwriteRepository.updateGroupMessage(
+          updatedGroup,
+        );
+        final admin = currentState.groupMessage.users.firstWhere(
+          (user) => user.id == me,
+        );
+        final message = "${admin.name} has named the group ${event.newName}";
+        add(MessageSendEvent(message));
+
+        emit(
+          currentState.copyWith(
+            groupMessage: updatedGroup,
+            successMessage: 'Group name updated successfully',
+          ),
+        );
+
+        emit(
+          currentState.copyWith(
+            groupMessage: updatedGroup,
+            successMessage: null,
+          ),
+        );
+      }
+    } catch (e) {
+      emit(MessageError(e.toString()));
+    }
   }
 
   void _onAddMeSeenMessageEvent(
@@ -344,10 +449,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     return "https://fra.cloud.appwrite.io/v1/storage/buckets/${AppwriteConfig.bucketId}/files/${file.$id}/view?project=${AppwriteConfig.projectId}";
   }
 
-  void _onMessageSendEvent(
-    MessageSendEvent event,
-    Emitter<MessageState> emit,
-  ) async {
+  void _onSend(MessageSendEvent event, Emitter<MessageState> emit) async {
     if (state is MessageLoaded) {
       final currentState = state as MessageLoaded;
       final String me = await meId;
@@ -483,7 +585,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     emit(MessageInitial());
   }
 
-  void _onMessageLoadMoreEvent(
+  void _onLoadMore(
     MessageLoadMoreEvent event,
     Emitter<MessageState> emit,
   ) async {
@@ -567,10 +669,7 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     }).toList();
   }
 
-  void _onMessageLoadEvent(
-    MessageLoadEvent event,
-    Emitter<MessageState> emit,
-  ) async {
+  void _onLoad(MessageLoadEvent event, Emitter<MessageState> emit) async {
     emit(MessageLoading());
     try {
       final String me = await meId;
@@ -789,6 +888,79 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     } catch (e) {
       debugPrint('Error extracting file info from URL: $e');
       throw Exception('Failed to extract fileId from URL');
+    }
+  }
+
+  Future<void> _onUpdateAvatar(
+    MessageUpdateGroupAvatarEvent event,
+    Emitter<MessageState> emit,
+  ) async {
+    try {
+      if (state is MessageLoaded) {
+        final currentState = state as MessageLoaded;
+        final me = await meId;
+
+        if (currentState.groupMessage.createrId != me) {
+          emit(MessageError('Only group admin can update group avatar'));
+          return;
+        }
+        final file = await chatRepository.uploadFile(event.newAvatarUrl, me);
+        final String url = generateUrl(file);
+        GroupMessage updatedGroup = currentState.groupMessage.copyWith(
+          avatarGroupUrl: url,
+        );
+        updatedGroup = await appwriteRepository.updateGroupMessage(
+          updatedGroup,
+        );
+
+        // Create notification message
+        final admin = currentState.groupMessage.users.firstWhere(
+          (user) => user.id == me,
+        );
+        final message = "${admin.name} has changed the group photo";
+        add(MessageSendEvent(message));
+
+        emit(
+          currentState.copyWith(
+            groupMessage: updatedGroup,
+            successMessage: 'Group avatar updated successfully',
+          ),
+        );
+
+        emit(
+          currentState.copyWith(
+            groupMessage: updatedGroup,
+            successMessage: null,
+          ),
+        );
+      }
+    } catch (e) {
+      emit(MessageError(e.toString()));
+    }
+  }
+
+  Future<void> _onAddMember(
+    MessageAddGroupMemberEvent event,
+    Emitter<MessageState> emit,
+  ) async {
+    try {
+      if (state is! MessageLoaded) return;
+      final currentState = state as MessageLoaded;
+      final me = await meId;
+      if (currentState.groupMessage.createrId?.trim() != me.trim()) {
+        emit(MessageError('Only group admin can add members'));
+        return;
+      }
+      final GroupMessage newGroupMessage = event.newGroupMessage;
+
+      emit(
+        currentState.copyWith(
+          groupMessage: newGroupMessage,
+          others: _updateOthers(newGroupMessage, me),
+        ),
+      );
+    } catch (e) {
+      emit(MessageError(e.toString()));
     }
   }
 }

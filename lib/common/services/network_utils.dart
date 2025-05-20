@@ -17,12 +17,15 @@ class NetworkUtils {
 
       for (final endpoint in endpoints) {
         try {
-          final response = await http.head(endpoint)
+          final response = await http
+              .head(endpoint)
               .timeout(_defaultConnectionCheckTimeout);
 
           if (kDebugMode) {
-            debugPrint('Network check to ${endpoint.host} - '
-                'Status: ${response.statusCode}');
+            debugPrint(
+              'Network check to ${endpoint.host} - '
+              'Status: ${response.statusCode}',
+            );
           }
 
           if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -43,12 +46,13 @@ class NetworkUtils {
       return false;
     }
   }
+
   static Future<T> withNetworkCheck<T>(
-      Future<T> Function() apiCall, {
-        Duration? timeout,
-        bool retryOnFailure = false,
-        int maxRetries = 2,
-      }) async {
+    Future<T> Function() apiCall, {
+    Duration? timeout,
+    bool retryOnFailure = false,
+    int maxRetries = 2,
+  }) async {
     int attempt = 0;
     late Exception lastException;
 
@@ -61,9 +65,11 @@ class NetworkUtils {
 
         return await apiCall().timeout(
           timeout ?? _defaultApiCallTimeout,
-          onTimeout: () => throw TimeoutException(
-            'API call timed out after ${timeout ?? _defaultApiCallTimeout}',
-          ),
+          onTimeout:
+              () =>
+                  throw TimeoutException(
+                    'API call timed out after ${timeout ?? _defaultApiCallTimeout}',
+                  ),
         );
       } on SocketException catch (e) {
         lastException = e;
@@ -109,6 +115,7 @@ class NetworkUtils {
 
     throw lastException;
   }
+
   static bool isNetworkError(dynamic error) {
     return error is SocketException ||
         error is TimeoutException ||
