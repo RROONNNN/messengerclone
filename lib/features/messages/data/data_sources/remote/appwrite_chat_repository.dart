@@ -214,44 +214,6 @@ class AppwriteChatRepository {
     }
   }
 
-  Future<void> _addGroupChatIdToUser(String userId, String groupMessId) async {
-    try {
-      debugPrint('Adding groupMessId $groupMessId to user $userId');
-
-      final Document userDoc = await AuthService.databases.getDocument(
-        databaseId: AppwriteConfig.databaseId,
-        collectionId: AppwriteConfig.userCollectionId,
-        documentId: userId,
-      );
-      final List<dynamic> groupMessages = userDoc.data['groupMessages'] ?? [];
-      final List<String> groupMessIds =
-          groupMessages
-              .where(
-                (message) =>
-                    message is Map<String, dynamic> &&
-                    message.containsKey('\$id'),
-              )
-              .map(
-                (message) =>
-                    (message as Map<String, dynamic>)['\$id'] as String,
-              )
-              .toList();
-      if (!groupMessIds.contains(groupMessId)) {
-        await AuthService.databases.updateDocument(
-          databaseId: AppwriteConfig.databaseId,
-          collectionId: AppwriteConfig.userCollectionId,
-          documentId: userId,
-          data: {
-            'groupMessages': [...groupMessIds, groupMessId],
-          },
-        );
-      }
-    } catch (error) {
-      debugPrint("Failed to add groupMessId to user  $userId document: $error");
-      throw Exception("Failed to add groupMessId to user document: $error");
-    }
-  }
-
   Future<GroupMessage> createGroupMessages({
     String? groupName,
     required List<String> userIds,
@@ -272,14 +234,10 @@ class AppwriteChatRepository {
               'isGroup': isGroup,
               'groupId': groupId,
               'createrId': createrId,
+              'users': userIds,
             },
           );
       List<Future<void>> userUpdates = [];
-      for (String userId in userIds) {
-        userUpdates.add(
-          _addGroupChatIdToUser(userId, groupMessageDocument.$id),
-        );
-      }
       await Future.wait(userUpdates);
       final Document groupMessageDoc = await AuthService.databases.getDocument(
         databaseId: AppwriteConfig.databaseId,

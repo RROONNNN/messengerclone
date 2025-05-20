@@ -84,4 +84,13 @@ class GroupMessage {
       createrId: json['createrId'] as String?,
     );
   }
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GroupMessage &&
+          runtimeType == other.runtimeType &&
+          groupMessagesId == other.groupMessagesId;
+
+  @override
+  int get hashCode => groupMessagesId.hashCode;
 }
