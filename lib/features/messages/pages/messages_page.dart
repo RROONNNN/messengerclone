@@ -155,6 +155,7 @@ class _MessagesPageState extends State<MessagesPage> {
                               callID += participant;
                               callID += "call_video_21211221133211412114214";
                             }
+                            callID = hashCallID(callID);
                             debugPrint(
                               'Gửi thông báo gọi với callID: $callID, participants: $participants',
                             );
@@ -207,6 +208,7 @@ class _MessagesPageState extends State<MessagesPage> {
                               callID += participant;
                               callID += "call_video_21211221133211412114214";
                             }
+                            callID = hashCallID(callID);
                             debugPrint(
                               'Gửi thông báo gọi video với callID: $callID, participants: $participants',
                             );
