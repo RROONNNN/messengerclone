@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:messenger_clone/common/services/notification_service.dart';
+import 'package:messenger_clone/common/services/user_status_service.dart';
 import 'package:messenger_clone/features/chat/bloc/chat_item_bloc.dart';
 import 'package:messenger_clone/features/chat/data/data_sources/remote/appwrite_repository.dart';
 import 'package:messenger_clone/features/chat/model/user.dart';
@@ -31,16 +32,15 @@ Future<void> main() async {
   if (await Permission.notification.isDenied) {
     await Permission.notification.request();
   }
-  final notificationService = NotificationService();
-  notificationService.setNavigatorKey(navigatorKey);
-  await notificationService.initializeNotifications();
+  NotificationService().initializeNotifications();
+  NotificationService().setNavigatorKey(navigatorKey);
+  await UserStatusService().initialize();
   Hive
     ..init(dir.path)
     ..registerAdapter(MessageModelAdapter())
     ..registerAdapter(UserAdapter())
     ..registerAdapter(MessageStatusAdapter());
 
-  await HiveChatRepository.instance.clearAllMessages();
   await MetaAiServiceHive.init();
   runApp(
     ChangeNotifierProvider(

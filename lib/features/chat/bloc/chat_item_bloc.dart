@@ -140,14 +140,6 @@ class ChatItemBloc extends Bloc<ChatItemEvent, ChatItemState> {
             (message) {
               debugPrint('Received update: ${message.events}');
               if (message.events.any(
-                (event) =>
-                    event.contains(
-                      'collections.${AppwriteConfig.userCollectionId}',
-                    ) &&
-                    event.contains(currentState.meId),
-              )) {
-                add(GetChatItemEvent());
-              } else if (message.events.any(
                 (event) => event.contains(
                   'collections.${AppwriteConfig.groupMessagesCollectionId}',
                 ),

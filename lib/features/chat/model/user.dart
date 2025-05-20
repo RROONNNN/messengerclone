@@ -17,6 +17,7 @@ class User {
   final bool isActive;
   @HiveField(6)
   final DateTime lastSeen;
+  final String? chattingWithGroupMessId;
   User({
     required this.aboutMe,
     required this.name,
@@ -25,8 +26,9 @@ class User {
     required this.id,
     this.isActive = false,
     required this.lastSeen,
+    this.chattingWithGroupMessId,
   });
-  factory User.createMeUser(String id) {
+  factory User.createMeUser(String id, {String? chattingWithGroupMessId}) {
     return User(
       aboutMe: '',
       name: '',
@@ -35,9 +37,9 @@ class User {
       id: id,
       isActive: false,
       lastSeen: DateTime.now().toUtc(),
+      chattingWithGroupMessId: chattingWithGroupMessId,
     );
   }
-
   factory User.fromMap(Map<String, dynamic> map) {
     return User(
       aboutMe: map['aboutMe'] ?? '',
@@ -48,6 +50,7 @@ class User {
       isActive: map['isActive'] ?? false,
       lastSeen:
           DateTime.tryParse(map['lastSeen'] ?? '') ?? DateTime.now().toUtc(),
+      chattingWithGroupMessId: map['chattingWithGroupMessId'],
     );
   }
   @override

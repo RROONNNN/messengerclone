@@ -9,6 +9,7 @@ class GroupMessage {
   final List<User> users;
   final String? groupName;
   final String groupId;
+  final String? createrId;
 
   GroupMessage({
     required this.groupMessagesId,
@@ -18,20 +19,25 @@ class GroupMessage {
     this.avatarGroupUrl,
     this.groupName,
     required this.groupId,
+    this.createrId,
   }) : assert(
          isGroup == false || groupName != null,
          'groupName must not be null if isGroup is true',
+       ),
+       assert(
+         isGroup == false || createrId != null,
+         'createrId must not be null if isGroup is true',
        );
 
   Map<String, dynamic> toJson() {
     return {
-      'groupMessagesId': groupMessagesId,
       'lastMessage': lastMessage?.toJson(),
-      'users': users,
+      'users': users.map((e) => e.id).toList(),
       'isGroup': isGroup,
       'avatarGroupUrl': avatarGroupUrl,
       'groupName': groupName,
       'groupId': groupId,
+      'createrId': createrId,
     };
   }
 
@@ -43,6 +49,7 @@ class GroupMessage {
     String? avatarGroupUrl,
     String? groupName,
     String? groupId,
+    String? createrId,
   }) {
     return GroupMessage(
       groupMessagesId: groupMessagesId ?? this.groupMessagesId,
@@ -52,6 +59,7 @@ class GroupMessage {
       avatarGroupUrl: avatarGroupUrl ?? this.avatarGroupUrl,
       groupName: groupName ?? this.groupName,
       groupId: groupId ?? this.groupId,
+      createrId: createrId ?? this.createrId,
     );
   }
 
@@ -73,6 +81,7 @@ class GroupMessage {
       avatarGroupUrl: json['avatarGroupUrl'] as String?,
       groupName: json['groupName'] as String?,
       groupId: json['groupId'] as String,
+      createrId: json['createrId'] as String?,
     );
   }
   @override

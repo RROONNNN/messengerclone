@@ -17,6 +17,9 @@ import 'package:messenger_clone/features/messages/elements/call_page.dart';
 import '../../../common/services/call_service.dart';
 import '../elements/custom_messages_appbar.dart';
 import '../elements/custom_messages_bottombar.dart';
+import '../pages/group_detail_page.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
 
 class MessagesPage extends StatefulWidget {
   final GroupMessage? groupMessage;
@@ -122,108 +125,240 @@ class _MessagesPageState extends State<MessagesPage> {
                 FocusScope.of(context).unfocus();
               },
               child: Scaffold(
-                appBar: CustomMessagesAppBar(
-                  isMe: true,
-                  user: state.others.first,
-                  callFunc: () async {
-                    final String userName =
-                        await UserService.getNameUser(state.meId) as String;
-                    if (state.meId.isEmpty || state.others.isEmpty) {
-                      debugPrint('Lỗi: meId hoặc others rỗng');
-                      return;
-                    }
-                    List<String> participants = [state.meId];
-                    for (User user in state.others) {
-                      if (user.id.isNotEmpty) {
-                        participants.add(user.id);
-                      }
-                    }
-                    if (participants.length < 2) {
-                      debugPrint('Lỗi: Không đủ participants để gọi');
-                      return;
-                    }
-                    participants.sort();
-                    String callID = "";
-                    for (final participant in participants) {
-                      callID += participant;
-                      callID += "call_video_21211221133211412114214";
-                    }
-                    debugPrint(
-                      'Gửi thông báo gọi với callID: $callID, participants: $participants',
-                    );
-                    try {
-                      await CallService.sendMessage(
-                        userIds: participants,
-                        callId: callID,
-                        callerName: userName,
-                        callerId: state.meId,
-                      );
-                      debugPrint('Điều hướng đến CallPage');
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => CallPage(
-                                callID: callID,
-                                userID: state.meId,
-                                userName: userName,
+                appBar:
+                    state.groupMessage.isGroup
+                        ? CustomMessagesAppBar.group(
+                          isMe: false,
+                          groupName: state.groupMessage.groupName ?? '',
+                          avatarGroupUrl: state.groupMessage.avatarGroupUrl,
+                          callFunc: () async {
+                            final String userName =
+                                await UserService.getNameUser(state.meId)
+                                    as String;
+                            if (state.meId.isEmpty || state.others.isEmpty) {
+                              debugPrint('Lỗi: meId hoặc others rỗng');
+                              return;
+                            }
+                            List<String> participants = [state.meId];
+                            for (User user in state.others) {
+                              if (user.id.isNotEmpty) {
+                                participants.add(user.id);
+                              }
+                            }
+                            if (participants.length < 2) {
+                              debugPrint('Lỗi: Không đủ participants để gọi');
+                              return;
+                            }
+                            participants.sort();
+                            String callID = "";
+                            for (final participant in participants) {
+                              callID += participant;
+                              callID += "call_video_21211221133211412114214";
+                            }
+                            callID = hashCallID(callID);
+                            debugPrint(
+                              'Gửi thông báo gọi với callID: $callID, participants: $participants',
+                            );
+                            try {
+                              await CallService.sendMessage(
+                                userIds: participants,
+                                callId: callID,
+                                callerName: userName,
+                                callerId: state.meId,
+                              );
+                              debugPrint('Điều hướng đến CallPage');
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => CallPage(
+                                        callID: callID,
+                                        userID: state.meId,
+                                        userName: userName,
+                                      ),
+                                ),
+                              );
+                            } catch (e) {
+                              debugPrint('Lỗi khi gửi thông báo gọi: $e');
+                            }
+                          },
+                          videoCallFunc: () async {
+                            final String userName =
+                                await UserService.getNameUser(state.meId)
+                                    as String;
+                            if (state.meId.isEmpty || state.others.isEmpty) {
+                              debugPrint('Lỗi: meId hoặc others rỗng');
+                              return;
+                            }
+                            List<String> participants = [state.meId];
+                            for (User user in state.others) {
+                              if (user.id.isNotEmpty) {
+                                participants.add(user.id);
+                              }
+                            }
+                            if (participants.length < 2) {
+                              debugPrint(
+                                'Lỗi: Không đủ participants để gọi video',
+                              );
+                              return;
+                            }
+                            participants.sort();
+                            String callID = "";
+                            for (final participant in participants) {
+                              callID += participant;
+                              callID += "call_video_21211221133211412114214";
+                            }
+                            callID = hashCallID(callID);
+                            debugPrint(
+                              'Gửi thông báo gọi video với callID: $callID, participants: $participants',
+                            );
+                            try {
+                              await CallService.sendMessage(
+                                userIds: participants,
+                                callId: callID,
+                                callerName: userName,
+                                callerId: state.meId,
+                              );
+                              debugPrint('Điều hướng đến CallPage');
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => CallPage(
+                                        callID: callID,
+                                        userID: state.meId,
+                                        userName: userName,
+                                      ),
+                                ),
+                              );
+                            } catch (e) {
+                              debugPrint('Lỗi khi gửi thông báo gọi video: $e');
+                            }
+                          },
+                          onTapAvatar: () {
+                            final messageBloc = context.read<MessageBloc>();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => BlocProvider.value(
+                                      value: messageBloc,
+                                      child: GroupDetailPage(
+                                        groupMessage: state.groupMessage,
+                                      ),
+                                    ),
                               ),
+                            );
+                          },
+                        )
+                        : CustomMessagesAppBar(
+                          isMe: false,
+                          user: state.others.first,
+                          callFunc: () async {
+                            final String userName =
+                                await UserService.getNameUser(state.meId)
+                                    as String;
+                            if (state.meId.isEmpty || state.others.isEmpty) {
+                              debugPrint('Lỗi: meId hoặc others rỗng');
+                              return;
+                            }
+                            List<String> participants = [state.meId];
+                            for (User user in state.others) {
+                              if (user.id.isNotEmpty) {
+                                participants.add(user.id);
+                              }
+                            }
+                            if (participants.length < 2) {
+                              debugPrint('Lỗi: Không đủ participants để gọi');
+                              return;
+                            }
+                            participants.sort();
+                            String callID = "";
+                            for (final participant in participants) {
+                              callID += participant;
+                              callID += "call_video_21211221133211412114214";
+                            }
+                            callID = hashCallID(callID);
+                            debugPrint(
+                              'Gửi thông báo gọi với callID: $callID, participants: $participants',
+                            );
+                            try {
+                              await CallService.sendMessage(
+                                userIds: participants,
+                                callId: callID,
+                                callerName: userName,
+                                callerId: state.meId,
+                              );
+                              debugPrint('Điều hướng đến CallPage');
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => CallPage(
+                                        callID: callID,
+                                        userID: state.meId,
+                                        userName: userName,
+                                      ),
+                                ),
+                              );
+                            } catch (e) {
+                              debugPrint('Lỗi khi gửi thông báo gọi: $e');
+                            }
+                          },
+                          videoCallFunc: () async {
+                            final String userName =
+                                await UserService.getNameUser(state.meId)
+                                    as String;
+                            if (state.meId.isEmpty || state.others.isEmpty) {
+                              debugPrint('Lỗi: meId hoặc others rỗng');
+                              return;
+                            }
+                            List<String> participants = [state.meId];
+                            for (User user in state.others) {
+                              if (user.id.isNotEmpty) {
+                                participants.add(user.id);
+                              }
+                            }
+                            if (participants.length < 2) {
+                              debugPrint(
+                                'Lỗi: Không đủ participants để gọi video',
+                              );
+                              return;
+                            }
+                            participants.sort();
+                            String callID = "";
+                            for (final participant in participants) {
+                              callID += participant;
+                              callID += "call_video_21211221133211412114214";
+                            }
+                            callID = hashCallID(callID);
+                            debugPrint(
+                              'Gửi thông báo gọi video với callID: $callID, participants: $participants',
+                            );
+                            try {
+                              await CallService.sendMessage(
+                                userIds: participants,
+                                callId: callID,
+                                callerName: userName,
+                                callerId: state.meId,
+                              );
+                              debugPrint('Điều hướng đến CallPage');
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => CallPage(
+                                        callID: callID,
+                                        userID: state.meId,
+                                        userName: userName,
+                                      ),
+                                ),
+                              );
+                            } catch (e) {
+                              debugPrint('Lỗi khi gửi thông báo gọi video: $e');
+                            }
+                          },
                         ),
-                      );
-                    } catch (e) {
-                      debugPrint('Lỗi khi gửi thông báo gọi: $e');
-                    }
-                  },
-                  videoCallFunc: () async {
-                    final String userName =
-                    await UserService.getNameUser(state.meId) as String;
-                    if (state.meId.isEmpty || state.others.isEmpty) {
-                      debugPrint('Lỗi: meId hoặc others rỗng');
-                      return;
-                    }
-                    List<String> participants = [state.meId];
-                    for (User user in state.others) {
-                      if (user.id.isNotEmpty) {
-                        participants.add(user.id);
-                      }
-                    }
-                    if (participants.length < 2) {
-                      debugPrint('Lỗi: Không đủ participants để gọi video');
-                      return;
-                    }
-                    participants.sort();
-                    String callID = "";
-                    for (final participant in participants) {
-                      callID += participant;
-                      callID += "call_video_21211221133211412114214";
-                    }
-                    debugPrint(
-                      'Gửi thông báo gọi video với callID: $callID, participants: $participants',
-                    );
-                    try {
-                      await CallService.sendMessage(
-                        userIds: participants,
-                        callId: callID,
-                        callerName: userName,
-                        callerId: state.meId,
-                      );
-                      debugPrint('Điều hướng đến CallPage');
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => CallPage(
-                                callID: callID,
-                                userID: state.meId,
-                                userName: userName,
-                              ),
-                        ),
-                      );
-                    } catch (e) {
-                      debugPrint('Lỗi khi gửi thông báo gọi video: $e');
-                    }
-                  },
-                ),
                 bottomNavigationBar: Padding(
                   padding: EdgeInsets.only(
                     bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -253,6 +388,11 @@ class _MessagesPageState extends State<MessagesPage> {
         },
       ),
     );
+  }
+  String hashCallID(String callID) {
+    var bytes = utf8.encode(callID);
+    var digest = md5.convert(bytes);
+    return digest.toString().substring(0, 16);
   }
 
   Widget _buildListMessage() {

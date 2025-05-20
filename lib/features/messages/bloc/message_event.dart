@@ -109,3 +109,39 @@ final class AddMeSeenMessageEvent extends MessageEvent {
   @override
   List<Object> get props => [message];
 }
+
+class MessageUpdateGroupNameEvent extends MessageEvent {
+  final String newName;
+
+  const MessageUpdateGroupNameEvent(this.newName);
+
+  @override
+  List<Object> get props => [newName];
+}
+
+class MessageUpdateGroupAvatarEvent extends MessageEvent {
+  final String newAvatarUrl;
+
+  const MessageUpdateGroupAvatarEvent(this.newAvatarUrl);
+
+  @override
+  List<Object> get props => [newAvatarUrl];
+}
+
+class MessageAddGroupMemberEvent extends MessageEvent {
+  final GroupMessage newGroupMessage;
+
+  const MessageAddGroupMemberEvent(this.newGroupMessage);
+
+  @override
+  List<Object> get props => [newGroupMessage];
+}
+
+class MessageRemoveGroupMemberEvent extends MessageEvent {
+  final appUser.User memberToRemove;
+
+  const MessageRemoveGroupMemberEvent(this.memberToRemove);
+
+  @override
+  List<Object> get props => [memberToRemove];
+}
