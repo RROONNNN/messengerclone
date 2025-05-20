@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:appwrite/appwrite.dart';
+import 'package:crypto/crypto.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -146,8 +148,9 @@ class _MessagesPageState extends State<MessagesPage> {
                     String callID = "";
                     for (final participant in participants) {
                       callID += participant;
-                      callID += "call_video_21211221133211412114214";
+                      callID += "call_video_423423233242423423243";
                     }
+                    callID = hashCallID(callID);
                     debugPrint(
                       'Gửi thông báo gọi với callID: $callID, participants: $participants',
                     );
@@ -195,8 +198,9 @@ class _MessagesPageState extends State<MessagesPage> {
                     String callID = "";
                     for (final participant in participants) {
                       callID += participant;
-                      callID += "call_video_21211221133211412114214";
+                      callID += "call_video_423423233242423423243";
                     }
+                    callID = hashCallID(callID);
                     debugPrint(
                       'Gửi thông báo gọi video với callID: $callID, participants: $participants',
                     );
@@ -253,6 +257,11 @@ class _MessagesPageState extends State<MessagesPage> {
         },
       ),
     );
+  }
+  String hashCallID(String callID) {
+    var bytes = utf8.encode(callID);
+    var digest = md5.convert(bytes);
+    return digest.toString().substring(0, 16);
   }
 
   Widget _buildListMessage() {

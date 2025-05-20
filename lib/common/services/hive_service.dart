@@ -17,7 +17,6 @@ class HiveService {
 
   Future<Box<String>> _initializeBox() async {
     final box = await Hive.openBox<String>('currentUserBox');
-    box.delete('currentUserId');
     return box;
   }
 
@@ -34,11 +33,12 @@ class HiveService {
   Future<String> getCurrentUserId() async {
     try {
       final box = await _box;
+      final currentUser = await AuthService.isLoggedIn();
       return box.get('currentUserId') ??
-          ((await AuthService.getCurrentUser())!.$id);
+          (currentUser ?? '');
     } catch (e) {
       debugPrint('Error getting current user ID: $e');
     }
-    throw Exception('Failed to get current user ID');
+    return '';
   }
 }
