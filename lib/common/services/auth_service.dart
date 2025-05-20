@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:messenger_clone/common/services/hive_service.dart';
 import 'package:messenger_clone/common/services/store.dart';
 
+import '../../features/meta_ai/data/meta_ai_message_hive.dart';
 import 'app_write_config.dart';
 import 'network_utils.dart';
 
@@ -223,6 +224,7 @@ class AuthService {
           final List<String> pushTargets = List<String>.from(
             document.data['pushTargets'] ?? [],
           );
+          await Store.setTargetId('');
           pushTargets.remove(targetId);
           await databases.updateDocument(
             databaseId: AppwriteConfig.databaseId,
@@ -231,6 +233,7 @@ class AuthService {
             data: {'pushTargets': pushTargets},
           );
         }
+        MetaAiServiceHive.clearAllBoxes();
         HiveService.instance.clearCurrentUserId();
         await account.deleteSession(sessionId: 'current');
       } on AppwriteException {
