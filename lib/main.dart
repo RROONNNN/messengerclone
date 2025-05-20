@@ -41,7 +41,6 @@ Future<void> main() async {
     ..registerAdapter(UserAdapter())
     ..registerAdapter(MessageStatusAdapter());
 
-  await HiveChatRepository.instance.clearAllMessages();
   await MetaAiServiceHive.init();
   runApp(
     ChangeNotifierProvider(

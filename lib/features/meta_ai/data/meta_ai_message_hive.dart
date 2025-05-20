@@ -81,4 +81,22 @@ class MetaAiServiceHive {
     final lastSyncTime = DateTime.parse(lastSync);
     return DateTime.now().difference(lastSyncTime).inMinutes > 5;
   }
+
+  static Future<void> clearAllBoxes() async {
+    final convBox = await _openBox(_conversationsBox);
+    await convBox.clear();
+
+    final conversations = await getConversations();
+    for (var conv in conversations) {
+      final conversationId = conv['id'] as String?;
+      if (conversationId != null) {
+        await Hive.deleteBoxFromDisk('messages_$conversationId');
+      }
+    }
+    final offlineBox = await _openBox(_offlineQueueBox);
+    await offlineBox.clear();
+
+    final metadataBox = await _openBox(_metadataBox);
+    await metadataBox.clear();
+  }
 }

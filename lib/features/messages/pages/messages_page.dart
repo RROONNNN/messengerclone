@@ -18,6 +18,8 @@ import '../../../common/services/call_service.dart';
 import '../elements/custom_messages_appbar.dart';
 import '../elements/custom_messages_bottombar.dart';
 import '../pages/group_detail_page.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
 
 class MessagesPage extends StatefulWidget {
   final GroupMessage? groupMessage;
@@ -274,6 +276,7 @@ class _MessagesPageState extends State<MessagesPage> {
                               callID += participant;
                               callID += "call_video_21211221133211412114214";
                             }
+                            callID = hashCallID(callID);
                             debugPrint(
                               'Gửi thông báo gọi với callID: $callID, participants: $participants',
                             );
@@ -326,6 +329,7 @@ class _MessagesPageState extends State<MessagesPage> {
                               callID += participant;
                               callID += "call_video_21211221133211412114214";
                             }
+                            callID = hashCallID(callID);
                             debugPrint(
                               'Gửi thông báo gọi video với callID: $callID, participants: $participants',
                             );
@@ -382,6 +386,11 @@ class _MessagesPageState extends State<MessagesPage> {
         },
       ),
     );
+  }
+  String hashCallID(String callID) {
+    var bytes = utf8.encode(callID);
+    var digest = md5.convert(bytes);
+    return digest.toString().substring(0, 16);
   }
 
   Widget _buildListMessage() {
