@@ -8,21 +8,18 @@ A modern messaging application built with Flutter, featuring real-time chat, vid
 - 📞 Video and audio calls
 - 📸 Image and video sharing
 - 🔔 Push notifications
-- 🎨 Sticker support
 - 🔒 Secure authentication
 - 💾 Local storage
 - 🌐 Cross-platform support
 
 ## Screenshots
 
-![Screenshot 1](assets/images/Picture1.png)
-![Screenshot 2](assets/images/Picture2.png)
-![Screenshot 3](assets/images/Picture3.png)
-![Screenshot 4](assets/images/Picture4.png)
-![Screenshot 5](assets/images/Picture5.png)
-
-## Demo Video
-
+![Screenshot 1](assets/images/Picture1.png)  
+![Screenshot 2](assets/images/Picture2.png)  
+![Screenshot 3](assets/images/Picture3.png)  
+![Screenshot 4](assets/images/Picture4.png)  
+![Screenshot 5](assets/images/Picture5.png)  
+ 
 [![Demo Video](assets/screenshots/thumbnail.png)](https://drive.google.com/drive/folders/1Za7tzsPghMiUbhfunv1jIfZL3whDdk5k?fbclid=IwY2xjawK7QgpleHRuA2FlbQIxMQABHuzj4MWeE5kLy-B_wyQeTcKqXJwdG9nKNAOW78S2ts5tUTlFdOPg58PJ-ECi_aem_Eu32XxNyCOk_XGqCf4WWxQ)
 
 ## Tech Stack
